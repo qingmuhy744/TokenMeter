@@ -1,23 +1,23 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
+
 from backend.main import app
-from backend.database import async_session
 from backend.models import User
 from backend.auth import hash_password
 from sqlalchemy import select
 
 
 @pytest.fixture
-async def auth_client():
+async def auth_client(db_session):
+    """Create an authenticated test client using the shared test db session."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # Create a test user with known password
-        async with async_session() as db:
-            result = await db.execute(select(User).where(User.username == "testadmin"))
-            existing = result.scalar_one_or_none()
-            if not existing:
-                db.add(User(username="testadmin", password_hash=hash_password("testpass")))
-                await db.commit()
+        # Use the same test session that the API will see (patched via db_session)
+        result = await db_session.execute(select(User).where(User.username == "testadmin"))
+        existing = result.scalar_one_or_none()
+        if not existing:
+            db_session.add(User(username="testadmin", password_hash=hash_password("testpass")))
+            await db_session.commit()
 
         await client.post("/api/auth/login", json={"username": "testadmin", "password": "testpass"})
         yield client

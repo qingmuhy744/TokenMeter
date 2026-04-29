@@ -71,6 +71,12 @@ docker exec tokenmeter sqlite3 /data/token_speed.db < backend/migrations/2026042
 - TPS (overall): tokens / 总耗时
 - TPS (generate): tokens / (总耗时 - TTFT)
 
+## 路径注意
+
+- **每条命令执行前先确认当前目录** (`pwd`)。前端 (`frontend/`) 和后端 (`backend/`) 是独立子目录，Shell 的 cwd 可能停留在任一位置
+- 涉及文件路径的操作（`git add <path>`、`uv run pytest`、`npm run build` 等），优先使用**绝对路径**或显式 `cd` 到仓库根目录后再执行，避免 pathspec 不匹配
+- 若不确定当前目录，**立即用 `pwd` 确认**，不要凭记忆假设
+
 ## 已知行为
 
 - 小米 API 返回 content_block_delta 事件但 parser 未匹配到文本（deltas > 0 但无内容），token 数来自 usage 字段

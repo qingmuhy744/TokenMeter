@@ -66,6 +66,7 @@ jobs:
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY@L}" >> "$GITHUB_OUTPUT"
 
       - name: Extract branch name
+        id: branch
         run: echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
