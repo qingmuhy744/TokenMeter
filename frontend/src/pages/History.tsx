@@ -33,7 +33,15 @@ export default function History() {
       <h1 className="text-2xl font-bold">Test History</h1>
       <div className="flex gap-4">
         <Select value={selectedPlan} onValueChange={(v) => { setSelectedPlan(v ?? "all"); setPage(1); }}>
-          <SelectTrigger className="w-[200px]"><SelectValue placeholder="All plans" /></SelectTrigger>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="All plans">
+              {(value: string | null) =>
+                value === "all" || !value
+                  ? "All plans"
+                  : plans.find((p) => String(p.id) === value)?.name || value
+              }
+            </SelectValue>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All plans</SelectItem>
             {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>))}
