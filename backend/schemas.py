@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class PlanCreate(BaseModel):
@@ -44,6 +44,13 @@ class PlanResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_validator("api_key")
+    @classmethod
+    def mask_api_key(cls, v: str) -> str:
+        if len(v) <= 8:
+            return "****"
+        return f"{v[:4]}...{v[-4:]}"
 
 
 class PlanWithLatestResult(PlanResponse):
