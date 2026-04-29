@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Query
 from sqlalchemy import select
@@ -22,6 +23,78 @@ def _is_unavailable(error: str | None) -> bool:
 
 def _range_to_timedelta(range_str: str) -> timedelta:
     return {"24h": timedelta(hours=24), "7d": timedelta(days=7), "30d": timedelta(days=30)}.get(range_str, timedelta(hours=24))
+
+
+def _get_bucket_config(range_str: Literal["24h", "7d", "30d"]) -> tuple[int, int]:
+    """Returns (bucket_ms, min_interval_ms) for given range."""
+    configs = {
+        "24h": (10 * 60 * 1000, 10 * 60 * 1000),      # 10min bucket, 10min min interval
+        "7d": (60 * 60 * 1000, 60 * 60 * 1000),       # 1hr bucket, 1hr min interval
+        "30d": (6 * 60 * 60 * 1000, 6 * 60 * 60 * 1000),  # 6hr bucket, 6hr min interval
+    }
+    return configs.get(range_str, configs["24h"])
+
+
+def _bin_timestamp(ts: datetime, bucket_ms: int) -> datetime:
+    """Floor timestamp to bucket boundary."""
+    ms = int(ts.timestamp() * 1000)
+    floored = (ms // bucket_ms) * bucket_ms
+    return datetime.fromtimestamp(floored / 1000, tz=timezone.utc)
+
+
+def _aggregate_trend_data(items: list[TestResult], bucket_ms: int, min_interval_ms: int) -> list[dict]:
+    """
+    Aggregate test results into time buckets.
+    If test interval > min_interval_ms, auto-increase bucket size.
+    Returns list of {time, tps_overall, ttft_ms} with bucketed timestamps.
+    """
+    if not items:
+        return []
+
+    # Group by bucket
+    buckets: dict[datetime, list[TestResult]] = {}
+    for item in items:
+        bucket_ts = _bin_timestamp(item.created_at, bucket_ms)
+        if bucket_ts not in buckets:
+            buckets[bucket_ts] = []
+        buckets[bucket_ts].append(item)
+
+    # Detect actual max interval and adjust bucket if needed
+    sorted_times = sorted(buckets.keys())
+    if len(sorted_times) >= 2:
+        max_interval = max((sorted_times[i+1] - sorted_times[i]).total_seconds() * 1000
+                           for i in range(len(sorted_times) - 1))
+        if max_interval > min_interval_ms:
+            # Find a bucket that fits: lcm-ish approach, use max_interval rounded up
+            new_bucket = bucket_ms
+            while new_bucket < max_interval:
+                new_bucket *= 2
+            bucket_ms = new_bucket
+            # Re-bin
+            buckets = {}
+            for item in items:
+                bucket_ts = _bin_timestamp(item.created_at, bucket_ms)
+                if bucket_ts not in buckets:
+                    buckets[bucket_ts] = []
+                buckets[bucket_ts].append(item)
+
+    # Aggregate each bucket (median)
+    result = []
+    for bucket_ts in sorted(buckets.keys()):
+        group = buckets[bucket_ts]
+        ttfts = [r.ttft_ms for r in group if r.ttft_ms is not None]
+        tps_list = [r.tps_overall for r in group if r.tps_overall is not None]
+
+        median_ttft = sorted(ttfts)[len(ttfts) // 2] if ttfts else None
+        median_tps = sorted(tps_list)[len(tps_list) // 2] if tps_list else None
+
+        result.append({
+            "time": bucket_ts.isoformat() + "Z",
+            "tps_overall": round(median_tps, 1) if median_tps is not None else None,
+            "ttft_ms": round(median_ttft) if median_ttft is not None else None,
+        })
+
+    return result
 
 
 @router.get("/status")
@@ -80,7 +153,7 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
             else:
                 stats = {"avg_ttft_ms": None, "avg_tps_overall": None, "p95_ttft_ms": None, "count": 0}
 
-            # Trend data (successful tests only)
+            # Trend data (successful tests only, aggregated into time buckets)
             trend_results = await db.execute(
                 select(TestResult)
                 .where(TestResult.plan_id == plan.id)
@@ -89,6 +162,9 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
                 .order_by(TestResult.created_at.asc())
             )
             trend_items = trend_results.scalars().all()
+
+            bucket_ms, min_interval_ms = _get_bucket_config(range)
+            trend = _aggregate_trend_data(trend_items, bucket_ms, min_interval_ms)
 
             latest_data = None
             if latest:
@@ -109,14 +185,7 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
                 "latest_result": latest_data,
                 "availability_pct": availability_pct,
                 "stats": stats,
-                "trend": [
-                    {
-                        "time": r.created_at.isoformat() + "Z",
-                        "tps_overall": round(r.tps_overall, 1) if r.tps_overall else None,
-                        "ttft_ms": round(r.ttft_ms) if r.ttft_ms else None,
-                    }
-                    for r in trend_items
-                ],
+                "trend": trend,
             })
 
     # Get custom banner
