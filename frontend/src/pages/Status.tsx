@@ -169,7 +169,7 @@ export default function Status() {
                   <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fontSize: 12 }} />
                   <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
-                  <Tooltip labelFormatter={formatTime} />
+                  <Tooltip labelFormatter={(label) => formatTime(String(label))} />
                   <Legend />
                   {data.plans.map((plan, i) => (
                     plan.trend.length > 1 && (
