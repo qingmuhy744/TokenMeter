@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query
 from sqlalchemy import select
 
 from backend.database import async_session
-from backend.models import TokenPlan, TestResult
+from backend.models import TokenPlan, TestResult, Setting
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -119,4 +119,8 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
                 ],
             })
 
-    return {"plans": plan_data, "range": range}
+    # Get custom banner
+    banner_result = await db.execute(select(Setting).where(Setting.key == "custom_banner"))
+    custom_banner = banner_result.scalar_one_or_none()
+
+    return {"plans": plan_data, "custom_banner": custom_banner.value if custom_banner else None, "range": range}

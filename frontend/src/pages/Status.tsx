@@ -27,6 +27,7 @@ interface StatusData {
     };
     trend: { time: string; tps_overall: number | null; ttft_ms: number | null }[];
   }[];
+  custom_banner: string | null;
   range: string;
 }
 
@@ -84,6 +85,15 @@ export default function Status() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Custom Banner */}
+      {data.custom_banner && (
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <div className="max-w-5xl mx-auto px-4 py-6 space-y-3">
+            <div dangerouslySetInnerHTML={{ __html: data.custom_banner }} />
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="border-b">
         <div className="max-w-5xl mx-auto px-4 py-6">
@@ -245,6 +255,8 @@ export default function Status() {
       {/* Footer */}
       <div className="border-t mt-8">
         <div className="max-w-5xl mx-auto px-4 py-4 text-center text-xs text-muted-foreground">
+          <a href="https://github.com/qingmuhy744/TokenMeter" target="_blank" rel="noopener noreferrer" className="hover:underline">GitHub</a>
+          {" · "}
           Powered by TokenMeter
         </div>
       </div>

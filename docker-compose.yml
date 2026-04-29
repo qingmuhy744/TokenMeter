@@ -7,7 +7,7 @@ services:
       - app-data:/data
     environment:
       - DB_PATH=/data/token_speed.db
-      - SECRET_KEY=change-this-to-a-random-string
+      # SECRET_KEY=your-secret-key-here  # 不配置则自动生成随机密钥
       # - HTTP_PROXY=http://host.docker.internal:7890
       # - HTTPS_PROXY=http://host.docker.internal:7890
       # - NO_PROXY=localhost,127.0.0.1
