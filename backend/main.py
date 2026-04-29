@@ -25,6 +25,17 @@ class BufferHandler(logging.Handler):
         log_buffer.append(self.format(record))
 
 
+class LocalTimeFormatter(logging.Formatter):
+    def formatTime(self, record, datefmt=None):
+        import time
+        ct = time.localtime(record.created)
+        if datefmt:
+            s = time.strftime(datefmt, ct)
+        else:
+            s = time.strftime("%Y-%m-%d %H:%M:%S", ct)
+        return s
+
+
 def setup_logging():
     fmt = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
     datefmt = "%Y-%m-%d %H:%M:%S"
@@ -34,12 +45,12 @@ def setup_logging():
 
     # Console handler
     console = logging.StreamHandler()
-    console.setFormatter(logging.Formatter(fmt, datefmt=datefmt))
+    console.setFormatter(LocalTimeFormatter(fmt, datefmt=datefmt))
     root.addHandler(console)
 
     # Buffer handler for API access
     buf = BufferHandler()
-    buf.setFormatter(logging.Formatter(fmt, datefmt=datefmt))
+    buf.setFormatter(LocalTimeFormatter(fmt, datefmt=datefmt))
     root.addHandler(buf)
 
 
