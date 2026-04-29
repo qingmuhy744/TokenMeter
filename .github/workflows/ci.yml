@@ -65,11 +65,14 @@ jobs:
         id: image
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY@L}" >> "$GITHUB_OUTPUT"
 
+      - name: Extract branch name
+        run: echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ${{ steps.image.outputs.name }}:latest
-            ${{ steps.image.outputs.name }}:${{ github.sha }}
+            ${{ steps.image.outputs.name }}:${{ steps.branch.outputs.branch }}
+            ${{ steps.image.outputs.name }}:${{ steps.branch.outputs.branch }}-${{ github.sha }}
