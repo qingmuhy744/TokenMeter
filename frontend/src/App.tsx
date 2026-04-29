@@ -37,16 +37,18 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 border-t space-y-2">
-        <button onClick={toggleLang} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full">
-          <Globe className="h-4 w-4" />
-          {i18n.language === "zh" ? "English" : "中文"}
-        </button>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">{user?.username}</span>
-          <button onClick={logout} className="text-muted-foreground hover:text-foreground">
-            <LogOut className="h-4 w-4" />
+      <div className="p-3 border-t">
+        <div className="flex items-center justify-between px-1">
+          <button onClick={toggleLang} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <Globe className="h-3.5 w-3.5" />
+            {i18n.language === "zh" ? "EN" : "中文"}
           </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{user?.username}</span>
+            <button onClick={logout} className="text-muted-foreground hover:text-foreground transition-colors">
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </aside>
