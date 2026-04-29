@@ -98,24 +98,43 @@ make lint
 
 ## Docker 部署
 
-### 构建镜像
+### 使用预构建镜像 (推荐)
 
-```bash
-make docker
-# 或
-docker build -t token-speed-test .
+创建 `docker-compose.yml`:
+
+```yaml
+services:
+  app:
+    image: ghcr.io/qingmuhy744/tokenmeter:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      - DB_PATH=/data/token_speed.db
+      - SECRET_KEY=change-me-in-production
 ```
 
-### docker-compose 运行
+启动:
 
 ```bash
 docker compose up -d
 ```
 
-访问 http://localhost:8000，终端查看管理员密码:
+访问 http://localhost:8000，查看管理员密码:
 
 ```bash
 docker compose logs -f
+```
+
+数据保存在当前目录的 `data/` 文件夹中，方便备份和迁移。
+
+### 本地构建镜像
+
+```bash
+make docker
+# 或
+docker build -t token-speed-test .
 ```
 
 ### 环境变量
