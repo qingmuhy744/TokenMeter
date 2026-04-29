@@ -37,6 +37,8 @@ def _get_bucket_config(range_str: Literal["24h", "7d", "30d"]) -> tuple[int, int
 
 def _bin_timestamp(ts: datetime, bucket_ms: int) -> datetime:
     """Floor timestamp to bucket boundary."""
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
     ms = int(ts.timestamp() * 1000)
     floored = (ms // bucket_ms) * bucket_ms
     return datetime.fromtimestamp(floored / 1000, tz=timezone.utc)
@@ -168,12 +170,15 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
 
             latest_data = None
             if latest:
+                latest_at = latest.created_at
+                if latest_at.tzinfo is None:
+                    latest_at = latest_at.replace(tzinfo=timezone.utc)
                 latest_data = {
                     "ttft_ms": round(latest.ttft_ms) if latest.ttft_ms else None,
                     "tps_overall": round(latest.tps_overall, 1) if latest.tps_overall else None,
                     "error": latest.error,
                     "is_unavailable": _is_unavailable(latest.error),
-                    "created_at": latest.created_at.isoformat() + "Z",
+                    "created_at": latest_at.isoformat().replace("+00:00", "Z"),
                 }
 
             plan_data.append({
