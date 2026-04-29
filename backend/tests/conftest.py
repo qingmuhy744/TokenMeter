@@ -4,6 +4,15 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from backend.database import Base
 
 
+@pytest.fixture(autouse=True)
+def _reset_login_rate_limit():
+    """Reset login rate limiter between tests."""
+    from backend.auth import reset_rate_limit
+    reset_rate_limit()
+    yield
+    reset_rate_limit()
+
+
 @pytest.fixture
 async def db_engine():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
