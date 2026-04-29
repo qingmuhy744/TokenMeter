@@ -74,17 +74,18 @@ async def change_password(body: ChangePasswordRequest, request: Request):
 
 async def ensure_admin():
     """Create admin user with random password if not exists."""
+    from backend.config import settings
     async with async_session() as db:
-        result = await db.execute(select(User).where(User.username == "admin"))
+        result = await db.execute(select(User).where(User.username == settings.ADMIN_USER))
         if result.scalar_one_or_none():
             return
         password = generate_password()
-        admin = User(username="admin", password_hash=hash_password(password))
+        admin = User(username=settings.ADMIN_USER, password_hash=hash_password(password))
         db.add(admin)
         await db.commit()
         print("\n" + "=" * 50)
         print("  Admin account created!")
-        print("  Username: admin")
+        print(f"  Username: {settings.ADMIN_USER}")
         print(f"  Password: {password}")
         print("  Please change password after login")
         print("=" * 50 + "\n")
