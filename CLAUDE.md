@@ -37,6 +37,26 @@ cp token_speed.db.bak token_speed.db   # 恢复
 - 小米 (mimo-v2.5-pro) — anthropic 格式
 - minimax (MiniMax-M2.7) — anthropic 格式
 
+### 数据库迁移
+
+本项目没有使用 Alembic，模型定义即 schema。当 `models.py` 字段变更时：
+
+1. **新安装 / 测试环境** — 直接用新 schema，首次启动自动建表
+2. **已有数据库** — 需手动执行迁移 SQL，写在 `backend/migrations/` 目录下
+
+迁移脚本命名规范：`YYYYMMDD_description.sql`，内容示例：
+```sql
+-- 20260429: test_result 表增加 plan_name 字段（仅用于参考，实际由 ORM 自动建表）
+ALTER TABLE test_result ADD COLUMN plan_name TEXT;
+```
+
+Docker 用户迁移方式：
+```bash
+docker exec tokenmeter sqlite3 /data/token_speed.db < backend/migrations/20260429_xxx.sql
+```
+
+注意：SQLite 的 ALTER TABLE 功能有限，不支持 DROP COLUMN、修改列类型等操作。如需复杂变更，需重建表。
+
 ## 分支策略
 
 - `main` — 只能 merge，不能直接 push
