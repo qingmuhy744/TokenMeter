@@ -8,6 +8,8 @@ RUN npm run build
 
 # Stage 2: Python backend
 FROM python:3.12-slim
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata && rm -rf /var/lib/apt/lists/*
+ENV TZ=Asia/Shanghai
 WORKDIR /app
 
 # Install uv
