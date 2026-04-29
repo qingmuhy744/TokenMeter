@@ -1,7 +1,10 @@
 import time
 import json
+import logging
 import httpx
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -12,6 +15,8 @@ class SpeedTestResult:
     total_tokens: int = 0
     total_time_ms: float | None = None
     error: str | None = None
+    note: str | None = None
+    debug_chunks: list[str] = field(default_factory=list)
 
 
 class SpeedTester:
@@ -32,6 +37,7 @@ class SpeedTester:
             "max_tokens": max_tokens,
             "stream": True,
         }
+        logger.info("Testing OpenAI-compatible: %s model=%s", url, model)
         return await self._stream_request(url, headers, body, self._parse_openai_chunk)
 
     async def test_anthropic(
@@ -49,6 +55,7 @@ class SpeedTester:
             "max_tokens": max_tokens,
             "stream": True,
         }
+        logger.info("Testing Anthropic: %s model=%s", url, model)
         return await self._stream_request(url, headers, body, self._parse_anthropic_chunk)
 
     async def _stream_request(
@@ -58,10 +65,12 @@ class SpeedTester:
         start_time = time.monotonic()
         first_chunk_time = None
         token_count = 0
+        raw_lines_seen = 0
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 async with client.stream("POST", url, headers=headers, json=body) as response:
+                    logger.info("Response status: %d", response.status_code)
                     response.raise_for_status()
                     buffer = ""
                     async for raw_bytes in response.aiter_bytes():
@@ -71,14 +80,22 @@ class SpeedTester:
                             line = line.strip()
                             if not line:
                                 continue
+                            raw_lines_seen += 1
+                            # Store first 10 non-empty lines for debugging
+                            if len(result.debug_chunks) < 10:
+                                result.debug_chunks.append(line[:500])
                             tokens = parse_chunk(line)
                             if tokens > 0:
                                 if first_chunk_time is None:
                                     first_chunk_time = time.monotonic()
+                                    logger.debug("First token at %.1fms", (first_chunk_time - start_time) * 1000)
                                 token_count += tokens
+                            elif raw_lines_seen <= 5:
+                                logger.debug("Unparsed line: %s", line[:200])
         except Exception as e:
             result.error = str(e)
             result.total_time_ms = (time.monotonic() - start_time) * 1000
+            logger.error("Speed test failed: %s", e)
             return result
 
         end_time = time.monotonic()
@@ -95,6 +112,16 @@ class SpeedTester:
                 if generate_ms > 0:
                     result.tps_overall = token_count / (total_ms / 1000)
                     result.tps_generate = token_count / (generate_ms / 1000)
+
+        logger.info(
+            "Test done: tokens=%d lines=%d ttft=%.0fms total=%.0fms",
+            token_count, raw_lines_seen,
+            result.ttft_ms or 0, total_ms,
+        )
+
+        if token_count == 0 and raw_lines_seen > 0:
+            result.note = f"Stream OK but 0 tokens parsed ({raw_lines_seen} SSE lines received). Check debug_chunks."
+            logger.warning("0 tokens from %d lines. First chunks: %s", raw_lines_seen, result.debug_chunks[:3])
 
         return result
 

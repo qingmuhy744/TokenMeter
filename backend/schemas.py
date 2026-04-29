@@ -66,6 +66,8 @@ class TestResultResponse(BaseModel):
     total_tokens: int | None
     total_time_ms: float | None
     error: str | None
+    note: str | None = None
+    debug_chunks: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

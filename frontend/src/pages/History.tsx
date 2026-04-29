@@ -49,7 +49,7 @@ export default function History() {
       )}
       <Table>
         <TableHeader>
-          <TableRow><TableHead>Time</TableHead><TableHead>Plan</TableHead><TableHead>TTFT (ms)</TableHead><TableHead>TPS (overall)</TableHead><TableHead>TPS (generate)</TableHead><TableHead>Tokens</TableHead><TableHead>Status</TableHead></TableRow>
+          <TableRow><TableHead>Time</TableHead><TableHead>Plan</TableHead><TableHead>TTFT (ms)</TableHead><TableHead>TPS (overall)</TableHead><TableHead>TPS (generate)</TableHead><TableHead>Tokens</TableHead><TableHead>Status</TableHead><TableHead>Note</TableHead></TableRow>
         </TableHeader>
         <TableBody>
           {results.items.map((r: any) => (
@@ -60,7 +60,8 @@ export default function History() {
               <TableCell>{r.tps_overall?.toFixed(1)}</TableCell>
               <TableCell>{r.tps_generate?.toFixed(1)}</TableCell>
               <TableCell>{r.total_tokens}</TableCell>
-              <TableCell>{r.error ? <span className="text-destructive text-sm">Error</span> : <span className="text-green-600 text-sm">OK</span>}</TableCell>
+              <TableCell>{r.error ? <span className="text-destructive text-sm">Error</span> : r.total_tokens === 0 ? <span className="text-yellow-600 text-sm">Warn</span> : <span className="text-green-600 text-sm">OK</span>}</TableCell>
+              <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground" title={r.note || r.debug_chunks || ""}>{r.note || ""}</TableCell>
             </TableRow>
           ))}
         </TableBody>

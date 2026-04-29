@@ -38,6 +38,8 @@ class TestResult(Base):
     total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_time_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    debug_chunks: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     plan: Mapped["TokenPlan"] = relationship(back_populates="results")

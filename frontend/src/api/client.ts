@@ -40,4 +40,6 @@ export const api = {
 
   getSettings: () => request<any>("/settings"),
   updateSettings: (data: any) => request("/settings", { method: "PUT", body: JSON.stringify(data) }),
+
+  getLogs: (limit: number = 100) => request<{ lines: string[] }>(`/logs?limit=${limit}`),
 };

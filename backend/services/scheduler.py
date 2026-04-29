@@ -1,3 +1,6 @@
+import json
+import logging
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy import select
@@ -7,6 +10,7 @@ from backend.models import TokenPlan, TestResult
 from backend.services.speed_test import SpeedTester
 from backend.config import settings
 
+logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()
 
 
@@ -21,12 +25,19 @@ async def run_speed_test(plan_id: int):
     tester = SpeedTester(timeout=settings.TIMEOUT_SECONDS)
     prompt = plan.prompt or settings.DEFAULT_PROMPT
 
+    logger.info("[Scheduler] Running test: plan=%d name=%s model=%s", plan_id, plan.name, plan.model)
+
     results = []
-    for _ in range(plan.test_count):
+    for i in range(plan.test_count):
         if plan.api_type == "openai":
             r = await tester.test_openai(plan.api_base, plan.api_key, plan.model, prompt, plan.max_tokens)
         else:
             r = await tester.test_anthropic(plan.api_base, plan.api_key, plan.model, prompt, plan.max_tokens)
+        logger.info("  Run %d/%d: tokens=%d ttft=%s tps=%s error=%s",
+                     i + 1, plan.test_count, r.total_tokens,
+                     f"{r.ttft_ms:.0f}" if r.ttft_ms else "N/A",
+                     f"{r.tps_overall:.1f}" if r.tps_overall else "N/A",
+                     r.error or "none")
         results.append(r)
 
     valid = [r for r in results if r.error is None]
@@ -45,6 +56,8 @@ async def run_speed_test(plan_id: int):
             total_tokens=median.total_tokens,
             total_time_ms=median.total_time_ms,
             error=median.error,
+            note=median.note,
+            debug_chunks=json.dumps(median.debug_chunks) if median.debug_chunks else None,
         )
         db.add(test_result)
         await db.commit()
