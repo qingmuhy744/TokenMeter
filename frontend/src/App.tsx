@@ -1,22 +1,28 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Plans from "@/pages/Plans";
 import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import { Toaster } from "@/components/ui/sonner";
-import { LayoutDashboard, ListTodo, History as HistoryIcon, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { LayoutDashboard, ListTodo, History as HistoryIcon, Settings as SettingsIcon, LogOut, Globe } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
 function Sidebar() {
   const { user, logout } = useAuth();
+  const { t, i18n } = useTranslation();
   const links = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/plans", icon: ListTodo, label: "Plans" },
-    { to: "/history", icon: HistoryIcon, label: "History" },
-    { to: "/settings", icon: SettingsIcon, label: "Settings" },
+    { to: "/", icon: LayoutDashboard, label: t("nav.dashboard") },
+    { to: "/plans", icon: ListTodo, label: t("nav.plans") },
+    { to: "/history", icon: HistoryIcon, label: t("nav.history") },
+    { to: "/settings", icon: SettingsIcon, label: t("nav.settings") },
   ];
+  const toggleLang = () => {
+    const next = i18n.language === "zh" ? "en" : "zh";
+    i18n.changeLanguage(next);
+  };
   return (
     <aside className="w-60 border-r bg-muted/30 flex flex-col">
       <div className="p-4 font-bold text-lg">TokenMeter</div>
@@ -30,11 +36,17 @@ function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="p-4 border-t flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{user?.username}</span>
-        <button onClick={logout} className="text-muted-foreground hover:text-foreground">
-          <LogOut className="h-4 w-4" />
+      <div className="p-4 border-t space-y-2">
+        <button onClick={toggleLang} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground w-full">
+          <Globe className="h-4 w-4" />
+          {i18n.language === "zh" ? "English" : "中文"}
         </button>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">{user?.username}</span>
+          <button onClick={logout} className="text-muted-foreground hover:text-foreground">
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </aside>
   );
