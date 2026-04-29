@@ -196,3 +196,7 @@ TokenMeter/
 1. Python lint (`ruff`) + 测试 (`pytest`)
 2. 前端类型检查 (`tsc`) + 构建 (`vite build`)
 3. Docker 构建并推送到 GHCR (仅 main 分支 push)
+
+## 关于
+
+本项目完全由 [小米 mimo-v2.5-pro](https://platform.miguvideo.com/) 构建。
