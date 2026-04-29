@@ -1,0 +1,87 @@
+{
+  "nav": {
+    "dashboard": "仪表盘",
+    "plans": "测速计划",
+    "history": "测试历史",
+    "settings": "设置"
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "active": "启用",
+    "inactive": "停用",
+    "ttft": "首Token时间",
+    "tps": "每秒Token数",
+    "noResults": "暂无测试结果",
+    "tpsComparison": "TPS 对比"
+  },
+  "plans": {
+    "title": "测速计划",
+    "newPlan": "新建计划",
+    "editPlan": "编辑计划",
+    "name": "名称",
+    "apiType": "API 类型",
+    "apiBaseUrl": "API 地址",
+    "apiKey": "API 密钥",
+    "model": "模型",
+    "customPrompt": "自定义提示词（可选）",
+    "maxTokens": "最大 Token 数",
+    "testCount": "测试次数",
+    "interval": "间隔（分钟）",
+    "active": "启用",
+    "update": "更新",
+    "create": "创建",
+    "deleteConfirm": "确定删除此计划？",
+    "runningTest": "正在测速...",
+    "testCompleted": "测试完成",
+    "planCreated": "计划已创建",
+    "planUpdated": "计划已更新",
+    "planDeleted": "计划已删除"
+  },
+  "history": {
+    "title": "测试历史",
+    "allPlans": "全部计划",
+    "trend": "趋势图",
+    "tpsOverall": "TPS（整体）",
+    "tpsGenerate": "TPS（生成）",
+    "ttftMs": "首Token时间（ms）",
+    "time": "时间",
+    "plan": "计划",
+    "tokens": "Token数",
+    "status": "状态",
+    "note": "备注",
+    "total": "总计",
+    "prev": "上一页",
+    "next": "下一页",
+    "page": "页"
+  },
+  "settings": {
+    "title": "设置",
+    "testConfig": "测试配置",
+    "defaultPrompt": "默认提示词",
+    "timeout": "超时时间（秒）",
+    "saveSettings": "保存设置",
+    "settingsSaved": "设置已保存",
+    "changePassword": "修改密码",
+    "oldPassword": "旧密码",
+    "newPassword": "新密码",
+    "confirmNewPassword": "确认新密码",
+    "passwordChanged": "密码已修改",
+    "passwordsNoMatch": "两次输入的密码不一致",
+    "passwordTooShort": "密码至少需要 8 个字符",
+    "serverLogs": "服务器日志",
+    "autoRefresh": "自动刷新",
+    "refresh": "刷新",
+    "clickRefresh": "点击刷新加载日志"
+  },
+  "login": {
+    "title": "登录",
+    "username": "用户名",
+    "password": "密码",
+    "loginButton": "登录"
+  },
+  "common": {
+    "error": "错误",
+    "warn": "警告",
+    "ok": "正常"
+  }
+}

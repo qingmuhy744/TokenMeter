@@ -1,5 +1,12 @@
-from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field, field_validator, field_serializer
+
+
+def _ensure_utc(dt: datetime) -> datetime:
+    """Ensure datetime has UTC timezone info (treat naive as UTC)."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 class PlanCreate(BaseModel):
@@ -52,6 +59,11 @@ class PlanResponse(BaseModel):
             return "****"
         return f"{v[:4]}...{v[-4:]}"
 
+    @field_serializer("created_at", "updated_at")
+    @classmethod
+    def serialize_dt(cls, v: datetime) -> datetime:
+        return _ensure_utc(v)
+
 
 class PlanWithLatestResult(PlanResponse):
     latest_result: "TestResultResponse | None" = None
@@ -72,6 +84,11 @@ class TestResultResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_serializer("created_at")
+    @classmethod
+    def serialize_dt(cls, v: datetime) -> datetime:
+        return _ensure_utc(v)
 
 
 class StatsResponse(BaseModel):

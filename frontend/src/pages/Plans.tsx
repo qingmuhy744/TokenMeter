@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ const defaultForm = {
 };
 
 export default function Plans() {
+  const { t } = useTranslation();
   const [plans, setPlans] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(defaultForm);
@@ -29,12 +31,11 @@ export default function Plans() {
   const handleSubmit = async () => {
     try {
       if (editingId) {
-        // Don't send masked api_key back — only send if user changed it
         const { api_key, ...rest } = form;
         const payload = originalKey !== api_key ? { ...rest, api_key } : rest;
-        await api.updatePlan(editingId, payload); toast.success("Plan updated");
+        await api.updatePlan(editingId, payload); toast.success(t("plans.planUpdated"));
       }
-      else { await api.createPlan(form); toast.success("Plan created"); }
+      else { await api.createPlan(form); toast.success(t("plans.planCreated")); }
       setOpen(false); setForm(defaultForm); setEditingId(null); loadPlans();
     } catch (e: any) { toast.error(e.message); }
   };
@@ -50,56 +51,56 @@ export default function Plans() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this plan?")) return;
-    await api.deletePlan(id); toast.success("Plan deleted"); loadPlans();
+    if (!confirm(t("plans.deleteConfirm"))) return;
+    await api.deletePlan(id); toast.success(t("plans.planDeleted")); loadPlans();
   };
 
   const handleTest = async (id: number) => {
-    toast.info("Running speed test...");
-    try { await api.triggerTest(id); toast.success("Test completed"); loadPlans(); }
+    toast.info(t("plans.runningTest"));
+    try { await api.triggerTest(id); toast.success(t("plans.testCompleted")); loadPlans(); }
     catch (e: any) { toast.error(e.message); }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Token Plans</h1>
+        <h1 className="text-2xl font-bold">{t("plans.title")}</h1>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger render={<Button onClick={() => { setForm(defaultForm); setEditingId(null); setOriginalKey(""); }} />}>
-            <Plus className="h-4 w-4 mr-2" /> New Plan
+            <Plus className="h-4 w-4 mr-2" /> {t("plans.newPlan")}
           </DialogTrigger>
           <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>{editingId ? "Edit Plan" : "New Plan"}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editingId ? t("plans.editPlan") : t("plans.newPlan")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+              <div><Label>{t("plans.name")}</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
               <div>
-                <Label>API Type</Label>
+                <Label>{t("plans.apiType")}</Label>
                 <Select value={form.api_type} onValueChange={(v) => setForm({ ...form, api_type: v ?? "openai" })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="openai">OpenAI Compatible</SelectItem><SelectItem value="anthropic">Anthropic</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div><Label>API Base URL</Label><Input value={form.api_base} onChange={(e) => setForm({ ...form, api_base: e.target.value })} /></div>
-              <div><Label>API Key</Label><Input type="password" value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} /></div>
-              <div><Label>Model</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
-              <div><Label>Custom Prompt (optional)</Label><Input value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} /></div>
+              <div><Label>{t("plans.apiBaseUrl")}</Label><Input value={form.api_base} onChange={(e) => setForm({ ...form, api_base: e.target.value })} /></div>
+              <div><Label>{t("plans.apiKey")}</Label><Input type="password" value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} /></div>
+              <div><Label>{t("plans.model")}</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
+              <div><Label>{t("plans.customPrompt")}</Label><Input value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} /></div>
               <div className="grid grid-cols-3 gap-4">
-                <div><Label>Max Tokens</Label><Input type="number" value={form.max_tokens} onChange={(e) => setForm({ ...form, max_tokens: +e.target.value })} /></div>
-                <div><Label>Test Count</Label><Input type="number" value={form.test_count} onChange={(e) => setForm({ ...form, test_count: +e.target.value })} /></div>
-                <div><Label>Interval (min)</Label><Input type="number" value={form.interval_minutes} onChange={(e) => setForm({ ...form, interval_minutes: +e.target.value })} /></div>
+                <div><Label>{t("plans.maxTokens")}</Label><Input type="number" value={form.max_tokens} onChange={(e) => setForm({ ...form, max_tokens: +e.target.value })} /></div>
+                <div><Label>{t("plans.testCount")}</Label><Input type="number" value={form.test_count} onChange={(e) => setForm({ ...form, test_count: +e.target.value })} /></div>
+                <div><Label>{t("plans.interval")}</Label><Input type="number" value={form.interval_minutes} onChange={(e) => setForm({ ...form, interval_minutes: +e.target.value })} /></div>
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-                <Label>Active</Label>
+                <Label>{t("plans.active")}</Label>
               </div>
-              <Button onClick={handleSubmit} className="w-full">{editingId ? "Update" : "Create"}</Button>
+              <Button onClick={handleSubmit} className="w-full">{editingId ? t("plans.update") : t("plans.create")}</Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
       <Table>
         <TableHeader>
-          <TableRow><TableHead>Name</TableHead><TableHead>Type</TableHead><TableHead>Model</TableHead><TableHead>Interval</TableHead><TableHead>Status</TableHead><TableHead>Actions</TableHead></TableRow>
+          <TableRow><TableHead>{t("plans.name")}</TableHead><TableHead>{t("plans.apiType")}</TableHead><TableHead>{t("plans.model")}</TableHead><TableHead>{t("plans.interval")}</TableHead><TableHead>{t("plans.active")}</TableHead><TableHead>Actions</TableHead></TableRow>
         </TableHeader>
         <TableBody>
           {plans.map((plan) => (
@@ -108,7 +109,7 @@ export default function Plans() {
               <TableCell>{plan.api_type}</TableCell>
               <TableCell>{plan.model}</TableCell>
               <TableCell>{plan.interval_minutes}m</TableCell>
-              <TableCell><Badge variant={plan.is_active ? "default" : "secondary"}>{plan.is_active ? "Active" : "Inactive"}</Badge></TableCell>
+              <TableCell><Badge variant={plan.is_active ? "default" : "secondary"}>{plan.is_active ? t("dashboard.active") : t("dashboard.inactive")}</Badge></TableCell>
               <TableCell>
                 <div className="flex gap-1">
                   <Button size="sm" variant="outline" onClick={() => handleTest(plan.id)}><Play className="h-3 w-3" /></Button>

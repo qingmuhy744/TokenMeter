@@ -1,0 +1,87 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "plans": "Plans",
+    "history": "History",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "active": "Active",
+    "inactive": "Inactive",
+    "ttft": "TTFT",
+    "tps": "TPS",
+    "noResults": "No test results yet",
+    "tpsComparison": "TPS Comparison"
+  },
+  "plans": {
+    "title": "Token Plans",
+    "newPlan": "New Plan",
+    "editPlan": "Edit Plan",
+    "name": "Name",
+    "apiType": "API Type",
+    "apiBaseUrl": "API Base URL",
+    "apiKey": "API Key",
+    "model": "Model",
+    "customPrompt": "Custom Prompt (optional)",
+    "maxTokens": "Max Tokens",
+    "testCount": "Test Count",
+    "interval": "Interval (min)",
+    "active": "Active",
+    "update": "Update",
+    "create": "Create",
+    "deleteConfirm": "Delete this plan?",
+    "runningTest": "Running speed test...",
+    "testCompleted": "Test completed",
+    "planCreated": "Plan created",
+    "planUpdated": "Plan updated",
+    "planDeleted": "Plan deleted"
+  },
+  "history": {
+    "title": "Test History",
+    "allPlans": "All plans",
+    "trend": "Trend",
+    "tpsOverall": "TPS (overall)",
+    "tpsGenerate": "TPS (generate)",
+    "ttftMs": "TTFT (ms)",
+    "time": "Time",
+    "plan": "Plan",
+    "tokens": "Tokens",
+    "status": "Status",
+    "note": "Note",
+    "total": "Total",
+    "prev": "Prev",
+    "next": "Next",
+    "page": "Page"
+  },
+  "settings": {
+    "title": "Settings",
+    "testConfig": "Test Configuration",
+    "defaultPrompt": "Default Prompt",
+    "timeout": "Timeout (seconds)",
+    "saveSettings": "Save Settings",
+    "settingsSaved": "Settings saved",
+    "changePassword": "Change Password",
+    "oldPassword": "Old Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "passwordChanged": "Password changed",
+    "passwordsNoMatch": "Passwords do not match",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "serverLogs": "Server Logs",
+    "autoRefresh": "Auto",
+    "refresh": "Refresh",
+    "clickRefresh": "Click Refresh to load logs"
+  },
+  "login": {
+    "title": "Login",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Login"
+  },
+  "common": {
+    "error": "Error",
+    "warn": "Warn",
+    "ok": "OK"
+  }
+}
