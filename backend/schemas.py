@@ -152,11 +152,13 @@ class ChangePasswordRequest(BaseModel):
 class SettingsResponse(BaseModel):
     default_prompt: str
     timeout_seconds: int
+    custom_banner: str | None = None
 
 
 class SettingsUpdate(BaseModel):
     default_prompt: str | None = None
     timeout_seconds: int | None = None
+    custom_banner: str | None = None
 
 
 class PaginatedResponse(BaseModel):
