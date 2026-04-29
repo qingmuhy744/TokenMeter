@@ -1,4 +1,8 @@
 from datetime import datetime, timezone
+from typing import Literal
+from urllib.parse import urlparse
+import ipaddress
+
 from pydantic import BaseModel, Field, field_validator, field_serializer
 
 
@@ -9,9 +13,30 @@ def _ensure_utc(dt: datetime) -> datetime:
     return dt
 
 
+def _validate_api_base(url: str) -> str:
+    """Validate api_base URL to prevent SSRF attacks."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("https", "http"):
+        raise ValueError("api_base must use http or https scheme")
+    hostname = parsed.hostname or ""
+    # Block private/internal IP ranges
+    try:
+        ip = ipaddress.ip_address(hostname)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise ValueError("api_base cannot point to private/internal addresses")
+    except ValueError as e:
+        if "private" in str(e) or "loopback" in str(e) or "link_local" in str(e) or "reserved" in str(e):
+            raise
+        # Not an IP address (hostname like "api.openai.com") — that's fine
+    # Block common internal hostnames
+    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "[::1]"):
+        raise ValueError("api_base cannot point to localhost")
+    return url
+
+
 class PlanCreate(BaseModel):
     name: str
-    api_type: str
+    api_type: Literal["openai", "anthropic"]
     api_base: str
     api_key: str
     model: str
@@ -21,10 +46,15 @@ class PlanCreate(BaseModel):
     interval_minutes: int = 60
     is_active: bool = True
 
+    @field_validator("api_base")
+    @classmethod
+    def validate_api_base(cls, v: str) -> str:
+        return _validate_api_base(v)
+
 
 class PlanUpdate(BaseModel):
     name: str | None = None
-    api_type: str | None = None
+    api_type: Literal["openai", "anthropic"] | None = None
     api_base: str | None = None
     api_key: str | None = None
     model: str | None = None
@@ -33,6 +63,13 @@ class PlanUpdate(BaseModel):
     test_count: int | None = None
     interval_minutes: int | None = None
     is_active: bool | None = None
+
+    @field_validator("api_base")
+    @classmethod
+    def validate_api_base(cls, v: str | None) -> str | None:
+        if v is not None:
+            return _validate_api_base(v)
+        return v
 
 
 class PlanResponse(BaseModel):

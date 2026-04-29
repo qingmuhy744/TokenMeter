@@ -14,6 +14,7 @@ from backend.auth import router as auth_router, ensure_admin, get_current_user
 from backend.routes.plans import router as plans_router
 from backend.routes.results import router as results_router
 from backend.routes.settings import router as settings_router
+from backend.routes.public import router as public_router
 from backend.services.scheduler import start_scheduler, shutdown_scheduler, sync_scheduled_jobs
 
 # In-memory log buffer (last 500 lines)
@@ -70,11 +71,12 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="TokenMeter", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, max_age=86400 * 7)  # 7 days
 app.include_router(auth_router)
 app.include_router(plans_router)
 app.include_router(results_router)
 app.include_router(settings_router)
+app.include_router(public_router)
 
 
 @app.get("/api/logs")
@@ -88,7 +90,6 @@ async def get_logs(request: Request, limit: int = 100):
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 if frontend_dist.exists():
     index_file = frontend_dist / "index.html"
-
     # Mount static assets (JS, CSS, images) under /assets
     app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
 

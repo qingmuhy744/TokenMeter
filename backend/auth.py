@@ -1,3 +1,4 @@
+import time
 import secrets
 import bcrypt
 from fastapi import APIRouter, HTTPException, Request
@@ -10,6 +11,30 @@ from backend.schemas import LoginRequest, ChangePasswordRequest
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 SESSION_KEY = "user_id"
+
+# Simple in-memory rate limiter for login attempts
+_login_attempts: dict[str, list[float]] = {}
+_LOGIN_RATE_LIMIT = 5  # max attempts
+_LOGIN_RATE_WINDOW = 300  # 5 minutes
+
+
+def reset_rate_limit(ip: str | None = None) -> None:
+    """Reset rate limiter for a specific IP or all IPs (for testing)."""
+    if ip:
+        _login_attempts.pop(ip, None)
+    else:
+        _login_attempts.clear()
+
+
+def _check_rate_limit(ip: str) -> None:
+    now = time.time()
+    attempts = _login_attempts.get(ip, [])
+    # Clean old entries
+    attempts = [t for t in attempts if now - t < _LOGIN_RATE_WINDOW]
+    if len(attempts) >= _LOGIN_RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="Too many login attempts. Try again in 5 minutes.")
+    attempts.append(now)
+    _login_attempts[ip] = attempts
 
 
 def hash_password(password: str) -> str:
@@ -38,6 +63,8 @@ async def get_current_user(request: Request) -> User:
 
 @router.post("/login")
 async def login(body: LoginRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    _check_rate_limit(client_ip)
     async with async_session() as db:
         result = await db.execute(select(User).where(User.username == body.username))
         user = result.scalar_one_or_none()

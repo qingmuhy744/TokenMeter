@@ -143,8 +143,10 @@ docker build -t token-speed-test .
 | 变量 | 默认值 | 说明 |
 |---|---|---|
 | `DB_PATH` | `token_speed.db` | SQLite 数据库文件路径 |
-| `SECRET_KEY` | `change-me-in-production` | Session 加密密钥，生产环境必须修改 |
+| `SECRET_KEY` | 随机生成 | Session 加密密钥，生产环境建议固定一个值 |
 | `ADMIN_USER` | `admin` | 管理员用户名 |
+| `HTTP_PROXY` | _(空)_ | HTTP 代理地址，如 `http://host.docker.internal:7890` |
+| `HTTPS_PROXY` | _(空)_ | HTTPS 代理地址 |
 
 docker-compose 中修改 `environment` 字段即可覆盖。
 

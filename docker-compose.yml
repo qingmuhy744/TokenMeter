@@ -8,6 +8,9 @@ services:
     environment:
       - DB_PATH=/data/token_speed.db
       - SECRET_KEY=change-this-to-a-random-string
+      # - HTTP_PROXY=http://host.docker.internal:7890
+      # - HTTPS_PROXY=http://host.docker.internal:7890
+      # - NO_PROXY=localhost,127.0.0.1
     restart: unless-stopped
 
 volumes:
