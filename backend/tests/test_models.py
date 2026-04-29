@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models import TokenPlan, TestResult, User, Setting
+from backend.models import TokenPlan, TestResult
 
 
 @pytest.mark.asyncio

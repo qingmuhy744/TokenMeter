@@ -35,7 +35,6 @@ async def test_create_and_list_plans(auth_client: AsyncClient):
     assert resp.status_code == 200
     data = resp.json()
     assert data["name"] == "Test GPT"
-    plan_id = data["id"]
 
     resp = await auth_client.get("/api/plans")
     assert resp.status_code == 200

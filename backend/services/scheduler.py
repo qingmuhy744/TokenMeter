@@ -53,7 +53,7 @@ async def run_speed_test(plan_id: int):
 async def sync_scheduled_jobs():
     """Sync APScheduler jobs with active plans in database."""
     async with async_session() as db:
-        result = await db.execute(select(TokenPlan).where(TokenPlan.is_active == True))
+        result = await db.execute(select(TokenPlan).where(TokenPlan.is_active))
         plans = result.scalars().all()
 
     existing_jobs = {job.id for job in scheduler.get_jobs()}
