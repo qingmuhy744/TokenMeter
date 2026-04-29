@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Request, Query
 from sqlalchemy import select, func
 from backend.database import async_session
-from backend.models import TestResult
+from backend.models import TestResult, TokenPlan
 from backend.schemas import TestResultResponse, PaginatedResponse, StatsResponse
 from backend.auth import get_current_user
 
@@ -20,7 +20,11 @@ async def list_results(
 ):
     await get_current_user(request)
     async with async_session() as db:
-        query = select(TestResult).order_by(TestResult.created_at.desc())
+        query = (
+            select(TestResult, TokenPlan.name)
+            .join(TokenPlan, TestResult.plan_id == TokenPlan.id)
+            .order_by(TestResult.created_at.desc())
+        )
         count_query = select(func.count(TestResult.id))
 
         if plan_id:
@@ -41,10 +45,16 @@ async def list_results(
 
         query = query.offset((page - 1) * size).limit(size)
         result = await db.execute(query)
-        items = result.scalars().all()
+        rows = result.all()
+
+    items = []
+    for test_result, plan_name in rows:
+        item = TestResultResponse.model_validate(test_result)
+        item.plan_name = plan_name
+        items.append(item)
 
     return PaginatedResponse(
-        items=[TestResultResponse.model_validate(i) for i in items],
+        items=items,
         total=total,
         page=page,
         size=size,

@@ -28,8 +28,6 @@ export default function History() {
       ttft: r.ttft_ms ? Math.round(r.ttft_ms) : 0,
     }));
 
-  const planName = (id: number) => plans.find((p) => p.id === id)?.name || `Plan ${id}`;
-
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Test History</h1>
@@ -68,7 +66,7 @@ export default function History() {
           {results.items.map((r: any) => (
             <TableRow key={r.id}>
               <TableCell>{new Date(r.created_at).toLocaleString()}</TableCell>
-              <TableCell>{planName(r.plan_id)}</TableCell>
+              <TableCell>{r.plan_name || `Plan ${r.plan_id}`}</TableCell>
               <TableCell>{r.ttft_ms?.toFixed(0)}</TableCell>
               <TableCell>{r.tps_overall?.toFixed(1)}</TableCell>
               <TableCell>{r.tps_generate?.toFixed(1)}</TableCell>
