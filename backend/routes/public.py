@@ -89,7 +89,7 @@ def _aggregate_trend_data(items: list[TestResult], bucket_ms: int, min_interval_
         median_tps = sorted(tps_list)[len(tps_list) // 2] if tps_list else None
 
         result.append({
-            "time": bucket_ts.isoformat() + "Z",
+            "time": bucket_ts.isoformat().replace("+00:00", "Z"),
             "tps_overall": round(median_tps, 1) if median_tps is not None else None,
             "ttft_ms": round(median_ttft) if median_ttft is not None else None,
         })
