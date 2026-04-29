@@ -199,4 +199,4 @@ TokenMeter/
 
 ## 关于
 
-本项目完全由 [小米 mimo-v2.5-pro](https://platform.miguvideo.com/) 构建。
+本项目完全由 [小米 mimo-v2.5-pro](https://platform.xiaomimimo.com/docs/zh-CN/welcome) 构建。
