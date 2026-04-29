@@ -71,7 +71,7 @@ class SpeedTester:
         event_types_seen: set[str] = set()
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
+            async with httpx.AsyncClient(timeout=self.timeout, trust_env=True) as client:
                 async with client.stream("POST", url, headers=headers, json=body) as response:
                     logger.info("Response status: %d", response.status_code)
                     response.raise_for_status()
