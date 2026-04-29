@@ -62,6 +62,7 @@ docker exec tokenmeter sqlite3 /data/token_speed.db < backend/migrations/2026042
 - `main` — 禁止直接 push，所有变更必须通过 PR 合并（包括 bugfix、文档、配置等）
 - 功能开发在 `feat/*` 分支，bugfix 在 `fix/*` 分支
 - 创建分支 → 提交 → 推送 → 创建 PR → 合并，不得跳过
+- **每次只推送一个 PR**，由用户在 GitHub review，通过后合并再处理下一个
 
 ## 测速逻辑
 

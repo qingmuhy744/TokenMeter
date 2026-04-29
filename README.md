@@ -10,6 +10,10 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 
 ~~本项目完全由 小米 mimo-v2.5-pro 构建~~（没额度了，自力更生 🎯）
 
+👉 在线看速度：[https://code.yangyangx.top/status](https://code.yangyangx.top/status)（作者的 coding plan 测速展示 ╮(╯▽╰)╭）
+
+😭 来点 token 吧，再来点，我啥都愿意干 (≧◡≦)
+
 ### 小米 MiMo V2.5 体验
 
 使用[我的邀请码](https://platform.xiaomimimo.com/console/balance?ref=283GAL)注册为新用户，即得 ¥10 API 体验金（40天有效）。
@@ -71,7 +75,7 @@ make dev
 ```
 
 这会同时启动:
-- 前端 Vite dev server (http://localhost:5173，自动代理 /api 请求)
+- 前端 Vite dev server (`http://localhost:5173`，自动代理 /api 请求)
 - 后端 uvicorn (`http://localhost:8000`，热重载)
 
 首次启动时，终端会打印管理员密码:
@@ -84,7 +88,7 @@ make dev
 ========================================
 ```
 
-打开 http://localhost:5173 用该密码登录，登录后可在 Settings 页面修改密码。
+打开 `http://localhost:5173` 用该密码登录，登录后可在 Settings 页面修改密码。
 
 ### 构建前端
 
