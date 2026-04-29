@@ -51,7 +51,8 @@ async def db_session(db_engine):
 
     session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
     async with session_factory() as session:
-        ctx = lambda: _MockAsyncSessionCtx(session)
+        def ctx():
+            return _MockAsyncSessionCtx(session)
 
         # Patch async_session at the source AND in every route module that
         # imported it via "from backend.database import async_session".
