@@ -106,6 +106,7 @@ make lint
 services:
   app:
     image: ghcr.io/qingmuhy744/tokenmeter:latest
+    container_name: tokenmeter
     ports:
       - "8000:8000"
     volumes:
