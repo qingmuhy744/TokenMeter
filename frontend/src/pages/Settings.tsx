@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { api } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
@@ -12,11 +13,19 @@ export default function Settings() {
   const [settings, setSettings] = useState({ default_prompt: "", timeout_seconds: 30 });
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [logs, setLogs] = useState<string[]>([]);
   const [logLoading, setLogLoading] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const logRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => { api.getSettings().then(setSettings); }, []);
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const id = setInterval(fetchLogs, 5000);
+    return () => clearInterval(id);
+  }, [autoRefresh]);
 
   const fetchLogs = async () => {
     setLogLoading(true);
@@ -37,9 +46,15 @@ export default function Settings() {
   };
 
   const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match"); return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("Password must be at least 8 characters"); return;
+    }
     try {
       await api.changePassword(oldPassword, newPassword);
-      toast.success("Password changed"); setOldPassword(""); setNewPassword("");
+      toast.success("Password changed"); setOldPassword(""); setNewPassword(""); setConfirmPassword("");
     } catch (e: any) { toast.error(e.message); }
   };
 
@@ -59,6 +74,7 @@ export default function Settings() {
         <CardContent className="space-y-4">
           <div><Label>Old Password</Label><Input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} /></div>
           <div><Label>New Password</Label><Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></div>
+          <div><Label>Confirm New Password</Label><Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
           <Button onClick={handleChangePassword}>Change Password</Button>
         </CardContent>
       </Card>
@@ -66,10 +82,16 @@ export default function Settings() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Server Logs</CardTitle>
-            <Button variant="outline" size="sm" onClick={fetchLogs} disabled={logLoading}>
-              <RefreshCw className={`h-4 w-4 mr-1 ${logLoading ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+                <span className="text-xs text-muted-foreground">Auto</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchLogs} disabled={logLoading}>
+                <RefreshCw className={`h-4 w-4 mr-1 ${logLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

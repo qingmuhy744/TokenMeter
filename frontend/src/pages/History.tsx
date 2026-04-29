@@ -24,7 +24,8 @@ export default function History() {
     .reverse()
     .map((r: any) => ({
       time: new Date(r.created_at).toLocaleTimeString(),
-      tps: r.tps_overall,
+      tps_overall: r.tps_overall ?? 0,
+      tps_generate: r.tps_generate ?? 0,
       ttft: r.ttft_ms ? Math.round(r.ttft_ms) : 0,
     }));
 
@@ -59,8 +60,9 @@ export default function History() {
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
                 <Tooltip />
                 <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="tps" stroke="var(--color-primary)" strokeWidth={2} name="TPS" dot={false} />
-                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="var(--color-destructive)" strokeWidth={2} name="TTFT (ms)" dot={false} />
+                <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="var(--color-chart-1)" strokeWidth={2} name="TPS (overall)" dot={false} />
+                <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="var(--color-chart-2)" strokeWidth={2} name="TPS (generate)" dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="var(--color-chart-3)" strokeWidth={2} name="TTFT (ms)" dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
