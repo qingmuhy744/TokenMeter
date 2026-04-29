@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Request, Query
 from sqlalchemy import select, func
 from backend.database import async_session
@@ -26,6 +27,15 @@ async def list_results(
             query = query.where(TestResult.plan_id == plan_id)
             count_query = count_query.where(TestResult.plan_id == plan_id)
 
+        if start:
+            start_dt = datetime.fromisoformat(start)
+            query = query.where(TestResult.created_at >= start_dt)
+            count_query = count_query.where(TestResult.created_at >= start_dt)
+        if end:
+            end_dt = datetime.fromisoformat(end)
+            query = query.where(TestResult.created_at <= end_dt)
+            count_query = count_query.where(TestResult.created_at <= end_dt)
+
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
@@ -44,11 +54,13 @@ async def list_results(
 @router.get("/stats")
 async def get_stats(request: Request, plan_id: int, days: int = 7):
     await get_current_user(request)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
     async with async_session() as db:
         result = await db.execute(
             select(TestResult)
             .where(TestResult.plan_id == plan_id)
             .where(TestResult.error.is_(None))
+            .where(TestResult.created_at >= since)
             .order_by(TestResult.created_at.desc())
         )
         items = result.scalars().all()
