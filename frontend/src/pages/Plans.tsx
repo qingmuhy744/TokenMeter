@@ -21,21 +21,29 @@ export default function Plans() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [originalKey, setOriginalKey] = useState("");
 
   const loadPlans = () => api.getPlans().then(setPlans);
   useEffect(() => { loadPlans(); }, []);
 
   const handleSubmit = async () => {
     try {
-      if (editingId) { await api.updatePlan(editingId, form); toast.success("Plan updated"); }
+      if (editingId) {
+        // Don't send masked api_key back — only send if user changed it
+        const { api_key, ...rest } = form;
+        const payload = originalKey !== api_key ? { ...rest, api_key } : rest;
+        await api.updatePlan(editingId, payload); toast.success("Plan updated");
+      }
       else { await api.createPlan(form); toast.success("Plan created"); }
       setOpen(false); setForm(defaultForm); setEditingId(null); loadPlans();
     } catch (e: any) { toast.error(e.message); }
   };
 
   const handleEdit = (plan: any) => {
+    const key = plan.api_key;
+    setOriginalKey(key);
     setForm({ name: plan.name, api_type: plan.api_type, api_base: plan.api_base,
-      api_key: plan.api_key, model: plan.model, prompt: plan.prompt || "",
+      api_key: key, model: plan.model, prompt: plan.prompt || "",
       max_tokens: plan.max_tokens, test_count: plan.test_count,
       interval_minutes: plan.interval_minutes, is_active: plan.is_active });
     setEditingId(plan.id); setOpen(true);
@@ -57,7 +65,7 @@ export default function Plans() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Token Plans</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button onClick={() => { setForm(defaultForm); setEditingId(null); }} />}>
+          <DialogTrigger render={<Button onClick={() => { setForm(defaultForm); setEditingId(null); setOriginalKey(""); }} />}>
             <Plus className="h-4 w-4 mr-2" /> New Plan
           </DialogTrigger>
           <DialogContent className="max-w-lg">
