@@ -7,6 +7,7 @@ from backend.models import TokenPlan, TestResult
 from backend.schemas import PlanCreate, PlanUpdate, PlanResponse, PlanWithLatestResult
 from backend.auth import get_current_user
 from backend.services.speed_test import SpeedTester
+from backend.services.scheduler import sync_scheduled_jobs
 from backend.config import settings
 
 router = APIRouter(prefix="/api/plans", tags=["plans"])
@@ -39,7 +40,9 @@ async def create_plan(body: PlanCreate, request: Request):
         db.add(plan)
         await db.commit()
         await db.refresh(plan)
-        return PlanResponse.model_validate(plan)
+
+    await sync_scheduled_jobs()
+    return PlanResponse.model_validate(plan)
 
 
 @router.get("/{plan_id}")
@@ -65,7 +68,9 @@ async def update_plan(plan_id: int, body: PlanUpdate, request: Request):
             setattr(plan, field, value)
         await db.commit()
         await db.refresh(plan)
-        return PlanResponse.model_validate(plan)
+
+    await sync_scheduled_jobs()
+    return PlanResponse.model_validate(plan)
 
 
 @router.delete("/{plan_id}")
@@ -78,6 +83,8 @@ async def delete_plan(plan_id: int, request: Request):
             raise HTTPException(status_code=404, detail="Plan not found")
         await db.delete(plan)
         await db.commit()
+
+    await sync_scheduled_jobs()
     return {"message": "Deleted"}
 
 
