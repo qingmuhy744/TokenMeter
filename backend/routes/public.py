@@ -89,10 +89,13 @@ def _aggregate_trend_data(items: list[TestResult], bucket_ms: int, min_interval_
 
         median_ttft = sorted(ttfts)[len(ttfts) // 2] if ttfts else None
         median_tps = sorted(tps_list)[len(tps_list) // 2] if tps_list else None
+        tps_gen_list = [r.tps_generate for r in group if r.tps_generate is not None]
+        median_tps_gen = sorted(tps_gen_list)[len(tps_gen_list) // 2] if tps_gen_list else None
 
         result.append({
             "time": bucket_ts.isoformat().replace("+00:00", "Z"),
             "tps_overall": round(median_tps, 1) if median_tps is not None else None,
+            "tps_generate": round(median_tps_gen, 1) if median_tps_gen is not None else None,
             "ttft_ms": round(median_ttft) if median_ttft is not None else None,
         })
 
@@ -143,17 +146,20 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
             if successful:
                 ttfts = sorted([r.ttft_ms for r in successful if r.ttft_ms is not None])
                 tps_list = sorted([r.tps_overall for r in successful])
+                tps_gen_list = sorted([r.tps_generate for r in successful if r.tps_generate is not None])
                 avg_ttft = round(sum(ttfts) / len(ttfts)) if ttfts else None
                 avg_tps = round(sum(tps_list) / len(tps_list), 1) if tps_list else None
+                avg_tps_gen = round(sum(tps_gen_list) / len(tps_gen_list), 1) if tps_gen_list else None
                 p95_ttft = ttfts[int(len(ttfts) * 0.95)] if ttfts else None
                 stats = {
                     "avg_ttft_ms": avg_ttft,
                     "avg_tps_overall": avg_tps,
+                    "avg_tps_generate": avg_tps_gen,
                     "p95_ttft_ms": round(p95_ttft) if p95_ttft else None,
                     "count": len(successful),
                 }
             else:
-                stats = {"avg_ttft_ms": None, "avg_tps_overall": None, "p95_ttft_ms": None, "count": 0}
+                stats = {"avg_ttft_ms": None, "avg_tps_overall": None, "avg_tps_generate": None, "p95_ttft_ms": None, "count": 0}
 
             # Trend data (successful tests only, aggregated into time buckets)
             trend_results = await db.execute(
@@ -176,6 +182,7 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
                 latest_data = {
                     "ttft_ms": round(latest.ttft_ms) if latest.ttft_ms else None,
                     "tps_overall": round(latest.tps_overall, 1) if latest.tps_overall else None,
+                    "tps_generate": round(latest.tps_generate, 1) if latest.tps_generate else None,
                     "error": latest.error,
                     "is_unavailable": _is_unavailable(latest.error),
                     "created_at": latest_at.isoformat().replace("+00:00", "Z"),

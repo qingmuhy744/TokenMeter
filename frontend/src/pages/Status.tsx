@@ -14,6 +14,7 @@ interface StatusData {
     latest_result: {
       ttft_ms: number | null;
       tps_overall: number | null;
+      tps_generate: number | null;
       error: string | null;
       is_unavailable: boolean;
       created_at: string;
@@ -22,10 +23,11 @@ interface StatusData {
     stats: {
       avg_ttft_ms: number | null;
       avg_tps_overall: number | null;
+      avg_tps_generate: number | null;
       p95_ttft_ms: number | null;
       count: number;
     };
-    trend: { time: string; tps_overall: number | null; ttft_ms: number | null }[];
+    trend: { time: string; tps_overall: number | null; tps_generate: number | null; ttft_ms: number | null }[];
   }[];
   custom_banner: string | null;
   range: string;
@@ -135,14 +137,18 @@ export default function Status() {
               <CardContent className="space-y-3">
                 {plan.latest_result ? (
                   <>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="grid grid-cols-3 gap-2 text-sm">
                       <div>
                         <p className="text-muted-foreground">TTFT</p>
                         <p className="text-lg font-semibold">{plan.latest_result.ttft_ms ?? "—"}ms</p>
                       </div>
                       <div>
-                        <p className="text-muted-foreground">TPS</p>
+                        <p className="text-muted-foreground">TPS Overall</p>
                         <p className="text-lg font-semibold">{plan.latest_result.tps_overall ?? "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">TPS Generate</p>
+                        <p className="text-lg font-semibold">{plan.latest_result.tps_generate ?? "—"}</p>
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
@@ -174,7 +180,7 @@ export default function Status() {
         {/* Trend chart */}
         {data.plans.some((p) => p.trend.length > 1) && (
           <Card>
-            <CardHeader><CardTitle>Trend — TPS (overall)</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Trend — TPS</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart>
@@ -216,6 +222,23 @@ export default function Status() {
                       />
                     )
                   ))}
+                  {data.plans.map((plan, i) => (
+                    plan.trend.length > 1 && (
+                      <Line
+                        key={`${plan.id}-tps-gen`}
+                        yAxisId="left"
+                        type="monotone"
+                        data={plan.trend}
+                        dataKey="tps_generate"
+                        stroke={`var(--color-chart-${(i % 3) + 1})`}
+                        strokeWidth={2}
+                        strokeDasharray="3 3"
+                        name={`${plan.name} TPS Gen`}
+                        dot={false}
+                        connectNulls
+                      />
+                    )
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -233,6 +256,7 @@ export default function Status() {
                     <th className="pb-2">Plan</th>
                     <th className="pb-2">Avg TTFT</th>
                     <th className="pb-2">Avg TPS</th>
+                    <th className="pb-2">Avg TPS Gen</th>
                     <th className="pb-2">P95 TTFT</th>
                     <th className="pb-2">Tests</th>
                   </tr>
@@ -243,6 +267,7 @@ export default function Status() {
                       <td className="py-2 font-medium">{plan.name}</td>
                       <td className="py-2">{plan.stats.avg_ttft_ms ? `${plan.stats.avg_ttft_ms}ms` : "—"}</td>
                       <td className="py-2">{plan.stats.avg_tps_overall ?? "—"}</td>
+                      <td className="py-2">{plan.stats.avg_tps_generate ?? "—"}</td>
                       <td className="py-2">{plan.stats.p95_ttft_ms ? `${plan.stats.p95_ttft_ms}ms` : "—"}</td>
                       <td className="py-2">{plan.stats.count}</td>
                     </tr>
