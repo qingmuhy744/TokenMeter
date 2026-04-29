@@ -4,11 +4,11 @@ install:
 	uv sync
 	cd frontend && npm install
 
-dev:
+dev: install
 	cd frontend && npm run dev &
 	uv run uvicorn backend.main:app --reload --port 8000
 
-build:
+build: install
 	cd frontend && npm run build
 
 test:
