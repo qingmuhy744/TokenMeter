@@ -50,7 +50,7 @@ export default function Dashboard() {
           <CardHeader><CardTitle>TPS Comparison</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="tps" fill="hsl(var(--primary))" name="TPS" /></BarChart>
+              <BarChart data={chartData}><XAxis dataKey="name" /><YAxis /><Tooltip /><Bar dataKey="tps" fill="var(--color-primary)" name="TPS" /></BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

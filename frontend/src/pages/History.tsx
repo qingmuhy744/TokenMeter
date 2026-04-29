@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function History() {
   const [plans, setPlans] = useState<any[]>([]);
@@ -19,9 +19,14 @@ export default function History() {
     api.getResults(params).then(setResults);
   }, [selectedPlan, page]);
 
-  const chartData = [...results.items].filter((r: any) => !r.error && r.tps_overall).reverse().map((r: any) => ({
-    time: new Date(r.created_at).toLocaleTimeString(), tps: r.tps_overall, ttft: r.ttft_ms,
-  }));
+  const chartData = [...results.items]
+    .filter((r: any) => !r.error && r.tps_overall)
+    .reverse()
+    .map((r: any) => ({
+      time: new Date(r.created_at).toLocaleTimeString(),
+      tps: r.tps_overall,
+      ttft: r.ttft_ms ? Math.round(r.ttft_ms) : 0,
+    }));
 
   const planName = (id: number) => plans.find((p) => p.id === id)?.name || `Plan ${id}`;
 
@@ -39,10 +44,18 @@ export default function History() {
       </div>
       {chartData.length > 1 && (
         <Card>
-          <CardHeader><CardTitle>TPS Trend</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Trend</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={chartData}><XAxis dataKey="time" /><YAxis /><Tooltip /><Line type="monotone" dataKey="tps" stroke="hsl(var(--primary))" name="TPS" dot={false} /></LineChart>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData}>
+                <XAxis dataKey="time" tick={{ fontSize: 12 }} />
+                <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Legend />
+                <Line yAxisId="left" type="monotone" dataKey="tps" stroke="var(--color-primary)" strokeWidth={2} name="TPS" dot={false} />
+                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="var(--color-destructive)" strokeWidth={2} name="TTFT (ms)" dot={false} />
+              </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
