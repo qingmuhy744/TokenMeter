@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 from pathlib import Path
 
@@ -72,7 +73,19 @@ async def get_logs(request: Request, limit: int = 100):
     return {"lines": lines}
 
 
-# Serve frontend static files
+# Serve frontend static files with SPA fallback
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 if frontend_dist.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="static")
+    index_file = frontend_dist / "index.html"
+
+    # Mount static assets (JS, CSS, images) under /assets
+    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # Try to serve the exact file first (e.g. favicon.svg)
+        file_path = frontend_dist / full_path
+        if full_path and file_path.is_file():
+            return FileResponse(str(file_path))
+        # Fallback to index.html for all SPA routes
+        return FileResponse(str(index_file))
