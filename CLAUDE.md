@@ -59,8 +59,9 @@ docker exec tokenmeter sqlite3 /data/token_speed.db < backend/migrations/2026042
 
 ## 分支策略
 
-- `main` — 只能 merge，不能直接 push
-- 功能开发在 `feat/*` 分支
+- `main` — 禁止直接 push，所有变更必须通过 PR 合并（包括 bugfix、文档、配置等）
+- 功能开发在 `feat/*` 分支，bugfix 在 `fix/*` 分支
+- 创建分支 → 提交 → 推送 → 创建 PR → 合并，不得跳过
 
 ## 测速逻辑
 
