@@ -64,9 +64,11 @@ class SpeedTester:
         result = SpeedTestResult()
         start_time = time.monotonic()
         first_chunk_time = None
+        first_data_time = None  # First data: line arrival (for usage-fallback TTFT)
         token_count = 0
         raw_lines_seen = 0
-        usage_tokens = 0  # Fallback: extract from usage field in final message
+        usage_tokens = 0
+        event_types_seen: set[str] = set()
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -83,34 +85,34 @@ class SpeedTester:
                             if not line:
                                 continue
                             raw_lines_seen += 1
-                            # Store first 10 non-empty lines for debugging
-                            if len(result.debug_chunks) < 10:
+                            # Store debug chunks: first 5 + last 5 data lines
+                            if len(result.debug_chunks) < 5:
                                 result.debug_chunks.append(line[:500])
-                            # Track event type for Anthropic-style SSE (event: and data: on separate lines)
+                            # Track event type for Anthropic-style SSE
                             if line.startswith("event: "):
                                 current_event = line[7:].strip()
+                                event_types_seen.add(current_event)
                                 continue
+                            # Track first data: arrival time
+                            if line.startswith("data: ") and first_data_time is None:
+                                first_data_time = time.monotonic()
                             tokens = parse_chunk(line, current_event)
                             if tokens > 0:
                                 if first_chunk_time is None:
                                     first_chunk_time = time.monotonic()
-                                    logger.debug("First token at %.1fms", (first_chunk_time - start_time) * 1000)
+                                    logger.info("First content token at %.0fms", (first_chunk_time - start_time) * 1000)
                                 token_count += tokens
-                            # Try extracting usage from message_delta or message_stop
+                            # Extract usage from data lines
                             if line.startswith("data: "):
                                 try:
                                     data = json.loads(line[6:])
-                                    # Anthropic-style: usage.output_tokens in message_delta
                                     usage = data.get("usage", {})
                                     if "output_tokens" in usage and usage["output_tokens"] > 0:
                                         usage_tokens = usage["output_tokens"]
-                                    # OpenAI-style: usage.total_tokens (some providers put it in last chunk)
                                     if "total_tokens" in usage and usage["total_tokens"] > 0:
                                         usage_tokens = usage["total_tokens"]
                                 except (json.JSONDecodeError, AttributeError):
                                     pass
-                            if raw_lines_seen <= 5:
-                                logger.debug("Line %d: %s", raw_lines_seen, line[:200])
         except Exception as e:
             result.error = str(e)
             result.total_time_ms = (time.monotonic() - start_time) * 1000
@@ -124,7 +126,10 @@ class SpeedTester:
         if token_count == 0 and usage_tokens > 0:
             logger.info("Stream parsing got 0 tokens, using usage.output_tokens=%d", usage_tokens)
             token_count = usage_tokens
-            result.note = "Token count from usage field (stream parsing did not find content deltas)"
+            result.note = "Token count from usage field (stream content deltas not parsed)"
+            # Estimate TTFT from first data: line arrival
+            if first_data_time is not None:
+                result.ttft_ms = (first_data_time - start_time) * 1000
 
         result.total_tokens = token_count
         result.total_time_ms = total_ms
@@ -132,21 +137,24 @@ class SpeedTester:
         if first_chunk_time is not None:
             ttft_ms = (first_chunk_time - start_time) * 1000
             result.ttft_ms = ttft_ms
-            if token_count > 0:
-                generate_ms = total_ms - ttft_ms
-                if generate_ms > 0:
-                    result.tps_overall = token_count / (total_ms / 1000)
-                    result.tps_generate = token_count / (generate_ms / 1000)
+
+        # Calculate TPS if we have both tokens and TTFT
+        if token_count > 0 and result.ttft_ms and result.ttft_ms > 0:
+            generate_ms = total_ms - result.ttft_ms
+            if generate_ms > 0:
+                result.tps_overall = token_count / (total_ms / 1000)
+                result.tps_generate = token_count / (generate_ms / 1000)
 
         logger.info(
-            "Test done: tokens=%d usage=%d lines=%d ttft=%.0fms total=%.0fms",
-            token_count, usage_tokens, raw_lines_seen,
-            result.ttft_ms or 0, total_ms,
+            "Test done: tokens=%d ttft=%.0fms tps=%.1f total=%.0fms events=%s lines=%d",
+            token_count, result.ttft_ms or 0,
+            result.tps_overall or 0, total_ms,
+            sorted(event_types_seen), raw_lines_seen,
         )
 
         if token_count == 0 and raw_lines_seen > 0:
-            result.note = f"Stream OK but 0 tokens parsed ({raw_lines_seen} SSE lines). API may use non-standard format."
-            logger.warning("0 tokens from %d lines. First chunks: %s", raw_lines_seen, result.debug_chunks[:3])
+            result.note = f"0 tokens from {raw_lines_seen} lines. Events: {sorted(event_types_seen)}"
+            logger.warning("0 tokens. Events seen: %s", sorted(event_types_seen))
 
         return result
 
