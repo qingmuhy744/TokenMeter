@@ -60,6 +60,7 @@ class PlanWithLatestResult(PlanResponse):
 class TestResultResponse(BaseModel):
     id: int
     plan_id: int
+    plan_name: str | None = None
     ttft_ms: float | None
     tps_overall: float | None
     tps_generate: float | None
