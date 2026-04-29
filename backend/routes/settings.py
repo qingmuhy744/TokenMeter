@@ -19,6 +19,7 @@ async def get_settings(request: Request):
     return SettingsResponse(
         default_prompt=rows.get("default_prompt", app_settings.DEFAULT_PROMPT),
         timeout_seconds=int(rows.get("timeout_seconds", app_settings.TIMEOUT_SECONDS)),
+        custom_banner=rows.get("custom_banner"),
     )
 
 

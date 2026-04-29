@@ -12,7 +12,7 @@ import { RefreshCw } from "lucide-react";
 
 export default function Settings() {
   const { t } = useTranslation();
-  const [settings, setSettings] = useState({ default_prompt: "", timeout_seconds: 30 });
+  const [settings, setSettings] = useState({ default_prompt: "", timeout_seconds: 30, custom_banner: "" });
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,7 +21,9 @@ export default function Settings() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const logRef = useRef<HTMLPreElement>(null);
 
-  useEffect(() => { api.getSettings().then(setSettings); }, []);
+  useEffect(() => {
+    api.getSettings().then((data: any) => setSettings({ ...settings, ...data }));
+  }, []);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -68,6 +70,16 @@ export default function Settings() {
         <CardContent className="space-y-4">
           <div><Label>{t("settings.defaultPrompt")}</Label><Textarea rows={4} value={settings.default_prompt} onChange={(e) => setSettings({ ...settings, default_prompt: e.target.value })} /></div>
           <div><Label>{t("settings.timeout")}</Label><Input type="number" value={settings.timeout_seconds} onChange={(e) => setSettings({ ...settings, timeout_seconds: +e.target.value })} /></div>
+          <div>
+            <Label>{t("settings.customBanner")}</Label>
+            <Textarea
+              rows={3}
+              placeholder="HTML... (留空关闭)"
+              value={settings.custom_banner || ""}
+              onChange={(e) => setSettings({ ...settings, custom_banner: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground mt-1">支持 HTML，显示在 Status 页面顶部</p>
+          </div>
           <Button onClick={handleSaveSettings}>{t("settings.saveSettings")}</Button>
         </CardContent>
       </Card>
