@@ -4,6 +4,22 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 
 支持 OpenAI Compatible 和 Anthropic 两种 API 格式，可配置多个测速计划并定时自动执行。
 
+## 关于
+
+本项目由 **MiniMax-M2.7** 和 **Xiaomi AI** 联合支持。
+
+~~本项目完全由 小米 mimo-v2.5-pro 构建~~（没额度了，自力更生 🎯）
+
+### 小米 MiMo V2.5 体验
+
+使用[我的邀请码](https://platform.xiaomimimo.com/console/balance?ref=283GAL)注册为新用户，即得 ¥10 API 体验金（40天有效）。
+
+邀请码：**283GAL**
+
+### MiniMax Token Plan
+
+[立即参与 MiniMax 优惠活动 →](https://platform.minimaxi.com/subscribe/token-plan?code=BLzVdBvhGE&source=link)
+
 ## 功能
 
 - 多 Token Plan 管理 — 自由组合 API 地址、模型、Prompt
@@ -56,7 +72,7 @@ make dev
 
 这会同时启动:
 - 前端 Vite dev server (http://localhost:5173，自动代理 /api 请求)
-- 后端 uvicorn (http://localhost:8000，热重载)
+- 后端 uvicorn (`http://localhost:8000`，热重载)
 
 首次启动时，终端会打印管理员密码:
 
@@ -113,7 +129,7 @@ services:
       - ./data:/data
     environment:
       - DB_PATH=/data/token_speed.db
-      - SECRET_KEY=change-me-in-production
+      # SECRET_KEY=your-secret-key-here  # 不配置则自动生成随机密钥
 ```
 
 启动:
@@ -122,13 +138,13 @@ services:
 docker compose up -d
 ```
 
-访问 http://localhost:8000，查看管理员密码:
+访问 `http://localhost:8000`，管理员密码通过以下命令查看:
 
 ```bash
 docker compose logs -f
 ```
 
-数据保存在当前目录的 `data/` 文件夹中，方便备份和迁移。
+数据保存在 `app-data` Docker volume 中，方便备份和迁移。
 
 ### 本地构建镜像
 
@@ -174,7 +190,7 @@ TokenMeter/
 │   │   ├── App.tsx          # 路由 + 布局
 │   │   ├── api/client.ts    # API 客户端
 │   │   ├── hooks/useAuth.ts # 认证 Hook
-│   │   └── pages/           # Dashboard, Plans, History, Settings, Login
+│   │   └── pages/           # Dashboard, Plans, History, Settings, Login, Status
 │   └── ...
 ├── Dockerfile               # 多阶段构建
 ├── docker-compose.yml
@@ -199,7 +215,3 @@ TokenMeter/
 1. Python lint (`ruff`) + 测试 (`pytest`)
 2. 前端类型检查 (`tsc`) + 构建 (`vite build`)
 3. Docker 构建并推送到 GHCR (仅 main 分支 push)
-
-## 关于
-
-本项目完全由 [小米 mimo-v2.5-pro](https://platform.xiaomimimo.com/docs/zh-CN/welcome) 构建。
