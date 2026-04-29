@@ -61,9 +61,8 @@ async def test_public_status_time_bucket_trend(db_session):
                 dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
                 assert dt.tzinfo is not None
 
-        # Verify timestamp format for any trend points that exist
-        # (trend points depend on seeded data being visible to the API, which
-        # requires proper db session injection not available without app-level changes)
+        plans_with_trend = [p for p in data["plans"] if p["trend"]]
+        assert len(plans_with_trend) >= 1, "At least one plan should have trend data"
 
 
 @pytest.mark.asyncio
