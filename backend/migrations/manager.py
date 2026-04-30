@@ -1,7 +1,7 @@
 import logging
 import textwrap
 import os
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import create_engine, select, text, inspect
 from sqlalchemy.orm import sessionmaker
 from backend.models import Setting, User, TokenPlan, TestResult
 from backend.config import settings
@@ -41,8 +41,28 @@ def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
             table_name = model.__tablename__
             logger.info(f"Copying table: {table_name}")
 
-            # Use src.execute(select(model)) to get rows
-            rows = src.execute(select(model)).all()
+            # Get columns present in SQLite
+            inspector = inspect(src)
+            existing_columns = [
+                col["name"] for col in inspector.get_columns(table_name)
+            ]
+
+            # Dynamically build select statement to only include columns present in SQLite
+            # and that exist in the SQLAlchemy model
+            selectable_columns = [
+                model.__table__.c[col_name]
+                for col_name in existing_columns
+                if col_name in model.__table__.c
+            ]
+
+            if not selectable_columns:
+                logger.warning(
+                    f"No selectable columns found for {table_name}, skipping."
+                )
+                continue
+
+            # Execute the dynamic select
+            rows = src.execute(select(*selectable_columns)).all()
             if not rows:
                 continue
 
