@@ -61,6 +61,15 @@ docker exec tokenmeter sqlite3 /data/token_speed.db < backend/migrations/2026042
 
 - `main` — 禁止直接 push，所有变更必须通过 PR 合并（包括 bugfix、文档、配置等）
 - 功能开发在 `feat/*` 分支，bugfix 在 `fix/*` 分支
+- **创建分支如果没指定，必须从 `origin/main`**，禁止从其他分支创建，避免带入无关改动
+  ```bash
+  # 正确：基于 origin/main 新建分支
+  git fetch
+  git checkout -b fix/xxx origin/main
+
+  # 错误：从当前分支/local feature 分支创建，会带入无关改动
+  git checkout -b fix/xxx
+  ```
 - 创建分支 → 提交 → 推送 → 创建 PR → 合并，不得跳过
 - **每次只推送一个 PR**，由用户在 GitHub review，通过后合并再处理下一个
 

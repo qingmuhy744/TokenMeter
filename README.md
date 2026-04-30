@@ -116,6 +116,24 @@ cd frontend && npx tsc --noEmit  # 前端类型检查
 make lint
 ```
 
+## 开发规范
+
+### 格式化 (强制)
+
+代码提交前必须通过格式化检查，由 [pre-commit](https://pre-commit.com/) 自动执行：
+
+```bash
+# 安装 pre-commit hook（首次克隆后只需运行一次）
+pre-commit install
+
+# 之后每次 git commit 会自动 format 代码
+git commit -m "fix: ..."
+```
+
+Hook 会自动格式化 Python (`ruff format`) 和前端代码 (`eslint --fix`)，格式化后的文件会自动 staged。
+
+如果 format 导致文件变更，commit 时会有提示，hook 不会阻止提交，只是确保代码格式统一。
+
 ## Docker 部署
 
 ### 使用预构建镜像 (推荐)

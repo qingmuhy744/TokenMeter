@@ -15,7 +15,11 @@ from backend.routes.plans import router as plans_router
 from backend.routes.results import router as results_router
 from backend.routes.settings import router as settings_router
 from backend.routes.public import router as public_router
-from backend.services.scheduler import start_scheduler, shutdown_scheduler, sync_scheduled_jobs
+from backend.services.scheduler import (
+    start_scheduler,
+    shutdown_scheduler,
+    sync_scheduled_jobs,
+)
 
 # In-memory log buffer (last 500 lines)
 log_buffer: deque[str] = deque(maxlen=500)
@@ -29,6 +33,7 @@ class BufferHandler(logging.Handler):
 class LocalTimeFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
         import time
+
         ct = time.localtime(record.created)
         if datefmt:
             s = time.strftime(datefmt, ct)
@@ -71,7 +76,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="TokenMeter", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, max_age=86400 * 7)  # 7 days
+app.add_middleware(
+    SessionMiddleware, secret_key=settings.SECRET_KEY, max_age=86400 * 7
+)  # 7 days
 app.include_router(auth_router)
 app.include_router(plans_router)
 app.include_router(results_router)
@@ -91,7 +98,9 @@ frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 if frontend_dist.exists():
     index_file = frontend_dist / "index.html"
     # Mount static assets (JS, CSS, images) under /assets
-    app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+    app.mount(
+        "/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets"
+    )
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):

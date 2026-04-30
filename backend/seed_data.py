@@ -2,6 +2,7 @@
 Seed fake data for development/testing.
 Run with: uv run python -m backend.seed_data
 """
+
 import asyncio
 from datetime import datetime, timezone, timedelta
 
@@ -65,12 +66,15 @@ async def seed_data():
                 tps_generate=48 + i * 1.0,  # higher than overall due to think time
                 total_tokens=90 + i * 8,
                 total_time_ms=2250,
-                created_at=now - timedelta(minutes=offset + 5),  # offset by 5min so they're staggered
+                created_at=now
+                - timedelta(minutes=offset + 5),  # offset by 5min so they're staggered
             )
             db.add(tr)
 
         await db.commit()
-        print(f"Seeded 12 + 8 = 20 fake test results for plans '{plan1.name}' and '{plan2.name}'")
+        print(
+            f"Seeded 12 + 8 = 20 fake test results for plans '{plan1.name}' and '{plan2.name}'"
+        )
 
 
 if __name__ == "__main__":

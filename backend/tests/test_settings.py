@@ -16,10 +16,14 @@ async def auth_client():
             result = await db.execute(select(User).where(User.username == "testadmin"))
             existing = result.scalar_one_or_none()
             if not existing:
-                db.add(User(username="testadmin", password_hash=hash_password("testpass")))
+                db.add(
+                    User(username="testadmin", password_hash=hash_password("testpass"))
+                )
                 await db.commit()
 
-        await client.post("/api/auth/login", json={"username": "testadmin", "password": "testpass"})
+        await client.post(
+            "/api/auth/login", json={"username": "testadmin", "password": "testpass"}
+        )
         yield client
 
 

@@ -16,22 +16,29 @@ async def auth_client():
             result = await db.execute(select(User).where(User.username == "testadmin"))
             existing = result.scalar_one_or_none()
             if not existing:
-                db.add(User(username="testadmin", password_hash=hash_password("testpass")))
+                db.add(
+                    User(username="testadmin", password_hash=hash_password("testpass"))
+                )
                 await db.commit()
 
-        await client.post("/api/auth/login", json={"username": "testadmin", "password": "testpass"})
+        await client.post(
+            "/api/auth/login", json={"username": "testadmin", "password": "testpass"}
+        )
         yield client
 
 
 @pytest.mark.asyncio
 async def test_create_and_list_plans(auth_client: AsyncClient):
-    resp = await auth_client.post("/api/plans", json={
-        "name": "Test GPT",
-        "api_type": "openai",
-        "api_base": "https://api.openai.com/v1",
-        "api_key": "sk-test",
-        "model": "gpt-4o",
-    })
+    resp = await auth_client.post(
+        "/api/plans",
+        json={
+            "name": "Test GPT",
+            "api_type": "openai",
+            "api_base": "https://api.openai.com/v1",
+            "api_key": "sk-test",
+            "model": "gpt-4o",
+        },
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["name"] == "Test GPT"
@@ -44,13 +51,16 @@ async def test_create_and_list_plans(auth_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_update_plan(auth_client: AsyncClient):
-    resp = await auth_client.post("/api/plans", json={
-        "name": "To Update",
-        "api_type": "openai",
-        "api_base": "https://api.openai.com/v1",
-        "api_key": "sk-test",
-        "model": "gpt-4o",
-    })
+    resp = await auth_client.post(
+        "/api/plans",
+        json={
+            "name": "To Update",
+            "api_type": "openai",
+            "api_base": "https://api.openai.com/v1",
+            "api_key": "sk-test",
+            "model": "gpt-4o",
+        },
+    )
     plan_id = resp.json()["id"]
 
     resp = await auth_client.put(f"/api/plans/{plan_id}", json={"name": "Updated"})
@@ -60,13 +70,16 @@ async def test_update_plan(auth_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_delete_plan(auth_client: AsyncClient):
-    resp = await auth_client.post("/api/plans", json={
-        "name": "To Delete",
-        "api_type": "openai",
-        "api_base": "https://api.openai.com/v1",
-        "api_key": "sk-test",
-        "model": "gpt-4o",
-    })
+    resp = await auth_client.post(
+        "/api/plans",
+        json={
+            "name": "To Delete",
+            "api_type": "openai",
+            "api_base": "https://api.openai.com/v1",
+            "api_key": "sk-test",
+            "model": "gpt-4o",
+        },
+    )
     plan_id = resp.json()["id"]
 
     resp = await auth_client.delete(f"/api/plans/{plan_id}")

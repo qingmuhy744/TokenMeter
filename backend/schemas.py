@@ -25,7 +25,12 @@ def _validate_api_base(url: str) -> str:
         if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
             raise ValueError("api_base cannot point to private/internal addresses")
     except ValueError as e:
-        if "private" in str(e) or "loopback" in str(e) or "link_local" in str(e) or "reserved" in str(e):
+        if (
+            "private" in str(e)
+            or "loopback" in str(e)
+            or "link_local" in str(e)
+            or "reserved" in str(e)
+        ):
             raise
         # Not an IP address (hostname like "api.openai.com") — that's fine
     # Block common internal hostnames

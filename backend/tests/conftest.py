@@ -21,6 +21,7 @@ class _MockAsyncSessionCtx:
 def _reset_login_rate_limit():
     """Reset login rate limiter between tests."""
     from backend.auth import reset_rate_limit
+
     reset_rate_limit()
     yield
     reset_rate_limit()
@@ -49,8 +50,11 @@ async def db_session(db_engine):
     import backend.routes.settings as settings_mod
     import backend.routes.plans as plans_mod
 
-    session_factory = async_sessionmaker(db_engine, class_=AsyncSession, expire_on_commit=False)
+    session_factory = async_sessionmaker(
+        db_engine, class_=AsyncSession, expire_on_commit=False
+    )
     async with session_factory() as session:
+
         def ctx():
             return _MockAsyncSessionCtx(session)
 
