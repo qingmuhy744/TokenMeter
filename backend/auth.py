@@ -32,7 +32,9 @@ def _check_rate_limit(ip: str) -> None:
     # Clean old entries
     attempts = [t for t in attempts if now - t < _LOGIN_RATE_WINDOW]
     if len(attempts) >= _LOGIN_RATE_LIMIT:
-        raise HTTPException(status_code=429, detail="Too many login attempts. Try again in 5 minutes.")
+        raise HTTPException(
+            status_code=429, detail="Too many login attempts. Try again in 5 minutes."
+        )
     attempts.append(now)
     _login_attempts[ip] = attempts
 
@@ -56,14 +58,14 @@ async def get_current_user(request: Request) -> User:
     user_id = request.session.get(SESSION_KEY)
     if not user_id:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
+
     async with async_session() as db:
         result = await db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    
+
     request.state.user = user
     return user
 
@@ -109,12 +111,17 @@ async def change_password(body: ChangePasswordRequest, request: Request):
 async def ensure_admin():
     """Create admin user with random password if not exists."""
     from backend.config import settings
+
     async with async_session() as db:
-        result = await db.execute(select(User).where(User.username == settings.ADMIN_USER))
+        result = await db.execute(
+            select(User).where(User.username == settings.ADMIN_USER)
+        )
         if result.scalar_one_or_none():
             return
         password = generate_password()
-        admin = User(username=settings.ADMIN_USER, password_hash=hash_password(password))
+        admin = User(
+            username=settings.ADMIN_USER, password_hash=hash_password(password)
+        )
         db.add(admin)
         await db.commit()
         print("\n" + "=" * 50)

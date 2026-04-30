@@ -15,21 +15,35 @@ def _is_unavailable(error: str | None) -> bool:
     if not error:
         return False
     error_lower = error.lower()
-    return any(kw in error_lower for kw in [
-        "429", "529", "overload", "rate limit", "too many",
-        "unavailable", "503", "502", "timeout",
-    ])
+    return any(
+        kw in error_lower
+        for kw in [
+            "429",
+            "529",
+            "overload",
+            "rate limit",
+            "too many",
+            "unavailable",
+            "503",
+            "502",
+            "timeout",
+        ]
+    )
 
 
 def _range_to_timedelta(range_str: str) -> timedelta:
-    return {"24h": timedelta(hours=24), "7d": timedelta(days=7), "30d": timedelta(days=30)}.get(range_str, timedelta(hours=24))
+    return {
+        "24h": timedelta(hours=24),
+        "7d": timedelta(days=7),
+        "30d": timedelta(days=30),
+    }.get(range_str, timedelta(hours=24))
 
 
 def _get_bucket_config(range_str: Literal["24h", "7d", "30d"]) -> tuple[int, int]:
     """Returns (bucket_ms, min_interval_ms) for given range."""
     configs = {
-        "24h": (10 * 60 * 1000, 10 * 60 * 1000),      # 10min bucket, 10min min interval
-        "7d": (60 * 60 * 1000, 60 * 60 * 1000),       # 1hr bucket, 1hr min interval
+        "24h": (10 * 60 * 1000, 10 * 60 * 1000),  # 10min bucket, 10min min interval
+        "7d": (60 * 60 * 1000, 60 * 60 * 1000),  # 1hr bucket, 1hr min interval
         "30d": (6 * 60 * 60 * 1000, 6 * 60 * 60 * 1000),  # 6hr bucket, 6hr min interval
     }
     return configs.get(range_str, configs["24h"])
@@ -44,7 +58,9 @@ def _bin_timestamp(ts: datetime, bucket_ms: int) -> datetime:
     return datetime.fromtimestamp(floored / 1000, tz=timezone.utc)
 
 
-def _aggregate_trend_data(items: list[TestResult], bucket_ms: int, min_interval_ms: int) -> list[dict]:
+def _aggregate_trend_data(
+    items: list[TestResult], bucket_ms: int, min_interval_ms: int
+) -> list[dict]:
     """
     Aggregate test results into time buckets.
     If test interval > min_interval_ms, auto-increase bucket size.
@@ -64,8 +80,10 @@ def _aggregate_trend_data(items: list[TestResult], bucket_ms: int, min_interval_
     # Detect actual max interval and adjust bucket if needed
     sorted_times = sorted(buckets.keys())
     if len(sorted_times) >= 2:
-        max_interval = max((sorted_times[i+1] - sorted_times[i]).total_seconds() * 1000
-                           for i in range(len(sorted_times) - 1))
+        max_interval = max(
+            (sorted_times[i + 1] - sorted_times[i]).total_seconds() * 1000
+            for i in range(len(sorted_times) - 1)
+        )
         if max_interval > min_interval_ms:
             # Find a bucket that fits: lcm-ish approach, use max_interval rounded up
             new_bucket = bucket_ms
@@ -90,11 +108,13 @@ def _aggregate_trend_data(items: list[TestResult], bucket_ms: int, min_interval_
         median_ttft = sorted(ttfts)[len(ttfts) // 2] if ttfts else None
         median_tps = sorted(tps_list)[len(tps_list) // 2] if tps_list else None
 
-        result.append({
-            "time": bucket_ts.isoformat().replace("+00:00", "Z"),
-            "tps_overall": round(median_tps, 1) if median_tps is not None else None,
-            "ttft_ms": round(median_ttft) if median_ttft is not None else None,
-        })
+        result.append(
+            {
+                "time": bucket_ts.isoformat().replace("+00:00", "Z"),
+                "tps_overall": round(median_tps, 1) if median_tps is not None else None,
+                "ttft_ms": round(median_ttft) if median_ttft is not None else None,
+            }
+        )
 
     return result
 
@@ -115,11 +135,12 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
             return {"plans": [], "custom_banner": None, "range": range}
 
         # Bulk fetch latest results
-        latest_results_query = (
-            select(TestResult)
-            .where(TestResult.id.in_(
-                select(func.max(TestResult.id)).where(TestResult.plan_id.in_(plan_ids)).group_by(TestResult.plan_id)
-            ))
+        latest_results_query = select(TestResult).where(
+            TestResult.id.in_(
+                select(func.max(TestResult.id))
+                .where(TestResult.plan_id.in_(plan_ids))
+                .group_by(TestResult.plan_id)
+            )
         )
         latest_results_res = await db.execute(latest_results_query)
         latest_map = {r.plan_id: r for r in latest_results_res.scalars().all()}
@@ -144,17 +165,23 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
 
         for plan in plans:
             plan_results = results_by_plan[plan.id]
-            
+
             # Availability
             total_count = len(plan_results)
             if total_count > 0:
-                success_count = sum(1 for r in plan_results if r.error is None and not _is_unavailable(r.error))
+                success_count = sum(
+                    1
+                    for r in plan_results
+                    if r.error is None and not _is_unavailable(r.error)
+                )
                 availability_pct = round(success_count / total_count * 100, 1)
             else:
                 availability_pct = None
 
             # Stats (successful tests only)
-            successful = [r for r in plan_results if r.error is None and r.tps_overall is not None]
+            successful = [
+                r for r in plan_results if r.error is None and r.tps_overall is not None
+            ]
             if successful:
                 ttfts = sorted([r.ttft_ms for r in successful if r.ttft_ms is not None])
                 tps_list = sorted([r.tps_overall for r in successful])
@@ -168,10 +195,17 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
                     "count": len(successful),
                 }
             else:
-                stats = {"avg_ttft_ms": None, "avg_tps_overall": None, "p95_ttft_ms": None, "count": 0}
+                stats = {
+                    "avg_ttft_ms": None,
+                    "avg_tps_overall": None,
+                    "p95_ttft_ms": None,
+                    "count": 0,
+                }
 
             # Trend data
-            trend = _aggregate_trend_data([r for r in plan_results if r.error is None], bucket_ms, min_interval_ms)
+            trend = _aggregate_trend_data(
+                [r for r in plan_results if r.error is None], bucket_ms, min_interval_ms
+            )
 
             latest = latest_map.get(plan.id)
             latest_data = None
@@ -181,26 +215,36 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
                     latest_at = latest_at.replace(tzinfo=timezone.utc)
                 latest_data = {
                     "ttft_ms": round(latest.ttft_ms) if latest.ttft_ms else None,
-                    "tps_overall": round(latest.tps_overall, 1) if latest.tps_overall else None,
+                    "tps_overall": round(latest.tps_overall, 1)
+                    if latest.tps_overall
+                    else None,
                     "error": latest.error,
                     "is_unavailable": _is_unavailable(latest.error),
                     "created_at": latest_at.isoformat().replace("+00:00", "Z"),
                 }
 
-            plan_data.append({
-                "id": plan.id,
-                "name": plan.name,
-                "model": plan.model,
-                "api_type": plan.api_type,
-                "is_active": plan.is_active,
-                "latest_result": latest_data,
-                "availability_pct": availability_pct,
-                "stats": stats,
-                "trend": trend,
-            })
+            plan_data.append(
+                {
+                    "id": plan.id,
+                    "name": plan.name,
+                    "model": plan.model,
+                    "api_type": plan.api_type,
+                    "is_active": plan.is_active,
+                    "latest_result": latest_data,
+                    "availability_pct": availability_pct,
+                    "stats": stats,
+                    "trend": trend,
+                }
+            )
 
     # Get custom banner
-    banner_result = await db.execute(select(Setting).where(Setting.key == "custom_banner"))
+    banner_result = await db.execute(
+        select(Setting).where(Setting.key == "custom_banner")
+    )
     custom_banner = banner_result.scalar_one_or_none()
 
-    return {"plans": plan_data, "custom_banner": custom_banner.value if custom_banner else None, "range": range}
+    return {
+        "plans": plan_data,
+        "custom_banner": custom_banner.value if custom_banner else None,
+        "range": range,
+    }

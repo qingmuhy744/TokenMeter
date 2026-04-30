@@ -27,11 +27,10 @@ async def list_plans(request: Request):
 
         # Get latest results for all plans in one go
         # This is much more efficient than loading all results for all plans
-        latest_results_query = (
-            select(TestResult)
-            .where(TestResult.id.in_(
+        latest_results_query = select(TestResult).where(
+            TestResult.id.in_(
                 select(func.max(TestResult.id)).group_by(TestResult.plan_id)
-            ))
+            )
         )
         latest_results_res = await db.execute(latest_results_query)
         latest_results_map = {r.plan_id: r for r in latest_results_res.scalars().all()}
@@ -39,10 +38,12 @@ async def list_plans(request: Request):
     response = []
     for plan in plans:
         latest = latest_results_map.get(plan.id)
-        response.append(PlanWithLatestResult(
-            **PlanResponse.model_validate(plan).model_dump(),
-            latest_result=latest,
-        ))
+        response.append(
+            PlanWithLatestResult(
+                **PlanResponse.model_validate(plan).model_dump(),
+                latest_result=latest,
+            )
+        )
     return response
 
 
@@ -114,19 +115,33 @@ async def trigger_test(plan_id: int, request: Request):
     tester = SpeedTester(timeout=settings.TIMEOUT_SECONDS)
     prompt = plan.prompt or settings.DEFAULT_PROMPT
 
-    logger.info("Manual test triggered: plan=%d name=%s model=%s", plan_id, plan.name, plan.model)
+    logger.info(
+        "Manual test triggered: plan=%d name=%s model=%s",
+        plan_id,
+        plan.name,
+        plan.model,
+    )
 
     results = []
     for i in range(plan.test_count):
         if plan.api_type == "openai":
-            r = await tester.test_openai(plan.api_base, plan.api_key, plan.model, prompt, plan.max_tokens)
+            r = await tester.test_openai(
+                plan.api_base, plan.api_key, plan.model, prompt, plan.max_tokens
+            )
         else:
-            r = await tester.test_anthropic(plan.api_base, plan.api_key, plan.model, prompt, plan.max_tokens)
-        logger.info("  Run %d/%d: tokens=%d ttft=%s tps=%s error=%s note=%s",
-                     i + 1, plan.test_count, r.total_tokens,
-                     f"{r.ttft_ms:.0f}" if r.ttft_ms else "N/A",
-                     f"{r.tps_overall:.1f}" if r.tps_overall else "N/A",
-                     r.error or "none", r.note or "none")
+            r = await tester.test_anthropic(
+                plan.api_base, plan.api_key, plan.model, prompt, plan.max_tokens
+            )
+        logger.info(
+            "  Run %d/%d: tokens=%d ttft=%s tps=%s error=%s note=%s",
+            i + 1,
+            plan.test_count,
+            r.total_tokens,
+            f"{r.ttft_ms:.0f}" if r.ttft_ms else "N/A",
+            f"{r.tps_overall:.1f}" if r.tps_overall else "N/A",
+            r.error or "none",
+            r.note or "none",
+        )
         results.append(r)
 
     valid = [r for r in results if r.error is None]
@@ -146,7 +161,9 @@ async def trigger_test(plan_id: int, request: Request):
             total_time_ms=median.total_time_ms,
             error=median.error,
             note=median.note,
-            debug_chunks=json.dumps(median.debug_chunks) if median.debug_chunks else None,
+            debug_chunks=json.dumps(median.debug_chunks)
+            if median.debug_chunks
+            else None,
         )
         db.add(test_result)
         await db.commit()
