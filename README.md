@@ -84,6 +84,26 @@ docker compose up -d
 | `SECRET_KEY` | 随机生成 | Session 加密密钥 |
 | `HTTP_PROXY` | _(空)_ | 全局 HTTP 代理地址 |
 
+### 重置管理员密码
+
+忘记密码？一行命令搞定：
+
+```bash
+# 重置默认 admin 用户密码
+docker exec tokenmeter uv run python -m backend.cli reset-password
+
+# 重置指定用户密码
+docker exec tokenmeter uv run python -m backend.cli reset-password myuser
+```
+
+执行后终端会打印新的 **Setup Key**，用该 Key 登录后请立即修改密码。
+
+本地开发同理：
+
+```bash
+uv run python -m backend.cli reset-password
+```
+
 ## 测速原理
 
 系统针对每个测速计划执行 `test_count` 次独立请求（取中位数），基于 `time.monotonic()` 进行微秒级计时：
