@@ -44,7 +44,7 @@ def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
             logger.info(f"Copying table: {table_name}")
 
             # Get columns present in SQLite
-            inspector = inspect(src)
+            inspector = inspect(sync_sqlite)
             existing_columns = [
                 col["name"] for col in inspector.get_columns(table_name)
             ]
@@ -117,7 +117,11 @@ async def set_current_version(db, version):
 
 async def run_migrations(db):
     """Run all pending migrations."""
+    # 0. Identify latest version
+    latest_version = MIGRATIONS[-1][0] if MIGRATIONS else "0.0.0"
+
     # 1. Handle SQLite -> PG Migration if needed
+    migration_performed = False
     if "postgresql" in settings.database_url and os.path.exists(settings.DB_PATH):
         # Double check if PG is empty by checking if there are any users
         try:
@@ -135,6 +139,7 @@ async def run_migrations(db):
                     # Cleanup
                     os.remove(settings.DB_PATH)
                     logger.info(f"Removed old SQLite file: {settings.DB_PATH}")
+                    migration_performed = True
                 except Exception as e:
                     logger.error(f"Migration failed: {e}")
         except Exception as e:
@@ -144,20 +149,35 @@ async def run_migrations(db):
     current = await get_current_version(db)
     logger.info(f"Current database version: {current}")
 
+    # Special case: If this is a fresh install (version 0.0.0) AND no SQLite migration was performed,
+    # it means Base.metadata.create_all already created the latest schema.
+    # We should just mark it as the latest version.
+    if current == "0.0.0" and not migration_performed:
+        # Check if we have any data/tables. If we have tables but version is 0.0.0,
+        # it's either a fresh install or a legacy DB without versioning.
+        # For this project, we assume fresh install if version is 0.0.0.
+        logger.info(f"Fresh installation detected, setting version to {latest_version}")
+        await set_current_version(db, latest_version)
+        await db.commit()
+        return
+
     for version, mtype, content in MIGRATIONS:
         if version > current:
             logger.info(f"Applying migration to {version}...")
             if mtype == "sql":
-                # Split by semicolon and run each statement
-                # Simple split is fine for basic migrations
                 for stmt in content.split(";"):
                     stmt = stmt.strip()
                     if stmt:
                         try:
+                            # Use a sub-transaction if possible, or just catch and handle
+                            # For simple migrations, we'll try-catch.
+                            # On PostgreSQL, a failure aborts the transaction.
                             await db.execute(text(stmt))
                         except Exception as e:
-                            # Ignore errors like "duplicate column" which might happen
-                            # if migrations were partially applied or manually run
+                            if "postgresql" in settings.database_url:
+                                # Rollback to clear the aborted state
+                                await db.rollback()
+
                             if (
                                 "duplicate column" in str(e).lower()
                                 or "already exists" in str(e).lower()
