@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 from fastapi import APIRouter, Query
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from backend.database import async_session
 from backend.models import TokenPlan, TestResult, Setting
@@ -109,37 +109,52 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
             select(TokenPlan).where(TokenPlan.is_active == True).order_by(TokenPlan.id)  # noqa: E712
         )
         plans = plans_result.scalars().all()
+        plan_ids = [p.id for p in plans]
+
+        if not plan_ids:
+            return {"plans": [], "custom_banner": None, "range": range}
+
+        # Bulk fetch latest results
+        latest_results_query = (
+            select(TestResult)
+            .where(TestResult.id.in_(
+                select(func.max(TestResult.id)).where(TestResult.plan_id.in_(plan_ids)).group_by(TestResult.plan_id)
+            ))
+        )
+        latest_results_res = await db.execute(latest_results_query)
+        latest_map = {r.plan_id: r for r in latest_results_res.scalars().all()}
+
+        # Bulk fetch all results in range for availability and stats
+        # We fetch all because we need them for P95 and median calculations which are hard in SQLite
+        range_results_res = await db.execute(
+            select(TestResult)
+            .where(TestResult.plan_id.in_(plan_ids))
+            .where(TestResult.created_at >= since)
+            .order_by(TestResult.created_at.asc())
+        )
+        all_results = range_results_res.scalars().all()
+
+        # Group results by plan
+        results_by_plan = {pid: [] for pid in plan_ids}
+        for r in all_results:
+            results_by_plan[r.plan_id].append(r)
 
         plan_data = []
+        bucket_ms, min_interval_ms = _get_bucket_config(range)
+
         for plan in plans:
-            # Latest result
-            latest_result = await db.execute(
-                select(TestResult)
-                .where(TestResult.plan_id == plan.id)
-                .order_by(TestResult.created_at.desc())
-                .limit(1)
-            )
-            latest = latest_result.scalar_one_or_none()
-
-            # All results in range for availability and stats
-            range_results = await db.execute(
-                select(TestResult)
-                .where(TestResult.plan_id == plan.id)
-                .where(TestResult.created_at >= since)
-                .order_by(TestResult.created_at.desc())
-            )
-            all_in_range = range_results.scalars().all()
-
-            # Availability: success = no error AND not overloaded
-            total_count = len(all_in_range)
+            plan_results = results_by_plan[plan.id]
+            
+            # Availability
+            total_count = len(plan_results)
             if total_count > 0:
-                success_count = sum(1 for r in all_in_range if r.error is None and not _is_unavailable(r.error))
+                success_count = sum(1 for r in plan_results if r.error is None and not _is_unavailable(r.error))
                 availability_pct = round(success_count / total_count * 100, 1)
             else:
                 availability_pct = None
 
-            # Stats (only successful tests, exclude overloaded)
-            successful = [r for r in all_in_range if r.error is None and r.tps_overall is not None]
+            # Stats (successful tests only)
+            successful = [r for r in plan_results if r.error is None and r.tps_overall is not None]
             if successful:
                 ttfts = sorted([r.ttft_ms for r in successful if r.ttft_ms is not None])
                 tps_list = sorted([r.tps_overall for r in successful])
@@ -155,19 +170,10 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
             else:
                 stats = {"avg_ttft_ms": None, "avg_tps_overall": None, "p95_ttft_ms": None, "count": 0}
 
-            # Trend data (successful tests only, aggregated into time buckets)
-            trend_results = await db.execute(
-                select(TestResult)
-                .where(TestResult.plan_id == plan.id)
-                .where(TestResult.error.is_(None))
-                .where(TestResult.created_at >= since)
-                .order_by(TestResult.created_at.asc())
-            )
-            trend_items = trend_results.scalars().all()
+            # Trend data
+            trend = _aggregate_trend_data([r for r in plan_results if r.error is None], bucket_ms, min_interval_ms)
 
-            bucket_ms, min_interval_ms = _get_bucket_config(range)
-            trend = _aggregate_trend_data(trend_items, bucket_ms, min_interval_ms)
-
+            latest = latest_map.get(plan.id)
             latest_data = None
             if latest:
                 latest_at = latest.created_at

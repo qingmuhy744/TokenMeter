@@ -2,7 +2,7 @@ import json
 import logging
 
 from fastapi import APIRouter, HTTPException, Request
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from backend.database import async_session
@@ -21,14 +21,24 @@ router = APIRouter(prefix="/api/plans", tags=["plans"])
 async def list_plans(request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        result = await db.execute(
-            select(TokenPlan).options(selectinload(TokenPlan.results)).order_by(TokenPlan.id.desc())
-        )
+        # Get all plans
+        result = await db.execute(select(TokenPlan).order_by(TokenPlan.id.desc()))
         plans = result.scalars().all()
+
+        # Get latest results for all plans in one go
+        # This is much more efficient than loading all results for all plans
+        latest_results_query = (
+            select(TestResult)
+            .where(TestResult.id.in_(
+                select(func.max(TestResult.id)).group_by(TestResult.plan_id)
+            ))
+        )
+        latest_results_res = await db.execute(latest_results_query)
+        latest_results_map = {r.plan_id: r for r in latest_results_res.scalars().all()}
 
     response = []
     for plan in plans:
-        latest = max(plan.results, key=lambda r: r.created_at, default=None)
+        latest = latest_results_map.get(plan.id)
         response.append(PlanWithLatestResult(
             **PlanResponse.model_validate(plan).model_dump(),
             latest_result=latest,
