@@ -3,8 +3,160 @@ import json
 import logging
 import httpx
 from dataclasses import dataclass, field
+from abc import ABC, abstractmethod
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class RequestTracker:
+    """Tracks timing and token state for a single streaming request."""
+
+    time_sent: float
+    time_first_token: float | None = None
+    time_finished: float | None = None
+    char_count: int = 0
+    delta_count: int = 0
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    cache_read: int | None = None
+    is_finished: bool = False
+    error: str | None = None
+
+
+class BaseParser(ABC):
+    """Abstract base for SSE stream parsers."""
+
+    @abstractmethod
+    def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
+        """Parse a single SSE line. Returns char_count delta. Updates tracker state."""
+        pass
+
+    @abstractmethod
+    def is_done(self, tracker: RequestTracker) -> bool:
+        """Returns True if stream has reached terminal state."""
+        pass
+
+
+class OpenAIParser(BaseParser):
+    """Parser for OpenAI-compatible /v1/chat/completions SSE streams."""
+
+    def __init__(self):
+        self._seen_done = False
+        self._finish_reason: str | None = None
+
+    def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
+        if line == "data: [DONE]":
+            self._seen_done = True
+            tracker.time_finished = now
+            tracker.is_finished = True
+            return 0
+        if not line.startswith("data: "):
+            return 0
+        try:
+            data = json.loads(line[6:])
+        except json.JSONDecodeError:
+            return 0
+
+        # T1: first non-empty delta.content
+        if tracker.time_first_token is None:
+            choices = data.get("choices", [])
+            if choices:
+                delta = choices[0].get("delta", {})
+                content = delta.get("content", "")
+                if content:
+                    tracker.time_first_token = now
+                    tracker.char_count += len(content)
+                    tracker.delta_count += 1
+                    return len(content)
+
+        # Track content even after first token
+        choices = data.get("choices", [])
+        if choices:
+            delta = choices[0].get("delta", {})
+            content = delta.get("content", "")
+            if content:
+                tracker.char_count += len(content)
+                tracker.delta_count += 1
+
+        # Capture usage (authoritative for token counts)
+        usage = data.get("usage", {})
+        if usage:
+            if usage.get("prompt_tokens"):
+                tracker.input_tokens = usage["prompt_tokens"]
+            if usage.get("completion_tokens"):
+                tracker.output_tokens = usage["completion_tokens"]
+            if usage.get("total_tokens"):
+                tracker.total_tokens = usage["total_tokens"]
+
+        # Early finish_reason (don't exit yet — must wait for [DONE] or usage)
+        if data.get("choices", [{}])[0].get("finish_reason"):
+            self._finish_reason = data["choices"][0]["finish_reason"]
+            if tracker.time_finished is None:
+                tracker.time_finished = now
+
+        return 0
+
+    def is_done(self, tracker: RequestTracker) -> bool:
+        return self._seen_done
+
+
+class AnthropicParser(BaseParser):
+    """Parser for Anthropic /v1/messages SSE streams."""
+
+    def __init__(self):
+        self._current_event: str = ""
+
+    def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
+        if line.startswith("event: "):
+            self._current_event = line[7:].strip()
+            return 0
+        if not line.startswith("data: "):
+            return 0
+        try:
+            data = json.loads(line[6:])
+        except json.JSONDecodeError:
+            return 0
+
+        data_type = data.get("type", "")
+
+        if data_type == "message_start":
+            usage = data.get("message", {}).get("usage", {})
+            tracker.input_tokens = usage.get("input_tokens")
+            tracker.cache_read = usage.get("cache_read_input_tokens")
+
+        elif data_type in ("content_block_delta", "message_delta"):
+            delta = data.get("delta", {})
+            text = delta.get("text", "")
+            thinking = delta.get("thinking", "")
+
+            # T1: first non-empty text or thinking
+            if tracker.time_first_token is None and (text or thinking):
+                tracker.time_first_token = now
+
+            if text:
+                tracker.char_count += len(text)
+                tracker.delta_count += 1
+            if thinking:
+                tracker.char_count += len(thinking)
+                tracker.delta_count += 1
+
+        elif data_type == "message_delta":
+            usage = data.get("usage", {})
+            if usage.get("output_tokens"):
+                tracker.output_tokens = usage["output_tokens"]
+            if usage.get("tokens"):
+                tracker.total_tokens = usage["tokens"]
+
+        elif data_type == "message_stop":
+            tracker.time_finished = now
+            tracker.is_finished = True
+
+        return 0
+
+    def is_done(self, tracker: RequestTracker) -> bool:
+        return tracker.is_finished
 
 
 @dataclass
@@ -14,6 +166,10 @@ class SpeedTestResult:
     tps_generate: float | None = None
     total_tokens: int = 0
     total_time_ms: float | None = None
+    input_tokens: int | None = None
+    cache_read: int | None = None
+    char_count: int | None = None
+    token_density: float | None = None
     error: str | None = None
     note: str | None = None
     debug_chunks: list[str] = field(default_factory=list)
@@ -43,7 +199,7 @@ class SpeedTester:
             "stream": True,
         }
         logger.info("Testing OpenAI-compatible: %s model=%s", url, model)
-        return await self._stream_request(url, headers, body, self._parse_openai_chunk)
+        return await self._stream_request(url, headers, body, OpenAIParser())
 
     async def test_anthropic(
         self,
@@ -66,25 +222,25 @@ class SpeedTester:
             "stream": True,
         }
         logger.info("Testing Anthropic: %s model=%s", url, model)
-        return await self._stream_request(
-            url, headers, body, self._parse_anthropic_chunk
-        )
+        return await self._stream_request(url, headers, body, AnthropicParser())
 
     async def _stream_request(
-        self, url: str, headers: dict, body: dict, parse_chunk
+        self, url: str, headers: dict, body: dict, parser: BaseParser
     ) -> SpeedTestResult:
+        tracker = RequestTracker(time_sent=time.monotonic())
         result = SpeedTestResult()
-        start_time = time.monotonic()
-        first_content_time = None  # TTFT: first content delta
-        first_data_time = None  # Fallback TTFT: first data: line
-        delta_count = 0  # Number of content deltas received
-        raw_lines_seen = 0
-        usage_tokens = 0  # Token count from usage field (authoritative)
-        event_types_seen: set[str] = set()
+        last_chunk_time = tracker.time_sent
+        debug_chunks: list[str] = []
 
         try:
             async with httpx.AsyncClient(
-                timeout=self.timeout, trust_env=True
+                timeout=httpx.Timeout(
+                    connect=10.0,
+                    read=float(self.timeout),
+                    write=10.0,
+                    pool=10.0,
+                ),
+                trust_env=True,
             ) as client:
                 async with client.stream(
                     "POST", url, headers=headers, json=body
@@ -92,7 +248,6 @@ class SpeedTester:
                     logger.info("Response status: %d", response.status_code)
                     response.raise_for_status()
                     buffer = ""
-                    current_event = ""
                     async for raw_bytes in response.aiter_bytes():
                         buffer += raw_bytes.decode("utf-8", errors="replace")
                         while "\n" in buffer:
@@ -100,142 +255,65 @@ class SpeedTester:
                             line = line.strip()
                             if not line:
                                 continue
-                            raw_lines_seen += 1
-                            if len(result.debug_chunks) < 5:
-                                result.debug_chunks.append(line[:500])
-                            # Track event type for Anthropic-style SSE
-                            if line.startswith("event: "):
-                                current_event = line[7:].strip()
-                                event_types_seen.add(current_event)
-                                continue
-                            # Track first data: line
-                            if line.startswith("data: ") and first_data_time is None:
-                                first_data_time = time.monotonic()
-                            # Check if this is a content delta (for TTFT)
-                            has_content = parse_chunk(line, current_event) > 0
-                            if has_content:
-                                delta_count += 1
-                                if first_content_time is None:
-                                    first_content_time = time.monotonic()
-                            # Always extract usage from data lines
-                            if line.startswith("data: "):
-                                try:
-                                    data = json.loads(line[6:])
-                                    usage = data.get("usage", {})
-                                    if (
-                                        "output_tokens" in usage
-                                        and usage["output_tokens"] > 0
-                                    ):
-                                        usage_tokens = usage["output_tokens"]
-                                    if (
-                                        "total_tokens" in usage
-                                        and usage["total_tokens"] > 0
-                                    ):
-                                        usage_tokens = usage["total_tokens"]
-                                except (json.JSONDecodeError, AttributeError):
-                                    pass
+                            last_chunk_time = time.monotonic()
+                            if len(debug_chunks) < 5:
+                                debug_chunks.append(line[:500])
+                            parser.parse_line(line, tracker, last_chunk_time)
+                            if parser.is_done(tracker):
+                                break
+        except httpx.TimeoutException as e:
+            tracker.error = f"Timeout: {e}"
+            tracker.time_finished = last_chunk_time
+            logger.error("Speed test timeout: %s", e)
         except Exception as e:
-            result.error = str(e)
-            result.total_time_ms = (time.monotonic() - start_time) * 1000
+            tracker.error = str(e)
+            tracker.time_finished = last_chunk_time
             logger.error("Speed test failed: %s", e)
+
+        total_ms = (tracker.time_finished or tracker.time_sent) - tracker.time_sent
+
+        # Detect dangling stream
+        if not tracker.is_finished and tracker.time_finished:
+            if tracker.error is None:
+                tracker.error = "incomplete stream"
+
+        result.debug_chunks = debug_chunks
+        result.input_tokens = tracker.input_tokens
+        result.cache_read = tracker.cache_read
+        result.char_count = tracker.char_count
+        result.total_time_ms = total_ms * 1000
+        result.error = tracker.error
+
+        output_tokens = tracker.output_tokens or tracker.total_tokens or 0
+        if output_tokens == 0 and tracker.delta_count > 0:
+            output_tokens = tracker.delta_count
+            result.note = f"Token count from stream deltas (no usage field). Events: {tracker.is_finished}"
+
+        if output_tokens == 0:
+            result.note = f"No output tokens. Events: {tracker.is_finished}"
+            result.total_tokens = tracker.total_tokens or 0
             return result
 
-        end_time = time.monotonic()
-        total_ms = (end_time - start_time) * 1000
+        result.total_tokens = output_tokens
 
-        # --- Token count: prefer usage field, fallback to delta count ---
-        if usage_tokens > 0:
-            token_count = usage_tokens
-            if delta_count == 0:
-                result.note = "Token count from usage (no content deltas parsed)"
-            else:
-                result.note = f"Token count from usage ({delta_count} deltas received)"
-        elif delta_count > 0:
-            token_count = delta_count
-            result.note = "Token count from stream deltas (no usage field)"
-        else:
-            token_count = 0
-            if raw_lines_seen > 0:
-                result.note = f"0 tokens from {raw_lines_seen} lines. Events: {sorted(event_types_seen)}"
-
-        result.total_tokens = token_count
-        result.total_time_ms = total_ms
-
-        # --- TTFT: first content delta > first data line > N/A ---
-        if first_content_time is not None:
-            result.ttft_ms = (first_content_time - start_time) * 1000
-        elif first_data_time is not None and token_count > 0:
-            result.ttft_ms = (first_data_time - start_time) * 1000
-
-        # --- TPS ---
-        if token_count > 0 and result.ttft_ms and result.ttft_ms > 0:
-            generate_ms = total_ms - result.ttft_ms
+        if tracker.time_first_token is not None:
+            result.ttft_ms = (tracker.time_first_token - tracker.time_sent) * 1000
+            generate_ms = (
+                tracker.time_finished or tracker.time_sent
+            ) - tracker.time_first_token
             if generate_ms > 0:
-                result.tps_overall = token_count / (total_ms / 1000)
-                result.tps_generate = token_count / (generate_ms / 1000)
+                result.tps_overall = output_tokens / (total_ms)
+                result.tps_generate = output_tokens / (generate_ms)
+                if tracker.char_count > 0:
+                    result.token_density = tracker.char_count / output_tokens
 
         logger.info(
-            "Test done: tokens=%d (usage=%d, deltas=%d) ttft=%.0fms tps=%.1f total=%.0fms events=%s",
-            token_count,
-            usage_tokens,
-            delta_count,
+            "Test done: tokens=%d char_count=%d ttft=%.0fms tps=%.1f density=%.2f error=%s",
+            output_tokens,
+            tracker.char_count,
             result.ttft_ms or 0,
             result.tps_overall or 0,
-            total_ms,
-            sorted(event_types_seen),
+            result.token_density or 0,
+            tracker.error or "",
         )
-
         return result
-
-    @staticmethod
-    def _parse_openai_chunk(line: str, event_type: str = "") -> int:
-        if line == "data: [DONE]":
-            return 0
-        if not line.startswith("data: "):
-            return 0
-        try:
-            data = json.loads(line[6:])
-            # Standard OpenAI: choices[0].delta.content
-            choices = data.get("choices", [])
-            if choices:
-                delta = choices[0].get("delta", {})
-                content = delta.get("content", "")
-                if content:
-                    return 1
-            # Some providers put content directly in delta
-            delta = data.get("delta", {})
-            if delta.get("content"):
-                return 1
-        except json.JSONDecodeError:
-            pass
-        return 0
-
-    @staticmethod
-    def _parse_anthropic_chunk(line: str, event_type: str = "") -> int:
-        if not line.startswith("data: "):
-            return 0
-        try:
-            data = json.loads(line[6:])
-            data_type = data.get("type", "")
-            # Match by event_type from event: line OR by type field in data
-            is_delta = (
-                data_type == "content_block_delta"
-                or event_type == "content_block_delta"
-            )
-            if is_delta:
-                delta = data.get("delta", {})
-                # Standard: delta.text
-                text = delta.get("text", "")
-                if text:
-                    return 1
-                # Fallback: delta.content (some providers)
-                content = delta.get("content", "")
-                if isinstance(content, str) and content:
-                    return 1
-                # Fallback: content_block with inline text
-                cb = data.get("content_block", {})
-                if cb.get("text"):
-                    return 1
-        except json.JSONDecodeError:
-            pass
-        return 0
