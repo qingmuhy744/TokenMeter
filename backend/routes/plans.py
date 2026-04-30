@@ -55,12 +55,13 @@ async def export_plans(request: Request):
 
     export_data = []
     for plan in plans:
-        # Exclude sensitive/internal fields: id, api_key, dates, results
+        # Include api_key for transferability/backup
         export_data.append(
             {
                 "name": plan.name,
                 "api_type": plan.api_type,
                 "api_base": plan.api_base,
+                "api_key": plan.api_key,
                 "model": plan.model,
                 "prompt": plan.prompt,
                 "max_tokens": plan.max_tokens,
@@ -75,6 +76,32 @@ async def export_plans(request: Request):
         media_type="application/json",
         headers={"Content-Disposition": "attachment; filename=tokenmeter-plans.json"},
     )
+
+
+@router.post("/import")
+async def import_plans(body: list[PlanCreate], request: Request):
+    await get_current_user(request)
+    imported_count = 0
+    async with async_session() as db:
+        for plan_data in body:
+            name = plan_data.name
+            # Collision handling: append " (Imported)" until unique
+            while True:
+                existing = await db.execute(
+                    select(TokenPlan).where(TokenPlan.name == name)
+                )
+                if not existing.scalar_one_or_none():
+                    break
+                name = f"{name} (Imported)"
+
+            plan = TokenPlan(**plan_data.model_dump(exclude={"name"}), name=name)
+            db.add(plan)
+            imported_count += 1
+
+        await db.commit()
+
+    await sync_scheduled_jobs()
+    return {"message": f"Imported {imported_count} plans", "count": imported_count}
 
 
 @router.post("")
