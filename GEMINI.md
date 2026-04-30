@@ -39,23 +39,12 @@ cp token_speed.db.bak token_speed.db   # 恢复
 
 ### 数据库迁移
 
-本项目没有使用 Alembic，模型定义即 schema。当 `models.py` 字段变更时：
+没有使用 Alembic，模型定义即 schema。`backend/migrations/manager.py` 管理：
+- SQLite → PG 自动迁移（PG 为空 + SQLite 文件存在时触发）
+- Schema 版本化迁移（`MIGRATIONS` 列表，支持 `sql` 和 `func` 两种类型）
+- 新安装由 `Base.metadata.create_all` 自动建表，版本直接标记为最新
 
-1. **新安装 / 测试环境** — 直接用新 schema，首次启动自动建表
-2. **已有数据库** — 需手动执行迁移 SQL，写在 `backend/migrations/` 目录下
-
-迁移脚本命名规范：`YYYYMMDD_description.sql`，内容示例：
-```sql
--- 20260429: test_result 表增加 plan_name 字段（仅用于参考，实际由 ORM 自动建表）
-ALTER TABLE test_result ADD COLUMN plan_name TEXT;
-```
-
-Docker 用户迁移方式：
-```bash
-docker exec tokenmeter sqlite3 /data/token_speed.db < backend/migrations/20260429_xxx.sql
-```
-
-注意：SQLite 的 ALTER TABLE 功能有限，不支持 DROP COLUMN、修改列类型等操作。如需复杂变更，需重建表。
+**重要**：`run_migrations()` 在异步引擎检查 PG 是否为空后，必须 `await db.rollback()` 释放锁，再启动同步迁移引擎执行 TRUNCATE，否则会死锁。
 
 ## 分支策略
 
@@ -79,6 +68,11 @@ docker exec tokenmeter sqlite3 /data/token_speed.db < backend/migrations/2026042
 - TTFT: 第一个 content_block_delta 到达时间，无 delta 则用首条 data: 行时间
 - TPS (overall): tokens / 总耗时
 - TPS (generate): tokens / (总耗时 - TTFT)
+
+## Git 提交注意
+
+- Pre-commit hook 会自动运行 ruff format 和 ruff check，可能格式化代码
+- 如果 commit 失败提示 "files were modified by this hook"，说明 ruff 格式化了文件，**重新 `git add` 再 commit 即可**，不需要手动修改
 
 ## 路径注意
 

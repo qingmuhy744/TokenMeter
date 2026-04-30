@@ -62,3 +62,8 @@ uv run pytest backend/tests/test_migration_integration.py -v  # 单文件
 
 - 前端 `frontend/` 和后端 `backend/` 是独立子目录
 - 涉及文件路径的操作优先用绝对路径，不确定时先 `pwd` 确认
+
+## Git 提交注意
+
+- Pre-commit hook 会自动运行 ruff format 和 ruff check，可能格式化代码
+- 如果 commit 失败提示 "files were modified by this hook"，说明 ruff 格式化了文件，**重新 `git add` 再 commit 即可**，不需要手动修改
