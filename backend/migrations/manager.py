@@ -29,7 +29,9 @@ def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
     """Synchronous migration helper for row-by-row copy."""
     # Use sync engines for simpler row-by-row iteration
     sync_sqlite = create_engine(f"sqlite:///{sqlite_path}")
-    sync_pg = create_engine(pg_url.replace("postgresql+asyncpg://", "postgresql://"))
+    sync_pg = create_engine(
+        pg_url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
+    )
 
     SqliteSession = sessionmaker(sync_sqlite)
     PgSession = sessionmaker(sync_pg)
