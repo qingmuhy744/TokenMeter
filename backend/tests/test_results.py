@@ -13,13 +13,19 @@ async def auth_client(db_session):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Use the same test session that the API will see (patched via db_session)
-        result = await db_session.execute(select(User).where(User.username == "testadmin"))
+        result = await db_session.execute(
+            select(User).where(User.username == "testadmin")
+        )
         existing = result.scalar_one_or_none()
         if not existing:
-            db_session.add(User(username="testadmin", password_hash=hash_password("testpass")))
+            db_session.add(
+                User(username="testadmin", password_hash=hash_password("testpass"))
+            )
             await db_session.commit()
 
-        await client.post("/api/auth/login", json={"username": "testadmin", "password": "testpass"})
+        await client.post(
+            "/api/auth/login", json={"username": "testadmin", "password": "testpass"}
+        )
         yield client
 
 

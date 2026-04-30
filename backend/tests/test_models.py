@@ -21,7 +21,9 @@ async def test_create_token_plan(db_session: AsyncSession):
     db_session.add(plan)
     await db_session.commit()
 
-    result = await db_session.execute(select(TokenPlan).where(TokenPlan.name == "Test Plan"))
+    result = await db_session.execute(
+        select(TokenPlan).where(TokenPlan.name == "Test Plan")
+    )
     saved = result.scalar_one()
     assert saved.name == "Test Plan"
     assert saved.api_type == "openai"
@@ -51,5 +53,7 @@ async def test_create_test_result(db_session: AsyncSession):
     db_session.add(result)
     await db_session.commit()
 
-    saved = await db_session.execute(select(TestResult).where(TestResult.plan_id == plan.id))
+    saved = await db_session.execute(
+        select(TestResult).where(TestResult.plan_id == plan.id)
+    )
     assert saved.scalar_one().ttft_ms == 150.5

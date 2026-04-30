@@ -24,7 +24,12 @@ class SpeedTester:
         self.timeout = timeout
 
     async def test_openai(
-        self, api_base: str, api_key: str, model: str, prompt: str, max_tokens: int = 256
+        self,
+        api_base: str,
+        api_key: str,
+        model: str,
+        prompt: str,
+        max_tokens: int = 256,
     ) -> SpeedTestResult:
         url = f"{api_base.rstrip('/')}/chat/completions"
         headers = {
@@ -41,7 +46,12 @@ class SpeedTester:
         return await self._stream_request(url, headers, body, self._parse_openai_chunk)
 
     async def test_anthropic(
-        self, api_base: str, api_key: str, model: str, prompt: str, max_tokens: int = 256
+        self,
+        api_base: str,
+        api_key: str,
+        model: str,
+        prompt: str,
+        max_tokens: int = 256,
     ) -> SpeedTestResult:
         url = f"{api_base.rstrip('/')}/v1/messages"
         headers = {
@@ -56,23 +66,29 @@ class SpeedTester:
             "stream": True,
         }
         logger.info("Testing Anthropic: %s model=%s", url, model)
-        return await self._stream_request(url, headers, body, self._parse_anthropic_chunk)
+        return await self._stream_request(
+            url, headers, body, self._parse_anthropic_chunk
+        )
 
     async def _stream_request(
         self, url: str, headers: dict, body: dict, parse_chunk
     ) -> SpeedTestResult:
         result = SpeedTestResult()
         start_time = time.monotonic()
-        first_content_time = None   # TTFT: first content delta
-        first_data_time = None      # Fallback TTFT: first data: line
-        delta_count = 0             # Number of content deltas received
+        first_content_time = None  # TTFT: first content delta
+        first_data_time = None  # Fallback TTFT: first data: line
+        delta_count = 0  # Number of content deltas received
         raw_lines_seen = 0
-        usage_tokens = 0            # Token count from usage field (authoritative)
+        usage_tokens = 0  # Token count from usage field (authoritative)
         event_types_seen: set[str] = set()
 
         try:
-            async with httpx.AsyncClient(timeout=self.timeout, trust_env=True) as client:
-                async with client.stream("POST", url, headers=headers, json=body) as response:
+            async with httpx.AsyncClient(
+                timeout=self.timeout, trust_env=True
+            ) as client:
+                async with client.stream(
+                    "POST", url, headers=headers, json=body
+                ) as response:
                     logger.info("Response status: %d", response.status_code)
                     response.raise_for_status()
                     buffer = ""
@@ -106,9 +122,15 @@ class SpeedTester:
                                 try:
                                     data = json.loads(line[6:])
                                     usage = data.get("usage", {})
-                                    if "output_tokens" in usage and usage["output_tokens"] > 0:
+                                    if (
+                                        "output_tokens" in usage
+                                        and usage["output_tokens"] > 0
+                                    ):
                                         usage_tokens = usage["output_tokens"]
-                                    if "total_tokens" in usage and usage["total_tokens"] > 0:
+                                    if (
+                                        "total_tokens" in usage
+                                        and usage["total_tokens"] > 0
+                                    ):
                                         usage_tokens = usage["total_tokens"]
                                 except (json.JSONDecodeError, AttributeError):
                                     pass
@@ -154,8 +176,12 @@ class SpeedTester:
 
         logger.info(
             "Test done: tokens=%d (usage=%d, deltas=%d) ttft=%.0fms tps=%.1f total=%.0fms events=%s",
-            token_count, usage_tokens, delta_count,
-            result.ttft_ms or 0, result.tps_overall or 0, total_ms,
+            token_count,
+            usage_tokens,
+            delta_count,
+            result.ttft_ms or 0,
+            result.tps_overall or 0,
+            total_ms,
             sorted(event_types_seen),
         )
 

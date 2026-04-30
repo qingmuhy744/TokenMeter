@@ -14,6 +14,7 @@ async def test_me_requires_auth():
 @pytest.mark.asyncio
 async def test_login_creates_session():
     from backend.database import init_db
+
     await init_db()
 
     transport = ASGITransport(app=app)
@@ -27,10 +28,14 @@ async def test_login_creates_session():
             result = await db.execute(select(User).where(User.username == "testadmin"))
             existing = result.scalar_one_or_none()
             if not existing:
-                db.add(User(username="testadmin", password_hash=hash_password("testpass")))
+                db.add(
+                    User(username="testadmin", password_hash=hash_password("testpass"))
+                )
                 await db.commit()
 
-        resp = await client.post("/api/auth/login", json={"username": "testadmin", "password": "testpass"})
+        resp = await client.post(
+            "/api/auth/login", json={"username": "testadmin", "password": "testpass"}
+        )
         assert resp.status_code == 200
 
         resp = await client.get("/api/auth/me")

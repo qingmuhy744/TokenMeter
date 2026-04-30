@@ -20,10 +20,18 @@ class TokenPlan(Base):
     test_count: Mapped[int] = mapped_column(Integer, default=3)
     interval_minutes: Mapped[int] = mapped_column(Integer, default=60)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
-    results: Mapped[list["TestResult"]] = relationship(back_populates="plan", cascade="all, delete-orphan")
+    results: Mapped[list["TestResult"]] = relationship(
+        back_populates="plan", cascade="all, delete-orphan"
+    )
 
 
 class TestResult(Base):
@@ -31,7 +39,9 @@ class TestResult(Base):
     __test__ = False  # Prevent pytest from collecting this as a test class
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    plan_id: Mapped[int] = mapped_column(Integer, ForeignKey("token_plans.id"), nullable=False)
+    plan_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("token_plans.id"), nullable=False
+    )
     ttft_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
     tps_overall: Mapped[float | None] = mapped_column(Float, nullable=True)
     tps_generate: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -40,7 +50,9 @@ class TestResult(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     debug_chunks: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
 
     plan: Mapped["TokenPlan"] = relationship(back_populates="results")
 

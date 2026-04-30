@@ -15,7 +15,7 @@ async def test_speed_tester_openai_format():
     chunks = [
         b'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
         b'data: {"choices":[{"delta":{"content":" world"}}]}\n\n',
-        b'data: [DONE]\n\n',
+        b"data: [DONE]\n\n",
     ]
 
     async def mock_aiter_bytes():

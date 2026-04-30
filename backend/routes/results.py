@@ -77,9 +77,14 @@ async def get_stats(request: Request, plan_id: int, days: int = 7):
 
     if not items:
         return StatsResponse(
-            plan_id=plan_id, count=0,
-            avg_ttft_ms=None, avg_tps_overall=None, avg_tps_generate=None,
-            median_ttft_ms=None, median_tps_overall=None, p95_ttft_ms=None,
+            plan_id=plan_id,
+            count=0,
+            avg_ttft_ms=None,
+            avg_tps_overall=None,
+            avg_tps_generate=None,
+            median_ttft_ms=None,
+            median_tps_overall=None,
+            p95_ttft_ms=None,
         )
 
     ttfts = sorted([r.ttft_ms for r in items if r.ttft_ms is not None])
