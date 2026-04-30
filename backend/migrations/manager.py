@@ -1,6 +1,8 @@
 import logging
 import textwrap
 import os
+import hashlib
+import bcrypt
 from sqlalchemy import create_engine, select, text, inspect
 from sqlalchemy.orm import sessionmaker
 from backend.models import Setting, User, TokenPlan, TestResult
@@ -22,7 +24,48 @@ MIGRATIONS = [
         ALTER TABLE test_results ADD COLUMN token_density FLOAT;
     """).strip(),
     ),
+    (
+        "0.2.0",
+        "func",
+        "rehash_passwords_sha256",
+    ),
 ]
+
+
+async def rehash_passwords_sha256(db):
+    """Re-hash passwords from bcrypt(raw) to bcrypt(SHA256(raw)).
+
+    Before SHA256 was added to the frontend, password hashes were bcrypt(raw_password).
+    After SHA256, the login flow became: frontend sends SHA256(password) -> bcrypt.
+    Old hashes stored as bcrypt(raw_password) can't be verified by bcrypt(SHA256(password)).
+    Since we can't reverse bcrypt, we reset all passwords and log new setup tokens.
+    """
+    result = await db.execute(select(User))
+    users = result.scalars().all()
+
+    reset_count = 0
+    for user in users:
+        setup_token = _generate_password()
+        client_hash = hashlib.sha256(setup_token.encode()).hexdigest()
+        user.password_hash = bcrypt.hashpw(
+            client_hash.encode(), bcrypt.gensalt()
+        ).decode()
+        reset_count += 1
+        logger.warning(
+            f"Password reset for user '{user.username}'. New setup key: {setup_token}"
+        )
+
+    if reset_count > 0:
+        await db.commit()
+        logger.info(
+            f"Rehashed {reset_count} user(s). Check logs above for new setup keys."
+        )
+
+
+def _generate_password(length: int = 16) -> str:
+    import secrets
+
+    return secrets.token_urlsafe(length)[:length]
 
 
 def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
@@ -182,13 +225,9 @@ async def run_migrations(db):
                     stmt = stmt.strip()
                     if stmt:
                         try:
-                            # Use a sub-transaction if possible, or just catch and handle
-                            # For simple migrations, we'll try-catch.
-                            # On PostgreSQL, a failure aborts the transaction.
                             await db.execute(text(stmt))
                         except Exception as e:
                             if "postgresql" in settings.database_url:
-                                # Rollback to clear the aborted state
                                 await db.rollback()
 
                             if (
@@ -200,6 +239,12 @@ async def run_migrations(db):
                                 )
                             else:
                                 raise e
+            elif mtype == "func":
+                migration_func = globals().get(content)
+                if migration_func:
+                    await migration_func(db)
+                else:
+                    logger.error(f"Migration function '{content}' not found, skipping.")
 
             await set_current_version(db, version)
             await db.commit()

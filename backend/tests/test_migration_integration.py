@@ -135,7 +135,11 @@ async def test_run_migrations_sqlite_to_pg_e2e(db_engine):
     async with async_session_factory() as session:
         res = await session.execute(select(User).where(User.username == "e2euser"))
         user = res.scalar_one()
-        assert user.password_hash == "e2ehash"
+        # Password was reset by rehash_passwords_sha256 migration,
+        # so it's no longer "e2ehash" but a proper bcrypt(SHA256(...)) hash
+        assert user.password_hash.startswith("$2b$"), (
+            "Password should be re-hashed to bcrypt format after migration"
+        )
 
         res = await session.execute(select(Setting).where(Setting.key == "e2e_key"))
         sett = res.scalar_one()
@@ -147,12 +151,59 @@ async def test_run_migrations_sqlite_to_pg_e2e(db_engine):
         plan = res.scalar_one()
         assert plan.api_key == "e2ekey"
 
-    # 4. Verify SQLite file was cleaned up after migration
+    # 4. Verify version was updated to 0.2.0 (latest after rehash migration)
+    async with async_session_factory() as session:
+        res = await session.execute(select(Setting).where(Setting.key == "db_version"))
+        version_setting = res.scalar_one()
+        assert version_setting.value == "0.2.0"
+
+    # 5. Verify SQLite file was cleaned up after migration
     assert not os.path.exists(sqlite_path), (
         "SQLite file should be removed after migration"
     )
 
     sync_sqlite_engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_password_rehash_migration(db_engine):
+    """Test that v0.2.0 migration resets old bcrypt(raw_password) hashes."""
+    db_url = os.getenv("TEST_DATABASE_URL", "")
+    if "postgresql" not in db_url:
+        pytest.skip("PostgreSQL specific password hash migration test")
+
+    import bcrypt
+
+    async_session = async_sessionmaker(db_engine, class_=AsyncSession)
+
+    # 1. Create a user with old-format password: bcrypt(raw_password)
+    old_password = "test_old_pass"
+    old_hash = bcrypt.hashpw(old_password.encode(), bcrypt.gensalt()).decode()
+
+    async with async_session() as session:
+        session.add(User(username="olduser", password_hash=old_hash))
+        session.add(Setting(key="db_version", value="0.1.0"))
+        await session.commit()
+
+    # 2. Run migrations (will apply 0.2.0 rehash)
+    async with async_session() as session:
+        await run_migrations(session)
+
+    # 3. Verify the password hash was reset and works with SHA256 flow
+    async with async_session() as session:
+        res = await session.execute(select(User).where(User.username == "olduser"))
+        user = res.scalar_one()
+        assert user.password_hash != old_hash, "Password hash should have been changed"
+        assert user.password_hash.startswith("$2b$"), "Should still be bcrypt format"
+
+        # Old password should NOT work (it was bcrypt(raw), now stored as bcrypt(SHA256))
+        assert not bcrypt.checkpw(old_password.encode(), user.password_hash.encode()), (
+            "Old raw password should not match new hash"
+        )
+
+        # Verify version is now 0.2.0
+        res = await session.execute(select(Setting).where(Setting.key == "db_version"))
+        assert res.scalar_one().value == "0.2.0"
 
 
 @pytest.mark.asyncio
