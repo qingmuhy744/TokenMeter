@@ -29,7 +29,16 @@ def _reset_login_rate_limit():
 
 @pytest.fixture
 async def db_engine():
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    import os
+
+    # Default to SQLite memory for local speed, allow override for CI/matrix
+    db_url = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+
+    # Handle PostgreSQL URL conversion if needed (sqlalchemy requires +asyncpg)
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    engine = create_async_engine(db_url)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield engine
