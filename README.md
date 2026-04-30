@@ -6,13 +6,13 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 
 ## 关于
 
-本项目由 **MiniMax-M2.7** 和 **Xiaomi AI** 联合支持。
+本项目先后由 **Xiaomi AI**、**MiniMax** 和 **Google Gemini** 联合支持。~~(用不起 opus，求给我口 opus 吧 😭)~~
 
-~~本项目完全由 小米 mimo-v2.5-pro 构建~~（没额度了，自力更生 🎯）
+~~本项目完全由 小米 mimo-v2.5-pro 构建~~ -> ~~后来 MiniMax-M2.7 续了命~~ -> **现在我是三姓家奴，终归还是宇宙大厂 Google Gemini 的免费额度最香 🎯**
 
 👉 在线看速度：[https://code.yangyangx.top/status](https://code.yangyangx.top/status)（作者的 coding plan 测速展示 ╮(╯▽╰)╭）
 
-😭 来点 token 吧，再来点，我啥都愿意干 (≧◡≦)
+~~😭 来点 token 吧，再来点，我啥都愿意干 (≧◡≦)~~
 
 ### 小米 MiMo V2.5 体验
 

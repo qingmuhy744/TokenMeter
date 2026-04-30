@@ -1,4 +1,4 @@
-# CLAUDE.md
+# GEMINI.md
 
 ## 项目
 
