@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, develop]
   pull_request:
-    branches: [main]
+    branches: [main, dev, develop]
 
 jobs:
   lint-and-test:
@@ -46,7 +46,7 @@ jobs:
   build-docker:
     needs: lint-and-test
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/develop'
     permissions:
       contents: read
       packages: write
@@ -73,7 +73,7 @@ jobs:
           TAG="${IMAGE}:${DATE}-${SHA}"
           if [ "${{ steps.branch.outputs.branch }}" = "main" ]; then
             TAG="${TAG},${IMAGE}:latest"
-          elif [ "${{ steps.branch.outputs.branch }}" = "dev" ]; then
+          elif [ "${{ steps.branch.outputs.branch }}" = "dev" ] || [ "${{ steps.branch.outputs.branch }}" = "develop" ]; then
             TAG="${TAG},${IMAGE}:dev"
           fi
           echo "tags=$TAG" >> "$GITHUB_OUTPUT"
