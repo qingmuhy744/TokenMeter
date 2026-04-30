@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
@@ -35,7 +36,7 @@ export default function Login() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input placeholder={t("login.username")} value={username} onChange={(e) => setUsername(e.target.value)} />
-            <Input type="password" placeholder={t("login.password")} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <PasswordInput placeholder={t("login.password")} value={password} onChange={(e) => setPassword(e.target.value)} />
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "..." : t("login.loginButton")}
             </Button>

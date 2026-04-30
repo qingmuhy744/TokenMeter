@@ -22,19 +22,22 @@ async def test_login_creates_session():
         from backend.database import async_session
         from backend.models import User
         from backend.auth import hash_password
-        from sqlalchemy import select
 
         async with async_session() as db:
-            result = await db.execute(select(User).where(User.username == "testadmin"))
-            existing = result.scalar_one_or_none()
-            if not existing:
-                db.add(
-                    User(username="testadmin", password_hash=hash_password("testpass"))
-                )
-                await db.commit()
+            import hashlib
+            from sqlalchemy import delete
 
+            # Clear any existing test user to ensure fresh credentials
+            await db.execute(delete(User).where(User.username == "testadmin"))
+            await db.commit()
+
+            pw_hash = hashlib.sha256("testpass".encode()).hexdigest()
+            db.add(User(username="testadmin", password_hash=hash_password(pw_hash)))
+            await db.commit()
+
+        pw_hash = hashlib.sha256("testpass".encode()).hexdigest()
         resp = await client.post(
-            "/api/auth/login", json={"username": "testadmin", "password": "testpass"}
+            "/api/auth/login", json={"username": "testadmin", "password": pw_hash}
         )
         assert resp.status_code == 200
 

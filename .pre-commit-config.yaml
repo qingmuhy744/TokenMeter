@@ -15,7 +15,7 @@ repos:
         pass_filenames: true
       - id: eslint
         name: eslint --fix
-        entry: npx eslint --fix
+        entry: npx eslint --config frontend/eslint.config.js --fix
         language: system
-        files: \.(ts|tsx|js|jsx)$
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
         pass_filenames: true

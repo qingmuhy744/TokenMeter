@@ -1,4 +1,66 @@
+import { hashPassword } from "@/lib/utils";
+
 const BASE = "/api";
+
+export interface Plan {
+  id: number;
+  name: string;
+  api_type: string;
+  api_base: string;
+  api_key: string;
+  model: string;
+  prompt: string | null;
+  max_tokens: number;
+  test_count: number;
+  interval_minutes: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  latest_result?: TestResult | null;
+}
+
+export interface TestResult {
+  id: number;
+  plan_id: number;
+  plan_name?: string | null;
+  ttft_ms: number | null;
+  tps_overall: number | null;
+  tps_generate: number | null;
+  total_tokens: number | null;
+  total_time_ms: number | null;
+  input_tokens?: number | null;
+  cache_read?: number | null;
+  char_count?: number | null;
+  token_density?: number | null;
+  error: string | null;
+  note: string | null;
+  debug_chunks: string | null;
+  created_at: string;
+}
+
+export interface Stats {
+  plan_id: number;
+  count: number;
+  avg_ttft_ms: number | null;
+  avg_tps_overall: number | null;
+  avg_tps_generate: number | null;
+  median_ttft_ms: number | null;
+  median_tps_overall: number | null;
+  p95_ttft_ms: number | null;
+}
+
+export interface Settings {
+  default_prompt: string;
+  timeout_seconds: number;
+  custom_banner: string | null;
+}
+
+export interface PaginatedResults {
+  items: TestResult[];
+  total: number;
+  page: number;
+  size: number;
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -17,29 +79,40 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  login: (username: string, password: string) =>
-    request("/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
+  login: async (username: string, password: string) => {
+    const hashedPassword = await hashPassword(password);
+    return request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password: hashedPassword }),
+    });
+  },
   logout: () => request("/auth/logout", { method: "POST" }),
   me: () => request<{ id: number; username: string }>("/auth/me"),
-  changePassword: (old_password: string, new_password: string) =>
-    request("/auth/change-password", { method: "POST", body: JSON.stringify({ old_password, new_password }) }),
+  changePassword: async (old_password: string, new_password: string) => {
+    const hashedOld = await hashPassword(old_password);
+    const hashedNew = await hashPassword(new_password);
+    return request("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ old_password: hashedOld, new_password: hashedNew }),
+    });
+  },
 
-  getPlans: () => request<any[]>("/plans"),
-  createPlan: (data: any) => request("/plans", { method: "POST", body: JSON.stringify(data) }),
-  updatePlan: (id: number, data: any) =>
-    request(`/plans/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  getPlans: () => request<Plan[]>("/plans"),
+  createPlan: (data: Partial<Plan>) => request<Plan>("/plans", { method: "POST", body: JSON.stringify(data) }),
+  updatePlan: (id: number, data: Partial<Plan>) =>
+    request<Plan>(`/plans/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deletePlan: (id: number) => request(`/plans/${id}`, { method: "DELETE" }),
-  triggerTest: (id: number) => request(`/plans/${id}/test`, { method: "POST" }),
+  triggerTest: (id: number) => request<{ task_id: string }>(`/plans/${id}/test`, { method: "POST" }),
 
   getResults: (params: Record<string, string>) => {
     const qs = new URLSearchParams(params).toString();
-    return request<any>(`/results?${qs}`);
+    return request<PaginatedResults>(`/results?${qs}`);
   },
   getStats: (planId: number, days: number = 7) =>
-    request<any>(`/results/stats?plan_id=${planId}&days=${days}`),
+    request<Stats>(`/results/stats?plan_id=${planId}&days=${days}`),
 
-  getSettings: () => request<any>("/settings"),
-  updateSettings: (data: any) => request("/settings", { method: "PUT", body: JSON.stringify(data) }),
+  getSettings: () => request<Settings>("/settings"),
+  updateSettings: (data: Partial<Settings>) => request<Settings>("/settings", { method: "PUT", body: JSON.stringify(data) }),
 
   getLogs: (limit: number = 100) => request<{ lines: string[] }>(`/logs?limit=${limit}`),
 };

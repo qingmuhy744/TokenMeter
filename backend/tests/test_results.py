@@ -1,3 +1,5 @@
+import hashlib
+
 import pytest
 from httpx import AsyncClient, ASGITransport
 
@@ -12,19 +14,19 @@ async def auth_client(db_session):
     """Create an authenticated test client using the shared test db session."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # Use the same test session that the API will see (patched via db_session)
+        pw_hash = hashlib.sha256("testpass".encode()).hexdigest()
         result = await db_session.execute(
             select(User).where(User.username == "testadmin")
         )
         existing = result.scalar_one_or_none()
         if not existing:
             db_session.add(
-                User(username="testadmin", password_hash=hash_password("testpass"))
+                User(username="testadmin", password_hash=hash_password(pw_hash))
             )
             await db_session.commit()
 
         await client.post(
-            "/api/auth/login", json={"username": "testadmin", "password": "testpass"}
+            "/api/auth/login", json={"username": "testadmin", "password": pw_hash}
         )
         yield client
 

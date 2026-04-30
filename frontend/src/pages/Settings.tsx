@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { api } from "@/api/client";
+import { api, Settings as SettingsType } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -12,7 +13,7 @@ import { RefreshCw } from "lucide-react";
 
 export default function Settings() {
   const { t } = useTranslation();
-  const [settings, setSettings] = useState({ default_prompt: "", timeout_seconds: 30, custom_banner: "" });
+  const [settings, setSettings] = useState<SettingsType>({ default_prompt: "", timeout_seconds: 30, custom_banner: "" });
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,8 +22,21 @@ export default function Settings() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const logRef = useRef<HTMLPreElement>(null);
 
+  const fetchLogs = async () => {
+    setLogLoading(true);
+    try {
+      const data = await api.getLogs(200);
+      setLogs(data.lines);
+      setTimeout(() => logRef.current?.scrollTo(0, logRef.current.scrollHeight), 50);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setLogLoading(false);
+    }
+  };
+
   useEffect(() => {
-    api.getSettings().then((data: any) => setSettings({ ...settings, ...data }));
+    api.getSettings().then((data) => setSettings(s => ({ ...s, ...data })));
   }, []);
 
   useEffect(() => {
@@ -31,22 +45,13 @@ export default function Settings() {
     return () => clearInterval(id);
   }, [autoRefresh]);
 
-  const fetchLogs = async () => {
-    setLogLoading(true);
-    try {
-      const data = await api.getLogs(200);
-      setLogs(data.lines);
-      setTimeout(() => logRef.current?.scrollTo(0, logRef.current.scrollHeight), 50);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setLogLoading(false);
-    }
-  };
-
   const handleSaveSettings = async () => {
-    try { await api.updateSettings(settings); toast.success(t("settings.settingsSaved")); }
-    catch (e: any) { toast.error(e.message); }
+    try {
+      await api.updateSettings(settings);
+      toast.success(t("settings.settingsSaved"));
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
   const handleChangePassword = async () => {
@@ -59,7 +64,9 @@ export default function Settings() {
     try {
       await api.changePassword(oldPassword, newPassword);
       toast.success(t("settings.passwordChanged")); setOldPassword(""); setNewPassword(""); setConfirmPassword("");
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
   return (
@@ -86,9 +93,9 @@ export default function Settings() {
       <Card>
         <CardHeader><CardTitle>{t("settings.changePassword")}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div><Label>{t("settings.oldPassword")}</Label><Input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} /></div>
-          <div><Label>{t("settings.newPassword")}</Label><Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></div>
-          <div><Label>{t("settings.confirmNewPassword")}</Label><Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
+          <div><Label>{t("settings.oldPassword")}</Label><PasswordInput value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} /></div>
+          <div><Label>{t("settings.newPassword")}</Label><PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></div>
+          <div><Label>{t("settings.confirmNewPassword")}</Label><PasswordInput value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
           <Button onClick={handleChangePassword}>{t("settings.changePassword")}</Button>
         </CardContent>
       </Card>

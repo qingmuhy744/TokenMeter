@@ -3,7 +3,7 @@ from typing import Literal
 from urllib.parse import urlparse
 import ipaddress
 
-from pydantic import BaseModel, Field, field_validator, field_serializer
+from pydantic import BaseModel, Field, field_validator, field_serializer, SecretStr
 
 
 def _ensure_utc(dt: datetime) -> datetime:
@@ -150,12 +150,12 @@ class StatsResponse(BaseModel):
 
 class LoginRequest(BaseModel):
     username: str
-    password: str
+    password: SecretStr
 
 
 class ChangePasswordRequest(BaseModel):
-    old_password: str
-    new_password: str = Field(min_length=8)
+    old_password: SecretStr
+    new_password: SecretStr = Field(min_length=8)
 
 
 class SettingsResponse(BaseModel):

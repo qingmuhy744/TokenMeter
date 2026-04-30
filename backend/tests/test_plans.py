@@ -1,3 +1,5 @@
+import hashlib
+
 import pytest
 from httpx import AsyncClient, ASGITransport
 from backend.main import app
@@ -11,18 +13,16 @@ from sqlalchemy import select
 async def auth_client(db_session):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # Create a test user with known password
+        pw_hash = hashlib.sha256("testpass".encode()).hexdigest()
         async with async_session() as db:
             result = await db.execute(select(User).where(User.username == "testadmin"))
             existing = result.scalar_one_or_none()
             if not existing:
-                db.add(
-                    User(username="testadmin", password_hash=hash_password("testpass"))
-                )
+                db.add(User(username="testadmin", password_hash=hash_password(pw_hash)))
                 await db.commit()
 
         await client.post(
-            "/api/auth/login", json={"username": "testadmin", "password": "testpass"}
+            "/api/auth/login", json={"username": "testadmin", "password": pw_hash}
         )
         yield client
 
