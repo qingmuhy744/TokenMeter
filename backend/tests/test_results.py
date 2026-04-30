@@ -47,11 +47,22 @@ async def test_stats_empty(auth_client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_delete_result(auth_client: AsyncClient, db_session):
-    from backend.models import TestResult
+    from backend.models import TestResult, TokenPlan
     import datetime
 
+    # Create a dummy plan first to satisfy Postgres foreign key constraints
+    plan = TokenPlan(
+        name="Delete Test Plan",
+        api_type="openai",
+        api_base="https://api.openai.com/v1",
+        api_key="sk-test",
+        model="gpt-4o",
+    )
+    db_session.add(plan)
+    await db_session.flush()
+
     # Create a dummy result
-    res = TestResult(plan_id=1, created_at=datetime.datetime.now())
+    res = TestResult(plan_id=plan.id, created_at=datetime.datetime.now())
     db_session.add(res)
     await db_session.commit()
     res_id = res.id
