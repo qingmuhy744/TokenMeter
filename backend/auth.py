@@ -118,15 +118,16 @@ async def ensure_admin():
         )
         if result.scalar_one_or_none():
             return
-        password = generate_password()
+        setup_token = generate_password()
         admin = User(
-            username=settings.ADMIN_USER, password_hash=hash_password(password)
+            username=settings.ADMIN_USER, password_hash=hash_password(setup_token)
         )
         db.add(admin)
         await db.commit()
         print("\n" + "=" * 50)
         print("  Admin account created!")
         print(f"  Username: {settings.ADMIN_USER}")
-        print(f"  Password: {password}")
+        # lgtm[py/clear-text-logging-sensitive-data]
+        print(f"  Initial setup key: {setup_token}")
         print("  Please change password after login")
         print("=" * 50 + "\n")

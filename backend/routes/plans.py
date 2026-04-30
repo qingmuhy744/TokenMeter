@@ -1,8 +1,9 @@
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from sqlalchemy import select, func
+from sqlalchemy.exc import SQLAlchemyError
 
 from backend.database import async_session
 from backend.models import TokenPlan, TestResult
@@ -44,6 +45,70 @@ async def list_plans(request: Request):
             )
         )
     return response
+
+
+@router.get("/export")
+async def export_plans(request: Request):
+    await get_current_user(request)
+    async with async_session() as db:
+        result = await db.execute(select(TokenPlan).order_by(TokenPlan.id.asc()))
+        plans = result.scalars().all()
+
+    export_data = []
+    for plan in plans:
+        # Include api_key for transferability/backup
+        export_data.append(
+            {
+                "name": plan.name,
+                "api_type": plan.api_type,
+                "api_base": plan.api_base,
+                "api_key": plan.api_key,
+                "model": plan.model,
+                "prompt": plan.prompt,
+                "max_tokens": plan.max_tokens,
+                "test_count": plan.test_count,
+                "interval_minutes": plan.interval_minutes,
+                "is_active": plan.is_active,
+            }
+        )
+
+    return Response(
+        content=json.dumps(export_data, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=tokenmeter-plans.json"},
+    )
+
+
+@router.post("/import")
+async def import_plans(body: list[PlanCreate], request: Request):
+    await get_current_user(request)
+    imported_count = 0
+    async with async_session() as db:
+        # Fetch all existing names to prevent N+1 queries
+        result = await db.execute(select(TokenPlan.name))
+        existing_names = set(result.scalars().all())
+
+        for plan_data in body:
+            name = plan_data.name
+            # Collision handling: append " (Imported)" until unique
+            while name in existing_names:
+                name = f"{name} (Imported)"
+
+            # Track names within the batch
+            existing_names.add(name)
+
+            plan = TokenPlan(**plan_data.model_dump(exclude={"name"}), name=name)
+            db.add(plan)
+            imported_count += 1
+
+        try:
+            await db.commit()
+        except SQLAlchemyError as e:
+            logger.error("Failed to commit imported plans: %s", str(e))
+            raise HTTPException(status_code=400, detail="Database error during import")
+
+    await sync_scheduled_jobs()
+    return {"message": f"Imported {imported_count} plans", "count": imported_count}
 
 
 @router.post("")

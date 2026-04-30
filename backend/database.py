@@ -40,5 +40,10 @@ async def get_db():
 
 
 async def init_db():
+    from backend.migrations.manager import run_migrations
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    async with async_session() as db:
+        await run_migrations(db)

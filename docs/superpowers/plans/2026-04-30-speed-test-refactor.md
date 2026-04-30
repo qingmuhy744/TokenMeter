@@ -1,3 +1,97 @@
+# Speed Test Refactor Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Add input_tokens/cache_read/char_count/token_density fields, refactor SpeedTester into RequestTracker + per-protocol state machines, add robust error handling.
+
+**Architecture:** `speed_test.py` is refactored into a `RequestTracker` dataclass holding timing + token state, with two protocol-specific parser classes (`OpenAIParser`, `AnthropicParser`) that implement the SSE state machine. TestResult model gains 4 nullable fields.
+
+**Tech Stack:** Python 3.12, httpx, dataclass, monotonic clock
+
+---
+
+## File Structure
+
+- `backend/models.py` — add 4 nullable fields to `TestResult`
+- `backend/services/speed_test.py` — refactor into RequestTracker + protocol parsers
+- `backend/schemas.py` — add new fields to `TestResultResponse`
+- `backend/migrations/20260430_add_input_tokens_cache_read_char_count_density.sql` — SQLite migration
+- `backend/tests/test_speed_test.py` — update tests for new fields
+
+---
+
+## Task 1: Add model fields
+
+**Files:**
+- Modify: `backend/models.py:37-57`
+- Modify: `backend/migrations/20260430_add_input_tokens_cache_read_char_count_density.sql` (create)
+
+- [ ] **Step 1: Add migration SQL file**
+
+```bash
+mkdir -p backend/migrations
+cat > backend/migrations/20260430_add_input_tokens_cache_read_char_count_density.sql << 'EOF'
+-- 20260430: add input_tokens, cache_read, char_count, token_density to test_results
+ALTER TABLE test_results ADD COLUMN input_tokens INTEGER;
+ALTER TABLE test_results ADD COLUMN cache_read INTEGER;
+ALTER TABLE test_results ADD COLUMN char_count INTEGER;
+ALTER TABLE test_results ADD COLUMN token_density FLOAT;
+EOF
+```
+
+- [ ] **Step 2: Add fields to TestResult model**
+
+```python
+# In backend/models.py, add to TestResult class after line ~51:
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cache_read: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    char_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    token_density: Mapped[float | None] = mapped_column(Float, nullable=True)
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add backend/models.py backend/migrations/20260430_add_input_tokens_cache_read_char_count_density.sql
+git commit -m "feat: add input_tokens, cache_read, char_count, token_density fields to TestResult"
+```
+
+---
+
+## Task 2: Add schema fields
+
+**Files:**
+- Modify: `backend/schemas.py:114-134`
+
+- [ ] **Step 1: Add fields to TestResultResponse**
+
+```python
+# In backend/schemas.py, add to TestResultResponse class after line ~124:
+    input_tokens: int | None = None
+    cache_read: int | None = None
+    char_count: int | None = None
+    token_density: float | None = None
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add backend/schemas.py
+git commit -m "feat: add input_tokens, cache_read, char_count, token_density to TestResultResponse"
+```
+
+---
+
+## Task 3: Refactor speed_test.py into RequestTracker + protocol parsers
+
+**Files:**
+- Modify: `backend/services/speed_test.py` (full rewrite)
+
+- [ ] **Step 1: Write RequestTracker dataclass + parsers**
+
+Replace the entire `speed_test.py` content with:
+
+```python
 import time
 import json
 import logging
@@ -11,12 +105,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RequestTracker:
     """Tracks timing and token state for a single streaming request."""
-
     time_sent: float
     time_first_token: float | None = None
     time_finished: float | None = None
     char_count: int = 0
-    delta_count: int = 0
     input_tokens: int | None = None
     output_tokens: int | None = None
     total_tokens: int | None = None
@@ -68,7 +160,6 @@ class OpenAIParser(BaseParser):
                 if content:
                     tracker.time_first_token = now
                     tracker.char_count += len(content)
-                    tracker.delta_count += 1
                     return len(content)
 
         # Track content even after first token
@@ -78,7 +169,6 @@ class OpenAIParser(BaseParser):
             content = delta.get("content", "")
             if content:
                 tracker.char_count += len(content)
-                tracker.delta_count += 1
 
         # Capture usage (authoritative for token counts)
         usage = data.get("usage", {})
@@ -137,10 +227,8 @@ class AnthropicParser(BaseParser):
 
             if text:
                 tracker.char_count += len(text)
-                tracker.delta_count += 1
             if thinking:
                 tracker.char_count += len(thinking)
-                tracker.delta_count += 1
 
         elif data_type == "message_delta":
             usage = data.get("usage", {})
@@ -242,9 +330,7 @@ class SpeedTester:
                 ),
                 trust_env=True,
             ) as client:
-                async with client.stream(
-                    "POST", url, headers=headers, json=body
-                ) as response:
+                async with client.stream("POST", url, headers=headers, json=body) as response:
                     logger.info("Response status: %d", response.status_code)
                     response.raise_for_status()
                     buffer = ""
@@ -281,13 +367,10 @@ class SpeedTester:
         result.input_tokens = tracker.input_tokens
         result.cache_read = tracker.cache_read
         result.char_count = tracker.char_count
-        result.total_time_ms = total_ms * 1000
+        result.total_time_ms = total_ms
         result.error = tracker.error
 
         output_tokens = tracker.output_tokens or tracker.total_tokens or 0
-        if output_tokens == 0 and tracker.delta_count > 0:
-            output_tokens = tracker.delta_count
-            result.note = f"Token count from stream deltas (no usage field). Events: {tracker.is_finished}"
 
         if output_tokens == 0:
             result.note = f"No output tokens. Events: {tracker.is_finished}"
@@ -298,12 +381,10 @@ class SpeedTester:
 
         if tracker.time_first_token is not None:
             result.ttft_ms = (tracker.time_first_token - tracker.time_sent) * 1000
-            generate_ms = (
-                tracker.time_finished or tracker.time_sent
-            ) - tracker.time_first_token
+            generate_ms = (tracker.time_finished or tracker.time_sent) - tracker.time_first_token
             if generate_ms > 0:
-                result.tps_overall = output_tokens / (total_ms)
-                result.tps_generate = output_tokens / (generate_ms)
+                result.tps_overall = output_tokens / (total_ms / 1000)
+                result.tps_generate = output_tokens / (generate_ms / 1000)
                 if tracker.char_count > 0:
                     result.token_density = tracker.char_count / output_tokens
 
@@ -317,3 +398,50 @@ class SpeedTester:
             tracker.error or "",
         )
         return result
+```
+
+- [ ] **Step 2: Run tests**
+
+```bash
+cd /Users/qingmuhy/Documents/devlop/python/tokoen-test && uv run pytest backend/tests/test_speed_test.py -v
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add backend/services/speed_test.py
+git commit -m "refactor: replace monolithic _stream_request with RequestTracker + protocol parsers"
+```
+
+---
+
+## Task 4: Update tests
+
+**Files:**
+- Modify: `backend/tests/test_speed_test.py`
+
+- [ ] **Step 1: Update test_speed_test.py**
+
+Update tests to cover new fields (`input_tokens`, `cache_read`, `char_count`, `token_density`). Keep existing tests, add assertions for new field presence.
+
+- [ ] **Step 2: Run all tests**
+
+```bash
+cd /Users/qingmuhy/Documents/devlop/python/tokoen-test && uv run pytest -v
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add backend/tests/test_speed_test.py
+git commit -m "test: cover new speed test fields and error handling"
+```
+
+---
+
+## Verification
+
+After all tasks:
+- `uv run pytest` passes
+- `uv run ruff check backend/` passes
+- New fields are nullable (no DB migration needed for fresh DB)

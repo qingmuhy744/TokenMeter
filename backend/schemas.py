@@ -120,6 +120,10 @@ class TestResultResponse(BaseModel):
     tps_generate: float | None
     total_tokens: int | None
     total_time_ms: float | None
+    input_tokens: int | None = None
+    cache_read: int | None = None
+    char_count: int | None = None
+    token_density: float | None = None
     error: str | None
     note: str | None = None
     debug_chunks: str | None = None

@@ -45,6 +45,56 @@ async def test_speed_tester_openai_format():
         assert result.total_tokens >= 2
         assert result.ttft_ms is not None
         assert result.tps_overall is not None
+        assert result.char_count == 11  # "Hello world"
+        assert result.token_density is not None
+
+
+@pytest.mark.asyncio
+async def test_speed_tester_anthropic_format():
+    tester = SpeedTester(timeout=10)
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.raise_for_status = MagicMock()
+
+    chunks = [
+        b'event: message_start\ndata: {"type": "message_start", "message": {"usage": {"input_tokens": 10, "cache_read_input_tokens": 5}}}\n\n',
+        b'event: content_block_delta\ndata: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": "Hello"}}\n\n',
+        b'event: content_block_delta\ndata: {"type": "content_block_delta", "index": 0, "delta": {"type": "text_delta", "text": " world"}}\n\n',
+        b'event: message_delta\ndata: {"type": "message_delta", "delta": {"stop_reason": "end_turn", "stop_sequence": null}, "usage": {"output_tokens": 2}}\n\n',
+        b'event: message_stop\ndata: {"type": "message_stop"}\n\n',
+    ]
+
+    async def mock_aiter_bytes():
+        for chunk in chunks:
+            yield chunk
+
+    mock_response.aiter_bytes = mock_aiter_bytes
+
+    with patch("backend.services.speed_test.httpx.AsyncClient") as MockClient:
+        instance = MagicMock()
+        mock_stream_ctx = MagicMock()
+        mock_stream_ctx.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_stream_ctx.__aexit__ = AsyncMock(return_value=False)
+        instance.stream.return_value = mock_stream_ctx
+        MockClient.return_value.__aenter__ = AsyncMock(return_value=instance)
+        MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        result = await tester.test_anthropic(
+            api_base="https://api.anthropic.com",
+            api_key="sk-ant-test",
+            model="claude-3-opus",
+            prompt="Say hi",
+            max_tokens=10,
+        )
+
+        assert result.error is None
+        assert result.total_tokens == 2
+        assert result.input_tokens == 10
+        assert result.cache_read == 5
+        assert result.char_count == 11
+        assert result.ttft_ms is not None
+        assert result.token_density is not None
 
 
 @pytest.mark.asyncio
