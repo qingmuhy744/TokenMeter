@@ -9,14 +9,8 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
-    outputs:
-      short_sha: ${{ steps.sha.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set short sha
-        id: sha
-        run: echo "sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v4
@@ -70,21 +64,23 @@ jobs:
         id: branch
         run: echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
 
-      - name: Generate tags file
+      - name: Generate docker tags
+        id: tags
         run: |
           DATE=$(date +%Y%m%d)
+          SHA=${GITHUB_SHA:0:7}
           IMAGE=ghcr.io/${GITHUB_REPOSITORY@L}
-          SHA=${{ needs.lint-and-test.outputs.short_sha }}
-          echo "$IMAGE:${DATE}-${SHA}" > tags.txt
+          TAG="${IMAGE}:${DATE}-${SHA}"
           if [ "${{ steps.branch.outputs.branch }}" = "main" ]; then
-            echo "$IMAGE:latest" >> tags.txt
+            TAG="${TAG},${IMAGE}:latest"
           elif [ "${{ steps.branch.outputs.branch }}" = "dev" ]; then
-            echo "$IMAGE:dev" >> tags.txt
+            TAG="${TAG},${IMAGE}:dev"
           fi
+          echo "tags=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags-from-file: tags.txt
+          tags: ${{ steps.tags.outputs.tags }}
