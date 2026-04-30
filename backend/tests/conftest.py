@@ -32,7 +32,9 @@ async def db_engine():
     import os
 
     # Default to SQLite memory for local speed, allow override for CI/matrix
-    db_url = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+    db_url = os.getenv("TEST_DATABASE_URL")
+    if not db_url:
+        db_url = "sqlite+aiosqlite:///:memory:"
 
     # Handle PostgreSQL URL conversion if needed (sqlalchemy requires +asyncpg)
     if db_url.startswith("postgresql://"):

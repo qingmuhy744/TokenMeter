@@ -30,7 +30,15 @@ async def test_sqlite_to_pg_migration_integrity(db_engine):
     with SqliteSession() as s:
         s.add(User(username="testuser", password_hash="hash"))
         s.add(Setting(key="test_key", value="test_value"))
-        s.add(TokenPlan(name="Plan 1", api_url="http://test", api_key="key", model="m"))
+        s.add(
+            TokenPlan(
+                name="Plan 1",
+                api_type="openai",
+                api_base="http://test",
+                api_key="key",
+                model="m",
+            )
+        )
         s.commit()
 
     # 2. Run the migration
