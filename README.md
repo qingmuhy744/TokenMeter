@@ -37,7 +37,8 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 
 | 层 | 技术 |
 |---|---|
-| 后端 | Python 3.12, FastAPI, SQLAlchemy, aiosqlite, APScheduler |
+| 后端 | Python 3.12, FastAPI, SQLAlchemy, aiosqlite, **psycopg3/asyncpg**, APScheduler |
+| 数据库 | SQLite (默认), PostgreSQL (可选, 支持自动热迁移) |
 | 前端 | React 19, TypeScript, TailwindCSS, shadcn/ui, Recharts |
 | 包管理 | uv (Python), npm (Node) |
 | 部署 | Docker, docker-compose |
@@ -218,6 +219,26 @@ TokenMeter/
 ├── docker-compose.yml
 ├── Makefile
 └── .github/workflows/ci.yml # GitHub Actions
+```
+
+## 测速原理
+
+每个 Plan 配置 `test_count` 次测试，取中位数结果:
+
+1. **TTFT** — 从请求发出到收到第一个 SSE chunk 的时间
+2. **TPS (overall)** — 总 Token 数 / 总耗时 (含 TTFT)
+3. **TPS (generate)** — 总 Token 数 / (总耗时 - TTFT)
+
+使用 `time.monotonic()` 高精度计时，SSE 流式解析逐 chunk 统计 Token 数。
+
+## GitHub Actions CI
+
+推送到 `main` 或创建 PR 时自动运行:
+
+1. Python lint (`ruff`) + 测试 (`pytest`)
+2. 前端类型检查 (`tsc`) + 构建 (`vite build`)
+3. Docker 构建并推送到 GHCR (仅 main 分支 push)
+Hub Actions
 ```
 
 ## 测速原理
