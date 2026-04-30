@@ -49,6 +49,7 @@ async def seed_data():
                 plan_id=plan1.id,
                 ttft_ms=100 + i * 5,
                 tps_overall=50 + i * 0.5,
+                tps_generate=60 + i * 0.8,  # higher than overall due to think time
                 total_tokens=100 + i * 10,
                 total_time_ms=2000,
                 created_at=now - timedelta(minutes=offset),
@@ -62,6 +63,7 @@ async def seed_data():
                 plan_id=plan2.id,
                 ttft_ms=150 + i * 8,
                 tps_overall=40 + i * 0.8,
+                tps_generate=48 + i * 1.0,  # higher than overall due to think time
                 total_tokens=90 + i * 8,
                 total_time_ms=2250,
                 created_at=now
