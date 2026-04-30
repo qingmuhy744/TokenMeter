@@ -134,7 +134,12 @@ async def run_migrations(db):
         # Double check if PG is empty by checking if there are any users
         try:
             result = await db.execute(select(User))
-            if result.first() is None:
+            is_empty = result.first() is None
+
+            # CRITICAL: Close the transaction and release locks before sync migration
+            await db.rollback()
+
+            if is_empty:
                 logger.info(
                     "PostgreSQL detected and empty, and SQLite file exists. Triggering migration."
                 )
