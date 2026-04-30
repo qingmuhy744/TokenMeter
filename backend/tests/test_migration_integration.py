@@ -1,8 +1,10 @@
 import pytest
 import os
+import tempfile
+from unittest.mock import patch
 from sqlalchemy import create_engine, select
 from backend.models import User, Setting, TokenPlan, TestResult
-from backend.migrations.manager import migrate_sqlite_to_pg
+from backend.migrations.manager import migrate_sqlite_to_pg, run_migrations
 from backend.database import Base, async_sessionmaker, AsyncSession
 
 
@@ -74,6 +76,83 @@ async def test_sqlite_to_pg_migration_integrity(db_engine):
     # Cleanup
     if os.path.exists(sqlite_path):
         os.remove(sqlite_path)
+
+
+@pytest.mark.asyncio
+async def test_run_migrations_sqlite_to_pg_e2e(db_engine):
+    """End-to-end test: async session checks PG -> rollback -> sync migration.
+    This simulates the real init_db() startup flow that previously caused deadlocks."""
+    db_url = os.getenv("TEST_DATABASE_URL", "")
+    if "postgresql" not in db_url:
+        pytest.skip(
+            "This test requires a real PostgreSQL database in TEST_DATABASE_URL"
+        )
+
+    # 1. Create a temporary SQLite database with data
+    sqlite_fd, sqlite_path = tempfile.mkstemp(suffix=".db")
+    os.close(sqlite_fd)
+
+    sync_sqlite_engine = create_engine(f"sqlite:///{sqlite_path}")
+    Base.metadata.create_all(sync_sqlite_engine)
+
+    from sqlalchemy.orm import sessionmaker as sync_sessionmaker
+
+    SqliteSession = sync_sessionmaker(sync_sqlite_engine)
+    with SqliteSession() as s:
+        s.add(User(username="e2euser", password_hash="e2ehash"))
+        s.add(Setting(key="e2e_key", value="e2e_value"))
+        s.add(
+            TokenPlan(
+                name="E2E Plan",
+                api_type="openai",
+                api_base="http://e2e",
+                api_key="e2ekey",
+                model="e2emodel",
+            )
+        )
+        s.commit()
+
+    # 2. Patch settings so run_migrations sees PG URL + SQLite file path
+    async_session_factory = async_sessionmaker(db_engine, class_=AsyncSession)
+
+    from backend.config import Settings
+
+    patched_settings = Settings()
+    patched_settings.DATABASE_URL = (
+        db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if db_url.startswith("postgresql://")
+        else db_url
+    )
+    patched_settings.DB_PATH = sqlite_path
+
+    with patch("backend.migrations.manager.settings", patched_settings):
+        async with async_session_factory() as db:
+            # This is the exact path init_db() takes:
+            # async session -> check if PG empty -> rollback -> sync migrate
+            await run_migrations(db)
+
+    # 3. Verify data was migrated to PG
+    async with async_session_factory() as session:
+        res = await session.execute(select(User).where(User.username == "e2euser"))
+        user = res.scalar_one()
+        assert user.password_hash == "e2ehash"
+
+        res = await session.execute(select(Setting).where(Setting.key == "e2e_key"))
+        sett = res.scalar_one()
+        assert sett.value == "e2e_value"
+
+        res = await session.execute(
+            select(TokenPlan).where(TokenPlan.name == "E2E Plan")
+        )
+        plan = res.scalar_one()
+        assert plan.api_key == "e2ekey"
+
+    # 4. Verify SQLite file was cleaned up after migration
+    assert not os.path.exists(sqlite_path), (
+        "SQLite file should be removed after migration"
+    )
+
+    sync_sqlite_engine.dispose()
 
 
 @pytest.mark.asyncio
