@@ -3,6 +3,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request, Response
 from sqlalchemy import select, func
+from sqlalchemy.exc import SQLAlchemyError
 
 from backend.database import async_session
 from backend.models import TokenPlan, TestResult
@@ -83,22 +84,28 @@ async def import_plans(body: list[PlanCreate], request: Request):
     await get_current_user(request)
     imported_count = 0
     async with async_session() as db:
+        # Fetch all existing names to prevent N+1 queries
+        result = await db.execute(select(TokenPlan.name))
+        existing_names = set(result.scalars().all())
+
         for plan_data in body:
             name = plan_data.name
             # Collision handling: append " (Imported)" until unique
-            while True:
-                existing = await db.execute(
-                    select(TokenPlan).where(TokenPlan.name == name)
-                )
-                if not existing.scalar_one_or_none():
-                    break
+            while name in existing_names:
                 name = f"{name} (Imported)"
+
+            # Track names within the batch
+            existing_names.add(name)
 
             plan = TokenPlan(**plan_data.model_dump(exclude={"name"}), name=name)
             db.add(plan)
             imported_count += 1
 
-        await db.commit()
+        try:
+            await db.commit()
+        except SQLAlchemyError as e:
+            logger.error("Failed to commit imported plans: %s", str(e))
+            raise HTTPException(status_code=400, detail="Database error during import")
 
     await sync_scheduled_jobs()
     return {"message": f"Imported {imported_count} plans", "count": imported_count}
