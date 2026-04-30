@@ -3,7 +3,6 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
 
 from backend.database import async_session
 from backend.models import TokenPlan, TestResult
