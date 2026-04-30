@@ -1,9 +1,12 @@
 services:
   app:
-    build: .
+    # 默认使用预构建镜像。如果你想在本地修改代码并构建，请注释掉 image 并解开 build 封印。
+    image: ghcr.io/qingmuhy744/tokenmeter:latest
+    # build: .
     ports:
       - "8000:8000"
     depends_on:
+      # 如果你解开了下面 db 服务的封印，请解开这里的 db 并删掉下面的空数组 []
       # db:
       #   condition: service_healthy
       []
