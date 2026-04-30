@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 
 @pytest.fixture
-async def auth_client():
+async def auth_client(db_session):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Create a test user with known password
@@ -28,7 +28,7 @@ async def auth_client():
 
 
 @pytest.mark.asyncio
-async def test_create_and_list_plans(auth_client: AsyncClient):
+async def test_create_and_list_plans(db_session, auth_client: AsyncClient):
     resp = await auth_client.post(
         "/api/plans",
         json={
@@ -50,7 +50,7 @@ async def test_create_and_list_plans(auth_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_update_plan(auth_client: AsyncClient):
+async def test_update_plan(db_session, auth_client: AsyncClient):
     resp = await auth_client.post(
         "/api/plans",
         json={
@@ -69,7 +69,7 @@ async def test_update_plan(auth_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_delete_plan(auth_client: AsyncClient):
+async def test_delete_plan(db_session, auth_client: AsyncClient):
     resp = await auth_client.post(
         "/api/plans",
         json={
