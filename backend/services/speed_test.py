@@ -91,8 +91,9 @@ class OpenAIParser(BaseParser):
                 tracker.total_tokens = usage["total_tokens"]
 
         # Early finish_reason (don't exit yet — must wait for [DONE] or usage)
-        if data.get("choices", [{}])[0].get("finish_reason"):
-            self._finish_reason = data["choices"][0]["finish_reason"]
+        choices = data.get("choices", [])
+        if choices and choices[0].get("finish_reason"):
+            self._finish_reason = choices[0]["finish_reason"]
             if tracker.time_finished is None:
                 tracker.time_finished = now
 
@@ -126,7 +127,7 @@ class AnthropicParser(BaseParser):
             tracker.input_tokens = usage.get("input_tokens")
             tracker.cache_read = usage.get("cache_read_input_tokens")
 
-        elif data_type in ("content_block_delta", "message_delta"):
+        elif data_type == "content_block_delta":
             delta = data.get("delta", {})
             text = delta.get("text", "")
             thinking = delta.get("thinking", "")

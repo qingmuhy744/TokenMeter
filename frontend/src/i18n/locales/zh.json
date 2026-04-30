@@ -52,7 +52,9 @@
     "total": "总计",
     "prev": "上一页",
     "next": "下一页",
-    "page": "页"
+    "page": "页",
+    "delete": "删除",
+    "deleteConfirm": "确定删除这条测试记录吗？"
   },
   "settings": {
     "title": "设置",

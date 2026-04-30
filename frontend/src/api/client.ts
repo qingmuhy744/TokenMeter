@@ -108,6 +108,7 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request<PaginatedResults>(`/results?${qs}`);
   },
+  deleteResult: (id: number) => request(`/results/${id}`, { method: "DELETE" }),
   getStats: (planId: number, days: number = 7) =>
     request<Stats>(`/results/stats?plan_id=${planId}&days=${days}`),
 

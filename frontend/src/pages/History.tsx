@@ -22,6 +22,21 @@ export default function History() {
     api.getResults(params).then(setResults);
   }, [selectedPlan, page]);
 
+  const handleDelete = async (id: number) => {
+    if (!confirm(t("history.deleteConfirm"))) return;
+    try {
+      await api.deleteResult(id);
+      setResults(prev => ({
+        ...prev,
+        items: prev.items.filter(r => r.id !== id),
+        total: prev.total - 1
+      }));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      alert(message);
+    }
+  };
+
   const chartData = [...results.items]
     .filter((r) => !r.error && r.tps_overall)
     .reverse()
@@ -73,7 +88,17 @@ export default function History() {
       )}
       <Table>
         <TableHeader>
-          <TableRow><TableHead>{t("history.time")}</TableHead><TableHead>{t("history.plan")}</TableHead><TableHead>{t("history.ttftMs")}</TableHead><TableHead>{t("history.tpsOverall")}</TableHead><TableHead>{t("history.tpsGenerate")}</TableHead><TableHead>{t("history.tokens")}</TableHead><TableHead>{t("history.status")}</TableHead><TableHead>{t("history.note")}</TableHead></TableRow>
+          <TableRow>
+            <TableHead>{t("history.time")}</TableHead>
+            <TableHead>{t("history.plan")}</TableHead>
+            <TableHead>{t("history.ttftMs")}</TableHead>
+            <TableHead>{t("history.tpsOverall")}</TableHead>
+            <TableHead>{t("history.tpsGenerate")}</TableHead>
+            <TableHead>{t("history.tokens")}</TableHead>
+            <TableHead>{t("history.status")}</TableHead>
+            <TableHead>{t("history.note")}</TableHead>
+            <TableHead className="w-[80px] text-right"></TableHead>
+          </TableRow>
         </TableHeader>
         <TableBody>
           {results.items.map((r: TestResult) => (
@@ -86,6 +111,16 @@ export default function History() {
               <TableCell>{r.total_tokens}</TableCell>
               <TableCell>{r.error ? <span className="text-destructive text-sm">{t("common.error")}</span> : r.total_tokens === 0 ? <span className="text-yellow-600 text-sm">{t("common.warn")}</span> : <span className="text-green-600 text-sm">{t("common.ok")}</span>}</TableCell>
               <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground" title={r.note || r.debug_chunks || ""}>{r.note || ""}</TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => handleDelete(r.id)}
+                >
+                  {t("history.delete")}
+                </Button>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

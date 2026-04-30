@@ -43,3 +43,23 @@ async def test_stats_empty(auth_client: AsyncClient):
     resp = await auth_client.get("/api/results/stats", params={"plan_id": 999})
     assert resp.status_code == 200
     assert resp.json()["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_result(auth_client: AsyncClient, db_session):
+    from backend.models import TestResult
+    import datetime
+
+    # Create a dummy result
+    res = TestResult(plan_id=1, created_at=datetime.datetime.now())
+    db_session.add(res)
+    await db_session.commit()
+    res_id = res.id
+
+    resp = await auth_client.delete(f"/api/results/{res_id}")
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+
+    # Verify deleted
+    check = await db_session.execute(select(TestResult).where(TestResult.id == res_id))
+    assert check.scalar_one_or_none() is None

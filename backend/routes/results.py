@@ -115,3 +115,18 @@ async def get_stats(request: Request, plan_id: int, days: int = 7):
         median_tps_overall=median(tps_list),
         p95_ttft_ms=p95(ttfts),
     )
+
+
+@router.delete("/{result_id}")
+async def delete_result(request: Request, result_id: int):
+    await get_current_user(request)
+    async with async_session() as db:
+        result = await db.execute(select(TestResult).where(TestResult.id == result_id))
+        item = result.scalar_one_or_none()
+        if not item:
+            from fastapi import HTTPException
+
+            raise HTTPException(status_code=404, detail="Result not found")
+        await db.delete(item)
+        await db.commit()
+    return {"ok": True}
