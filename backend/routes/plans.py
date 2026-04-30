@@ -1,7 +1,7 @@
 import json
 import logging
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from sqlalchemy import select, func
 
 from backend.database import async_session
@@ -44,6 +44,37 @@ async def list_plans(request: Request):
             )
         )
     return response
+
+
+@router.get("/export")
+async def export_plans(request: Request):
+    await get_current_user(request)
+    async with async_session() as db:
+        result = await db.execute(select(TokenPlan).order_by(TokenPlan.id.asc()))
+        plans = result.scalars().all()
+
+    export_data = []
+    for plan in plans:
+        # Exclude sensitive/internal fields: id, api_key, dates, results
+        export_data.append(
+            {
+                "name": plan.name,
+                "api_type": plan.api_type,
+                "api_base": plan.api_base,
+                "model": plan.model,
+                "prompt": plan.prompt,
+                "max_tokens": plan.max_tokens,
+                "test_count": plan.test_count,
+                "interval_minutes": plan.interval_minutes,
+                "is_active": plan.is_active,
+            }
+        )
+
+    return Response(
+        content=json.dumps(export_data, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": "attachment; filename=tokenmeter-plans.json"},
+    )
 
 
 @router.post("")

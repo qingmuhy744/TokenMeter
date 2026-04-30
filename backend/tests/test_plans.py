@@ -87,3 +87,39 @@ async def test_delete_plan(db_session, auth_client: AsyncClient):
 
     resp = await auth_client.get(f"/api/plans/{plan_id}")
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_export_plans(db_session, auth_client: AsyncClient):
+    # Create a plan first
+    await auth_client.post(
+        "/api/plans",
+        json={
+            "name": "Export Test",
+            "api_type": "openai",
+            "api_base": "https://api.openai.com/v1",
+            "api_key": "sk-export-test",
+            "model": "gpt-4o",
+            "test_count": 5,
+        },
+    )
+
+    resp = await auth_client.get("/api/plans/export")
+    assert resp.status_code == 200
+    assert (
+        resp.headers["content-disposition"]
+        == "attachment; filename=tokenmeter-plans.json"
+    )
+
+    data = resp.json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+
+    # Check if fields are correct
+    plan = next(p for p in data if p["name"] == "Export Test")
+    assert plan["api_type"] == "openai"
+    assert plan["test_count"] == 5
+    assert "api_key" not in plan
+    assert "id" not in plan
+    assert "created_at" not in plan
+    assert "updated_at" not in plan
