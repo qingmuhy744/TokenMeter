@@ -79,7 +79,7 @@ def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
                 try:
                     dst.execute(
                         text(
-                            f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE(MAX(id), 1), false) FROM {table_name}"
+                            f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE(MAX(id), 1), true) FROM {table_name}"
                         )
                     )
                 except Exception as e:
