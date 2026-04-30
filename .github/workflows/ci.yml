@@ -69,11 +69,19 @@ jobs:
         id: branch
         run: echo "branch=${GITHUB_REF#refs/heads/}" >> "$GITHUB_OUTPUT"
 
+      - name: Set image tags
+        id: tags
+        run: |
+          TAGS="${{ steps.image.outputs.name }}:${{ steps.branch.outputs.branch }}"
+          TAGS="$TAGS ${{ steps.image.outputs.name }}:${{ steps.branch.outputs.branch }}-${{ github.sha }}"
+          if [ "${{ steps.branch.outputs.branch }}" = "main" ]; then
+            TAGS="$TAGS ${{ steps.image.outputs.name }}:latest"
+          fi
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: |
-            ${{ steps.image.outputs.name }}:${{ steps.branch.outputs.branch }}
-            ${{ steps.image.outputs.name }}:${{ steps.branch.outputs.branch }}-${{ github.sha }}
+          tags: ${{ steps.tags.outputs.tags }}
