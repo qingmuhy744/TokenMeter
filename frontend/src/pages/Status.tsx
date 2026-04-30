@@ -63,15 +63,22 @@ export default function Status() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
+    let active = true;
     fetchStatus(range)
-      .then(setData)
-      .finally(() => setLoading(false));
+      .then((res) => {
+        if (active) setData(res);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
   }, [range]);
 
   // Auto-refresh every 60s
   useEffect(() => {
-    const id = setInterval(() => fetchStatus(range).then(setData), 60000);
+    const id = setInterval(() => {
+      fetchStatus(range).then(setData);
+    }, 60000);
     return () => clearInterval(id);
   }, [range]);
 
@@ -115,7 +122,15 @@ export default function Status() {
         {/* Range selector */}
         <div className="flex gap-2">
           {RANGES.map((r) => (
-            <Button key={r.value} variant={range === r.value ? "default" : "outline"} size="sm" onClick={() => setRange(r.value)}>
+            <Button
+              key={r.value}
+              variant={range === r.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setRange(r.value);
+                setLoading(true);
+              }}
+            >
               {r.label}
             </Button>
           ))}

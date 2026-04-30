@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
+import type { Plan, PaginatedResults, TestResult } from "@/api/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,8 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } f
 
 export default function History() {
   const { t } = useTranslation();
-  const [plans, setPlans] = useState<any[]>([]);
-  const [results, setResults] = useState<any>({ items: [], total: 0 });
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [results, setResults] = useState<PaginatedResults>({ items: [], total: 0, page: 1, size: 20 });
   const [selectedPlan, setSelectedPlan] = useState<string>("all");
   const [page, setPage] = useState(1);
 
@@ -22,9 +23,9 @@ export default function History() {
   }, [selectedPlan, page]);
 
   const chartData = [...results.items]
-    .filter((r: any) => !r.error && r.tps_overall)
+    .filter((r) => !r.error && r.tps_overall)
     .reverse()
-    .map((r: any) => ({
+    .map((r) => ({
       time: new Date(r.created_at).toLocaleTimeString(),
       tps_overall: r.tps_overall ?? 0,
       tps_generate: r.tps_generate ?? 0,
@@ -75,7 +76,7 @@ export default function History() {
           <TableRow><TableHead>{t("history.time")}</TableHead><TableHead>{t("history.plan")}</TableHead><TableHead>{t("history.ttftMs")}</TableHead><TableHead>{t("history.tpsOverall")}</TableHead><TableHead>{t("history.tpsGenerate")}</TableHead><TableHead>{t("history.tokens")}</TableHead><TableHead>{t("history.status")}</TableHead><TableHead>{t("history.note")}</TableHead></TableRow>
         </TableHeader>
         <TableBody>
-          {results.items.map((r: any) => (
+          {results.items.map((r: TestResult) => (
             <TableRow key={r.id}>
               <TableCell>{new Date(r.created_at).toLocaleString()}</TableCell>
               <TableCell>{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
