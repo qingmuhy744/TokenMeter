@@ -239,20 +239,40 @@ async def run_migrations(db):
             if mtype == "sql":
                 for stmt in content.split(";"):
                     stmt = stmt.strip()
-                    if stmt:
+                    if not stmt:
+                        continue
+                    attempts = 0
+                    while attempts < 2:
+                        attempts += 1
                         try:
                             await db.execute(text(stmt))
+                            break
                         except Exception as e:
+                            # Rollback on PostgreSQL to clear the aborted transaction state.
+                            # Even if we handle the error, asyncpg requires rollback before
+                            # any subsequent commands in the same transaction.
                             if "postgresql" in settings.database_url:
-                                await db.rollback()
+                                try:
+                                    await db.rollback()
+                                except Exception:
+                                    pass
 
+                            err_str = str(e).lower()
                             if (
-                                "duplicate column" in str(e).lower()
-                                or "already exists" in str(e).lower()
+                                "duplicate column" in err_str
+                                or "already exists" in err_str
                             ):
                                 logger.warning(
                                     f"Column already exists in {version}, skipping: {stmt}"
                                 )
+                                break
+                            elif (
+                                "InFailedSQLTransactionError" in type(e).__name__
+                                and attempts == 1
+                            ):
+                                # Transaction was aborted by a prior error (e.g., invalid
+                                # SQL syntax). Rollback cleared the state — retry once.
+                                continue
                             else:
                                 raise e
             elif mtype == "func":
