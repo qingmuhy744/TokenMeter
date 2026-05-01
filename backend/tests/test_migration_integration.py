@@ -155,7 +155,7 @@ async def test_run_migrations_sqlite_to_pg_e2e(db_engine):
     async with async_session_factory() as session:
         res = await session.execute(select(Setting).where(Setting.key == "db_version"))
         version_setting = res.scalar_one()
-        assert version_setting.value == "0.2.0"
+        assert version_setting.value == "0.2.1"
 
     # 5. Verify SQLite file was cleaned up after migration
     assert not os.path.exists(sqlite_path), (
@@ -203,7 +203,7 @@ async def test_password_rehash_migration(db_engine):
 
         # Verify version is now 0.2.0
         res = await session.execute(select(Setting).where(Setting.key == "db_version"))
-        assert res.scalar_one().value == "0.2.0"
+        assert res.scalar_one().value == "0.2.1"
 
 
 @pytest.mark.asyncio

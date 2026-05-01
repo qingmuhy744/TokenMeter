@@ -124,6 +124,16 @@ class TestResultResponse(BaseModel):
     cache_read: int | None = None
     char_count: int | None = None
     token_density: float | None = None
+    ttfb_ms: float | None = None
+    ttfr_ms: float | None = None
+    think_time_ms: float | None = None
+    content_tokens: int | None = None
+    thinking_tokens: int | None = None
+    tps_content: float | None = None
+    content_char_count: int | None = None
+    thinking_char_count: int | None = None
+    ping_ms: float | None = None
+    ping_samples: str | None = None  # JSON array as string
     error: str | None
     note: str | None = None
     debug_chunks: str | None = None

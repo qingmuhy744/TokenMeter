@@ -15,6 +15,15 @@ interface StatusData {
       ttft_ms: number | null;
       tps_overall: number | null;
       tps_generate: number | null;
+      tps_content: number | null;
+      ttfb_ms: number | null;
+      ttfr_ms: number | null;
+      think_time_ms: number | null;
+      thinking_tokens: number | null;
+      content_tokens: number | null;
+      content_char_count: number | null;
+      thinking_char_count: number | null;
+      ping_ms: number | null;
       error: string | null;
       is_unavailable: boolean;
       created_at: string;
@@ -166,6 +175,46 @@ export default function Status() {
                         <p className="text-lg font-semibold">{plan.latest_result.tps_generate ?? "—"}</p>
                       </div>
                     </div>
+                    {(plan.latest_result.ttfr_ms != null || plan.latest_result.ping_ms != null) && (
+                      <div className="grid grid-cols-3 gap-2 text-sm">
+                        {plan.latest_result.ttfb_ms != null && (
+                          <div>
+                            <p className="text-muted-foreground">TTFB</p>
+                            <p className="text-sm font-semibold">{plan.latest_result.ttfb_ms}ms</p>
+                          </div>
+                        )}
+                        {plan.latest_result.ttfr_ms != null && (
+                          <div>
+                            <p className="text-muted-foreground">TTFR</p>
+                            <p className="text-sm font-semibold">{plan.latest_result.ttfr_ms}ms</p>
+                          </div>
+                        )}
+                        {plan.latest_result.think_time_ms != null && (
+                          <div>
+                            <p className="text-muted-foreground">Think</p>
+                            <p className="text-sm font-semibold">{plan.latest_result.think_time_ms}ms</p>
+                          </div>
+                        )}
+                        {plan.latest_result.ping_ms != null && (
+                          <div>
+                            <p className="text-muted-foreground">Ping</p>
+                            <p className="text-sm font-semibold">{plan.latest_result.ping_ms}ms</p>
+                          </div>
+                        )}
+                        {plan.latest_result.tps_content != null && (
+                          <div>
+                            <p className="text-muted-foreground">TPS Content</p>
+                            <p className="text-sm font-semibold">{plan.latest_result.tps_content}</p>
+                          </div>
+                        )}
+                        {plan.latest_result.thinking_tokens != null && plan.latest_result.thinking_tokens > 0 && (
+                          <div>
+                            <p className="text-muted-foreground">Think Tokens</p>
+                            <p className="text-sm font-semibold">{plan.latest_result.thinking_tokens}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Last test: {timeAgo(plan.latest_result.created_at)}
                     </p>

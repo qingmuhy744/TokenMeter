@@ -29,6 +29,22 @@ MIGRATIONS = [
         "func",
         "rehash_passwords_sha256",
     ),
+    (
+        "0.2.1",
+        "sql",
+        textwrap.dedent("""
+        ALTER TABLE test_results ADD COLUMN ttfb_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN ttfr_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN think_time_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN content_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN thinking_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN tps_content FLOAT;
+        ALTER TABLE test_results ADD COLUMN content_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN thinking_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN ping_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN ping_samples TEXT;
+    """).strip(),
+    ),
 ]
 
 

@@ -32,6 +32,16 @@ export interface TestResult {
   cache_read?: number | null;
   char_count?: number | null;
   token_density?: number | null;
+  ttfb_ms?: number | null;
+  ttfr_ms?: number | null;
+  think_time_ms?: number | null;
+  content_tokens?: number | null;
+  thinking_tokens?: number | null;
+  tps_content?: number | null;
+  content_char_count?: number | null;
+  thinking_char_count?: number | null;
+  ping_ms?: number | null;
+  ping_samples?: string | null;
   error: string | null;
   note: string | null;
   debug_chunks: string | null;
