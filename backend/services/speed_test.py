@@ -13,9 +13,14 @@ class RequestTracker:
     """Tracks timing and token state for a single streaming request."""
 
     time_sent: float
+    time_first_byte: float | None = None
     time_first_token: float | None = None
+    time_first_reasoning: float | None = None
+    time_think_end: float | None = None
     time_finished: float | None = None
     char_count: int = 0
+    content_char_count: int = 0
+    thinking_char_count: int = 0
     delta_count: int = 0
     input_tokens: int | None = None
     output_tokens: int | None = None
