@@ -50,6 +50,7 @@ class OpenAIParser(BaseParser):
     def __init__(self):
         self._seen_done = False
         self._finish_reason: str | None = None
+        self._is_thinking = False
 
     def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
         if line == "data: [DONE]":
@@ -68,26 +69,93 @@ class OpenAIParser(BaseParser):
         char_delta = 0
         if choices:
             delta = choices[0].get("delta", {})
-            # Handle standard content and reasoning_content (DeepSeek/GLM style)
             content = delta.get("content", "")
             reasoning = delta.get("reasoning_content", "")
-            full_text = content + reasoning
 
-            if full_text:
-                if tracker.time_first_token is None:
-                    tracker.time_first_token = now
-                tracker.char_count += len(full_text)
+            # reasoning_content field → thinking content
+            if reasoning:
+                if tracker.time_first_reasoning is None:
+                    tracker.time_first_reasoning = now
+                self._is_thinking = True
+                tracker.thinking_char_count += len(reasoning)
+                tracker.char_count += len(reasoning)
                 tracker.delta_count += 1
-                char_delta = len(full_text)
+                char_delta += len(reasoning)
 
-            # Early finish_reason (don't exit yet — must wait for [DONE] or usage)
+            if content:
+                if self._is_thinking:
+                    # Currently in thinking state
+                    if "</think>" in content:
+                        idx = content.index("</think>")
+                        before = content[:idx]
+                        after = content[idx + len("</think>") :]
+
+                        if before:
+                            tracker.thinking_char_count += len(before)
+                            tracker.char_count += len(before)
+                            char_delta += len(before)
+
+                        tracker.time_think_end = now
+                        self._is_thinking = False
+
+                        # After tag: skip pure whitespace, count real content
+                        if after.strip():
+                            if tracker.time_first_token is None:
+                                tracker.time_first_token = now
+                            tracker.content_char_count += len(after)
+                            tracker.char_count += len(after)
+                            tracker.delta_count += 1
+                            char_delta += len(after)
+                    else:
+                        # Still thinking — content is thinking text
+                        tracker.thinking_char_count += len(content)
+                        tracker.char_count += len(content)
+                        tracker.delta_count += 1
+                        char_delta += len(content)
+                else:
+                    # Not in thinking state
+                    if "<think>" in content:
+                        idx = content.index("<think>")
+                        before = content[:idx]
+                        after = content[idx + len("<think>") :]
+
+                        if before:
+                            if tracker.time_first_token is None:
+                                tracker.time_first_token = now
+                            tracker.content_char_count += len(before)
+                            tracker.char_count += len(before)
+                            tracker.delta_count += 1
+                            char_delta += len(before)
+
+                        if tracker.time_first_reasoning is None:
+                            tracker.time_first_reasoning = now
+                        self._is_thinking = True
+
+                        if after:
+                            tracker.thinking_char_count += len(after)
+                            tracker.char_count += len(after)
+                            tracker.delta_count += 1
+                            char_delta += len(after)
+                    else:
+                        # Pure whitespace right after think_end → skip for TTFT
+                        if tracker.time_think_end is not None and not content.strip():
+                            tracker.char_count += len(content)
+                            char_delta += len(content)
+                        else:
+                            if tracker.time_first_token is None:
+                                tracker.time_first_token = now
+                            tracker.content_char_count += len(content)
+                            tracker.char_count += len(content)
+                            tracker.delta_count += 1
+                            char_delta += len(content)
+
+            # Early finish_reason
             if choices[0].get("finish_reason"):
                 self._finish_reason = choices[0]["finish_reason"]
                 if tracker.time_finished is None:
                     tracker.time_finished = now
 
-        # Capture usage (authoritative for token counts)
-        # Check this even if there's no choices (some providers send usage in a separate final chunk)
+        # Capture usage
         usage = data.get("usage", {})
         if usage:
             if usage.get("prompt_tokens"):
