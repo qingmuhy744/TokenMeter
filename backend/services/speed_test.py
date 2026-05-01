@@ -59,28 +59,30 @@ class OpenAIParser(BaseParser):
         except json.JSONDecodeError:
             return 0
 
-        # T1: first non-empty delta.content
-        if tracker.time_first_token is None:
-            choices = data.get("choices", [])
-            if choices:
-                delta = choices[0].get("delta", {})
-                content = delta.get("content", "")
-                if content:
-                    tracker.time_first_token = now
-                    tracker.char_count += len(content)
-                    tracker.delta_count += 1
-                    return len(content)
-
-        # Track content even after first token
         choices = data.get("choices", [])
+        char_delta = 0
         if choices:
             delta = choices[0].get("delta", {})
+            # Handle standard content and reasoning_content (DeepSeek/GLM style)
             content = delta.get("content", "")
-            if content:
-                tracker.char_count += len(content)
+            reasoning = delta.get("reasoning_content", "")
+            full_text = content + reasoning
+
+            if full_text:
+                if tracker.time_first_token is None:
+                    tracker.time_first_token = now
+                tracker.char_count += len(full_text)
                 tracker.delta_count += 1
+                char_delta = len(full_text)
+
+            # Early finish_reason (don't exit yet — must wait for [DONE] or usage)
+            if choices[0].get("finish_reason"):
+                self._finish_reason = choices[0]["finish_reason"]
+                if tracker.time_finished is None:
+                    tracker.time_finished = now
 
         # Capture usage (authoritative for token counts)
+        # Check this even if there's no choices (some providers send usage in a separate final chunk)
         usage = data.get("usage", {})
         if usage:
             if usage.get("prompt_tokens"):
@@ -90,14 +92,7 @@ class OpenAIParser(BaseParser):
             if usage.get("total_tokens"):
                 tracker.total_tokens = usage["total_tokens"]
 
-        # Early finish_reason (don't exit yet — must wait for [DONE] or usage)
-        choices = data.get("choices", [])
-        if choices and choices[0].get("finish_reason"):
-            self._finish_reason = choices[0]["finish_reason"]
-            if tracker.time_finished is None:
-                tracker.time_finished = now
-
-        return 0
+        return char_delta
 
     def is_done(self, tracker: RequestTracker) -> bool:
         return self._seen_done
