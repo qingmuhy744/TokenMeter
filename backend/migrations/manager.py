@@ -33,16 +33,16 @@ MIGRATIONS = [
         "0.2.1",
         "sql",
         textwrap.dedent("""
-        ALTER TABLE test_results ADD COLUMN ttfb_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN ttfr_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN think_time_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN content_tokens INTEGER;
-        ALTER TABLE test_results ADD COLUMN thinking_tokens INTEGER;
-        ALTER TABLE test_results ADD COLUMN tps_content FLOAT;
-        ALTER TABLE test_results ADD COLUMN content_char_count INTEGER;
-        ALTER TABLE test_results ADD COLUMN thinking_char_count INTEGER;
-        ALTER TABLE test_results ADD COLUMN ping_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN ping_samples TEXT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ttfb_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ttfr_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS think_time_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS content_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS thinking_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS tps_content FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS content_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS thinking_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_samples TEXT;
     """).strip(),
     ),
 ]
@@ -241,40 +241,30 @@ async def run_migrations(db):
                     stmt = stmt.strip()
                     if not stmt:
                         continue
-                    attempts = 0
-                    while attempts < 2:
-                        attempts += 1
-                        try:
-                            await db.execute(text(stmt))
-                            break
-                        except Exception as e:
-                            # Rollback on PostgreSQL to clear the aborted transaction state.
-                            # Even if we handle the error, asyncpg requires rollback before
-                            # any subsequent commands in the same transaction.
-                            if "postgresql" in settings.database_url:
-                                try:
-                                    await db.rollback()
-                                except Exception:
-                                    pass
+                    try:
+                        await db.execute(text(stmt))
+                    except Exception as e:
+                        # Rollback on PostgreSQL to clear any aborted transaction state.
+                        if "postgresql" in settings.database_url:
+                            try:
+                                await db.rollback()
+                            except Exception:
+                                pass
 
-                            err_str = str(e).lower()
-                            if (
-                                "duplicate column" in err_str
-                                or "already exists" in err_str
-                            ):
-                                logger.warning(
-                                    f"Column already exists in {version}, skipping: {stmt}"
-                                )
-                                break
-                            elif (
-                                "InFailedSQLTransactionError" in type(e).__name__
-                                and attempts == 1
-                            ):
-                                # Transaction was aborted by a prior error (e.g., invalid
-                                # SQL syntax). Rollback cleared the state — retry once.
-                                continue
-                            else:
-                                raise e
+                        err_str = str(e).lower()
+                        if "duplicate column" in err_str or "already exists" in err_str:
+                            logger.warning(
+                                f"Column already exists in {version}, skipping: {stmt}"
+                            )
+                        elif "InFailedSQLTransactionError" in type(e).__name__:
+                            # Transaction was aborted. Rollback above cleared the state —
+                            # retry once so the statement runs in a fresh transaction.
+                            try:
+                                await db.execute(text(stmt))
+                            except Exception as retry_e:
+                                raise retry_e from None
+                        else:
+                            raise
             elif mtype == "func":
                 migration_func = globals().get(content)
                 if migration_func:
