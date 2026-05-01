@@ -181,7 +181,7 @@ class OpenAIParser(BaseParser):
                         if tracker.time_think_end is not None and not content.strip():
                             tracker.char_count += len(content)
                             char_delta += len(content)
-                        else:
+                        elif content.strip():
                             self._in_content = True
                             if tracker.time_first_token is None:
                                 tracker.time_first_token = now
@@ -215,8 +215,12 @@ class AnthropicParser(BaseParser):
 
     def __init__(self):
         self._is_thinking = False
+        self._current_event: str = ""
 
     def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
+        if line.startswith("event: "):
+            self._current_event = line[7:].strip()
+            return 0
         if not line.startswith("data: "):
             return 0
         try:
@@ -259,6 +263,11 @@ class AnthropicParser(BaseParser):
                 tracker.content_char_count += len(text)
                 tracker.char_count += len(text)
                 tracker.delta_count += 1
+
+        elif data_type == "content_block_stop":
+            if self._is_thinking:
+                tracker.time_think_end = now
+                self._is_thinking = False
 
         elif data_type == "message_delta":
             usage = data.get("usage", {})
