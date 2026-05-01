@@ -33,16 +33,16 @@ MIGRATIONS = [
         "0.2.1",
         "sql",
         textwrap.dedent("""
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ttfb_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ttfr_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS think_time_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS content_tokens INTEGER;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS thinking_tokens INTEGER;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS tps_content FLOAT;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS content_char_count INTEGER;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS thinking_char_count INTEGER;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_samples TEXT;
+        ALTER TABLE test_results ADD COLUMN ttfb_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN ttfr_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN think_time_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN content_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN thinking_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN tps_content FLOAT;
+        ALTER TABLE test_results ADD COLUMN content_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN thinking_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN ping_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN ping_samples TEXT;
     """).strip(),
     ),
 ]
@@ -223,15 +223,34 @@ async def run_migrations(db):
 
     # Special case: If this is a fresh install (version 0.0.0) AND no SQLite migration was performed,
     # it means Base.metadata.create_all already created the latest schema.
-    # We should just mark it as the latest version.
+    # We should only mark it as the latest version if there is truly no data.
     if current == "0.0.0" and not migration_performed:
-        # Check if we have any data/tables. If we have tables but version is 0.0.0,
+        # Check if we have any data. If we have tables but version is 0.0.0,
         # it's either a fresh install or a legacy DB without versioning.
-        # For this project, we assume fresh install if version is 0.0.0.
-        logger.info(f"Fresh installation detected, setting version to {latest_version}")
-        await set_current_version(db, latest_version)
-        await db.commit()
-        return
+        try:
+            has_data = False
+            for model in [User, TokenPlan, TestResult, Setting]:
+                res = await db.execute(select(model).limit(1))
+                if res.first():
+                    has_data = True
+                    break
+
+            if not has_data:
+                logger.info(
+                    f"Fresh installation detected, setting version to {latest_version}"
+                )
+                await set_current_version(db, latest_version)
+                await db.commit()
+                return
+            else:
+                logger.info(
+                    "Legacy database detected (v0.0.0 with data). Running migrations..."
+                )
+        except Exception as e:
+            # If check fails, play it safe and run migrations
+            logger.warning(f"Data check failed, proceeding with migrations: {e}")
+            if "postgresql" in settings.database_url:
+                await db.rollback()
 
     for version, mtype, content in MIGRATIONS:
         if version > current:

@@ -240,3 +240,61 @@ async def test_migration_transaction_idempotency(db_engine):
 
         latest = MIGRATIONS[-1][0]
         assert s.value == latest
+
+
+@pytest.mark.asyncio
+async def test_migration_not_skipped_when_data_exists(db_session):
+    """Verify that migration is NOT skipped if tables have data, even if version is 0.0.0."""
+    from backend.migrations.manager import MIGRATIONS
+
+    # 1. Setup: version 0.0.0 but has a User
+    # Password is in old format (from before v0.2.0)
+    db_session.add(User(username="olduser", password_hash="oldhash"))
+    # Explicitly set version to 0.0.0
+    res = await db_session.execute(select(Setting).where(Setting.key == "db_version"))
+    s = res.scalar_one_or_none()
+    if s:
+        s.value = "0.0.0"
+    else:
+        db_session.add(Setting(key="db_version", value="0.0.0"))
+    await db_session.commit()
+
+    # 2. Run migrations
+    # It should detect data (User exists) and run migrations instead of taking the shortcut.
+    await run_migrations(db_session)
+
+    # 3. Verify password was rehashed by the 0.2.0 migration
+    res = await db_session.execute(select(User).where(User.username == "olduser"))
+    user = res.scalar_one()
+    assert user.password_hash != "oldhash", (
+        "Migration should have rehashed the password"
+    )
+    assert user.password_hash.startswith("$2b$"), "Should be a bcrypt hash"
+
+    # 4. Verify version was updated to latest
+    res = await db_session.execute(select(Setting).where(Setting.key == "db_version"))
+    version = res.scalar_one().value
+    assert version == MIGRATIONS[-1][0]
+
+
+@pytest.mark.asyncio
+async def test_migration_skipped_on_fresh_install(db_session):
+    """Verify that migration IS skipped (shortcut taken) on a truly empty DB."""
+    from backend.migrations.manager import MIGRATIONS
+    from sqlalchemy import text
+
+    # 1. Setup: Clear all tables
+    await db_session.execute(text("DELETE FROM users"))
+    await db_session.execute(text("DELETE FROM token_plans"))
+    await db_session.execute(text("DELETE FROM test_results"))
+    await db_session.execute(text("DELETE FROM settings"))
+    await db_session.commit()
+
+    # 2. Run migrations
+    # It should detect NO data and take the shortcut.
+    await run_migrations(db_session)
+
+    # 3. Verify version was set to latest
+    res = await db_session.execute(select(Setting).where(Setting.key == "db_version"))
+    version = res.scalar_one().value
+    assert version == MIGRATIONS[-1][0]
