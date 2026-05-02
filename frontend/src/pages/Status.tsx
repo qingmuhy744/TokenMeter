@@ -52,6 +52,8 @@ const RANGES = [
   { value: "30d", label: "30d" },
 ];
 
+type ComparisonMetric = 'tps_overall' | 'tps_generate' | 'ttft_ms';
+
 function fetchStatus(range: string): Promise<StatusData> {
   return fetch(`/api/public/status?range=${range}`).then((r) => r.json());
 }
@@ -75,6 +77,7 @@ export default function Status() {
   const [range, setRange] = useState("24h");
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [metric, setMetric] = useState<ComparisonMetric>('tps_overall');
 
   // Derived plans for the trend chart based on user selection
   const trendPlans = useMemo(() => {
@@ -86,7 +89,6 @@ export default function Status() {
   const mergedTrendData = useMemo(() => {
     if (trendPlans.length === 0) return [];
     
-    // Create a map of timestamp -> values
     const timeMap: Record<string, Record<string, string | number | null>> = {};
     
     trendPlans.forEach(plan => {
@@ -94,13 +96,12 @@ export default function Status() {
         if (!timeMap[point.time]) {
           timeMap[point.time] = { time: point.time };
         }
-        // Use plan name as key to distinguish lines
-        timeMap[point.time][`tps_${plan.id}`] = point.tps_overall;
-        timeMap[point.time][`ttft_${plan.id}`] = point.ttft_ms;
+        timeMap[point.time][`tps_overall_${plan.id}`] = point.tps_overall;
+        timeMap[point.time][`tps_generate_${plan.id}`] = point.tps_generate;
+        timeMap[point.time][`ttft_ms_${plan.id}`] = point.ttft_ms;
       });
     });
     
-    // Convert back to array and sort by time
     return Object.values(timeMap).sort((a, b) => (a.time as string).localeCompare(b.time as string));
   }, [trendPlans]);
 
@@ -282,61 +283,72 @@ export default function Status() {
         {/* Trend chart */}
         <Card className="overflow-hidden border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
           <CardHeader className="bg-muted/30 border-b border-border/50 py-5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-xl font-bold tracking-tight">Comparison Trend — TPS</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">Select up to 5 models from status cards above to compare performance</p>
+                <CardTitle className="text-xl font-bold tracking-tight">Comparison Trend</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">Select up to 5 models to compare performance metrics</p>
               </div>
-              {selectedIds.length > 0 && (
-                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold px-3 py-1">
-                  {selectedIds.length} / 5 Models Selected
-                </Badge>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex bg-background border rounded-lg p-1">
+                  <Button 
+                    variant={metric === 'tps_overall' ? "default" : "ghost"} 
+                    size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
+                    onClick={() => setMetric('tps_overall')}
+                  >TPS Overall</Button>
+                  <Button 
+                    variant={metric === 'tps_generate' ? "default" : "ghost"} 
+                    size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
+                    onClick={() => setMetric('tps_generate')}
+                  >TPS Generate</Button>
+                  <Button 
+                    variant={metric === 'ttft_ms' ? "default" : "ghost"} 
+                    size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
+                    onClick={() => setMetric('ttft_ms')}
+                  >TTFT (ms)</Button>
+                </div>
+                {selectedIds.length > 0 && (
+                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold px-3 py-1">
+                    {selectedIds.length} / 5 Selected
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pt-8">
-            {mergedTrendData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={mergedTrendData}>
-                  <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fontSize: 11 }} minTickGap={30} />
-                  <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
-                  <Tooltip 
-                    labelFormatter={(label) => formatTime(String(label))}
-                    contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                  />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '30px' }} />
-                  {trendPlans.map((plan, i) => (
-                    <Line
-                      key={plan.id}
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey={`tps_${plan.id}`}
-                      stroke={`oklch(0.6 ${0.1 + (i % 5) * 0.03} ${20 + i * 40})`}
-                      strokeWidth={3}
-                      name={`${plan.name} (TPS)`}
-                      dot={false}
-                      activeDot={{ r: 6 }}
-                      connectNulls
+            {selectedIds.length > 0 ? (
+              mergedTrendData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={mergedTrendData}>
+                    <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fontSize: 11 }} minTickGap={30} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      labelFormatter={(label) => formatTime(String(label))}
+                      contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
                     />
-                  ))}
-                  {trendPlans.map((plan, i) => (
-                    <Line
-                      key={`${plan.id}-ttft`}
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey={`ttft_${plan.id}`}
-                      stroke={`oklch(0.6 ${0.1 + (i % 5) * 0.03} ${20 + i * 40})`}
-                      strokeWidth={1}
-                      strokeDasharray="4 4"
-                      name={`${plan.name} (TTFT)`}
-                      dot={false}
-                      connectNulls
-                      hide={true} // Hidden by default, user can click legend to show
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '30px' }} />
+                    {trendPlans.map((plan, i) => (
+                      <Line
+                        key={plan.id}
+                        type="monotone"
+                        dataKey={`${metric}_${plan.id}`}
+                        stroke={`oklch(0.6 ${0.1 + (i % 5) * 0.03} ${20 + i * 40})`}
+                        strokeWidth={3}
+                        name={plan.name}
+                        dot={false}
+                        activeDot={{ r: 6 }}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted/20 animate-in fade-in duration-700">
+                   <p className="text-muted-foreground font-bold text-lg">No data for selected models in this range</p>
+                   <p className="text-sm text-muted-foreground mt-2 max-w-[300px] text-center">
+                    Try switching the time window (24h/7d/30d) above.
+                  </p>
+                </div>
+              )
             ) : (
               <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted/20 animate-in fade-in duration-700">
                 <div className="bg-muted p-4 rounded-full mb-4">
