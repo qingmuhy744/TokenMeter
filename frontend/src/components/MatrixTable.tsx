@@ -43,10 +43,10 @@ function Sparkline({ data }: { data: (number | null)[] }) {
           d={pathData}
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-[oklch(0.6_0.2_250)] dark:text-[oklch(0.7_0.15_200)]"
+          className="text-primary/60"
         />
       </svg>
     </div>
@@ -385,7 +385,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     key={row.id} 
                     className={cn(
                       "group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer text-sm",
-                      isSelected && "bg-primary/[0.04]"
+                      isSelected ? "bg-primary/[0.04]" : "bg-background"
                     )}
                     onClick={() => {
                       const target = isPublicContext ? `/public/history?plan_id=${row.original.plan_id}` : `/history?plan_id=${row.original.plan_id}`;
@@ -397,8 +397,14 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                         key={cell.id} 
                         className={cn(
                           "px-4 py-3 align-middle transition-colors",
-                          index === 0 && "sticky left-0 bg-background/95 backdrop-blur-md z-20 group-hover:bg-muted/90 border-r border-border/50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
-                          index === 1 && "sticky left-[72px] bg-background/95 backdrop-blur-md z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90"
+                          index === 0 && cn(
+                            "sticky left-0 z-20 group-hover:bg-muted/90 border-r border-border/50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
+                            isSelected ? "bg-primary/[0.04]" : "bg-background/95 backdrop-blur-md"
+                          ),
+                          index === 1 && cn(
+                            "sticky left-[72px] z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90",
+                            isSelected ? "bg-primary/[0.04]" : "bg-background/95 backdrop-blur-md"
+                          )
                         )}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
