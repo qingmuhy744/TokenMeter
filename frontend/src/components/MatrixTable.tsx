@@ -93,7 +93,9 @@ export default function MatrixTable() {
     const tzOffset = -new Date().getTimezoneOffset();
     api.getMatrix(days, tzOffset, mode)
       .then(items => {
-        setData(items.filter(item => item.avg_ttft !== null || item.latest_status !== null));
+        // Filter out items with no results (suites that don't run tests themselves)
+        // Check for avg_ttft and ensure latest_status is not "none"
+        setData(items.filter(item => item.avg_ttft !== null && item.latest_status !== "none"));
       })
       .finally(() => setLoading(false));
   }, [days, mode]);
@@ -136,8 +138,9 @@ export default function MatrixTable() {
         <div 
           className="flex items-center justify-end cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.ttftDef")}
         >
-          Avg TTFT
+          <span className="border-b border-dashed border-muted-foreground/50">Avg TTFT</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -155,8 +158,9 @@ export default function MatrixTable() {
         <div 
           className="flex items-center justify-end cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.tpsOverallDef")}
         >
-          TPS (All)
+          <span className="border-b border-dashed border-muted-foreground/50">TPS (All)</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -174,8 +178,9 @@ export default function MatrixTable() {
         <div 
           className="flex items-center justify-end cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.tpsGenerateDef")}
         >
-          TPS (Gen)
+          <span className="border-b border-dashed border-muted-foreground/50">TPS (Gen)</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -193,8 +198,9 @@ export default function MatrixTable() {
         <div 
           className="flex items-center justify-end cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.ttftDef") + " (Day)"}
         >
-          Day
+          <span className="border-b border-dashed border-muted-foreground/50">Day</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -208,8 +214,9 @@ export default function MatrixTable() {
         <div 
           className="flex items-center justify-end cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.ttftDef") + " (Night)"}
         >
-          Night
+          <span className="border-b border-dashed border-muted-foreground/50">Night</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -223,8 +230,9 @@ export default function MatrixTable() {
         <div 
           className="flex items-center justify-end cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title="昼夜劣化率：(白天均值 - 夜间均值) / 夜间均值。数值越大代表白天拥堵越严重。"
         >
-          Degrad.
+          <span className="border-b border-dashed border-muted-foreground/50">Degrad.</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -245,8 +253,9 @@ export default function MatrixTable() {
         <div 
           className="flex items-center justify-end cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title="请求成功率：(成功请求数 / 总请求数)"
         >
-          Success
+          <span className="border-b border-dashed border-muted-foreground/50">Success</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
