@@ -136,13 +136,41 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
               <TableRow>
                 <TableHead className="whitespace-nowrap min-w-[160px]">{t("history.time")}</TableHead>
                 <TableHead className="whitespace-nowrap">{t("history.plan")}</TableHead>
-                <TableHead className="text-right whitespace-nowrap">{t("history.ttftMs")}</TableHead>
-                <TableHead className="text-right whitespace-nowrap">{t("history.ttfbMs")}</TableHead>
-                <TableHead className="text-right whitespace-nowrap">{t("history.ttfrMs")}</TableHead>
-                <TableHead className="text-right whitespace-nowrap">{t("history.thinkTimeMs")}</TableHead>
-                <TableHead className="text-right whitespace-nowrap font-bold text-primary">{t("history.tpsOverall")}</TableHead>
-                <TableHead className="text-right whitespace-nowrap">{t("history.tpsGenerate")}</TableHead>
-                <TableHead className="text-right whitespace-nowrap">{t("history.tpsContent")}</TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  <span title={t("history.ttftDef")} className="border-b border-dashed border-muted-foreground/50 cursor-help">
+                    {t("history.ttftMs")}
+                  </span>
+                </TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  <span title={t("history.ttfbDef")} className="border-b border-dashed border-muted-foreground/50 cursor-help">
+                    {t("history.ttfbMs")}
+                  </span>
+                </TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  <span title={t("history.ttfrDef")} className="border-b border-dashed border-muted-foreground/50 cursor-help">
+                    {t("history.ttfrMs")}
+                  </span>
+                </TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  <span title={t("history.thinkTimeDef")} className="border-b border-dashed border-muted-foreground/50 cursor-help">
+                    {t("history.thinkTimeMs")}
+                  </span>
+                </TableHead>
+                <TableHead className="text-right whitespace-nowrap font-bold text-primary">
+                  <span title={t("history.tpsOverallDef")} className="border-b border-dashed border-primary/50 cursor-help">
+                    {t("history.tpsOverall")}
+                  </span>
+                </TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  <span title={t("history.tpsGenerateDef")} className="border-b border-dashed border-muted-foreground/50 cursor-help">
+                    {t("history.tpsGenerate")}
+                  </span>
+                </TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  <span title={t("history.tpsContentDef")} className="border-b border-dashed border-muted-foreground/50 cursor-help">
+                    {t("history.tpsContent")}
+                  </span>
+                </TableHead>
                 <TableHead className="text-right whitespace-nowrap">{t("history.tokens")}</TableHead>
                 <TableHead className="text-right whitespace-nowrap text-xs text-muted-foreground">{t("history.thinkingTokens")}</TableHead>
                 <TableHead className="text-right whitespace-nowrap text-xs text-muted-foreground">{t("history.inputTokens")}</TableHead>
