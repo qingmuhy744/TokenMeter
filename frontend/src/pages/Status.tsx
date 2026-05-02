@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import MatrixTable from "@/components/MatrixTable";
 
 interface StatusData {
   plans: {
@@ -241,6 +242,9 @@ export default function Status() {
           ))}
         </div>
 
+        {/* Matrix Table */}
+        <MatrixTable />
+
         {/* Trend chart */}
         {data.plans.some((p) => p.trend.length > 1) && (
           <Card>
@@ -305,39 +309,6 @@ export default function Status() {
                   ))}
                 </LineChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Statistics table */}
-        {data.plans.some((p) => p.stats.count > 0) && (
-          <Card>
-            <CardHeader><CardTitle>Statistics</CardTitle></CardHeader>
-            <CardContent>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-2">Plan</th>
-                    <th className="pb-2">Avg TTFT</th>
-                    <th className="pb-2">Avg TPS</th>
-                    <th className="pb-2">Avg TPS Gen</th>
-                    <th className="pb-2">P95 TTFT</th>
-                    <th className="pb-2">Tests</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.plans.map((plan) => (
-                    <tr key={plan.id} className="border-b last:border-0">
-                      <td className="py-2 font-medium">{plan.name}</td>
-                      <td className="py-2">{plan.stats.avg_ttft_ms ? `${plan.stats.avg_ttft_ms}ms` : "—"}</td>
-                      <td className="py-2">{plan.stats.avg_tps_overall ?? "—"}</td>
-                      <td className="py-2">{plan.stats.avg_tps_generate ?? "—"}</td>
-                      <td className="py-2">{plan.stats.p95_ttft_ms ? `${plan.stats.p95_ttft_ms}ms` : "—"}</td>
-                      <td className="py-2">{plan.stats.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </CardContent>
           </Card>
         )}
