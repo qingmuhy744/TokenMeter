@@ -381,12 +381,13 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           </div>
           {loading && <div className="text-[10px] text-muted-foreground animate-pulse">Updating...</div>}
         </CardHeader>
-        <CardContent 
-          ref={scrollRef}
-          className="p-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent pb-4"
-        >
-          <Table>
-            <TableHeader className="bg-muted/50 sticky top-0 z-20">
+        <CardContent className="p-0 pb-4">
+          <div 
+            ref={scrollRef}
+            className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent"
+          >
+            <Table className="w-full min-w-[800px]">
+              <TableHeader className="bg-muted/50 sticky top-0 z-20">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border/50">
                   {headerGroup.headers.map((header, index) => (
@@ -440,6 +441,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
               })}
             </TableBody>
           </Table>
+        </div>
         </CardContent>
       </Card>
     </div>

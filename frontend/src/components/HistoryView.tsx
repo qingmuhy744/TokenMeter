@@ -209,9 +209,9 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       <Card className="shadow-md overflow-hidden">
         <div 
           ref={scrollRef}
-          className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent pb-4"
+          className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent pb-4"
         >
-          <Table>
+          <Table className="w-full min-w-[1000px]">
             <TableHeader className="bg-muted/50">
               <TableRow>
                 <TableHead className="whitespace-nowrap min-w-[160px]">{t("history.time")}</TableHead>
