@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,6 +71,14 @@ export default function Status() {
   const [data, setData] = useState<StatusData | null>(null);
   const [range, setRange] = useState("24h");
   const [loading, setLoading] = useState(true);
+
+  const trendPlans = useMemo(() => {
+    if (!data) return [];
+    // Only show top 10 models with most trend data to keep legend clean
+    return [...data.plans]
+      .sort((a, b) => b.trend.length - a.trend.length)
+      .slice(0, 10);
+  }, [data]);
 
   useEffect(() => {
     let active = true;
@@ -246,9 +254,14 @@ export default function Status() {
         <MatrixTable />
 
         {/* Trend chart */}
-        {data.plans.some((p) => p.trend.length > 1) && (
+        {trendPlans.some((p) => p.trend.length > 1) && (
           <Card>
-            <CardHeader><CardTitle>Trend — TPS</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Trend — TPS</span>
+                <span className="text-[10px] text-muted-foreground font-normal italic">Showing top {trendPlans.length} models</span>
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart>
@@ -256,8 +269,8 @@ export default function Status() {
                   <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
                   <Tooltip labelFormatter={(label) => formatTime(String(label))} />
-                  <Legend />
-                  {data.plans.map((plan, i) => (
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  {trendPlans.map((plan, i) => (
                     plan.trend.length > 1 && (
                       <Line
                         key={plan.id}
@@ -265,7 +278,7 @@ export default function Status() {
                         type="monotone"
                         data={plan.trend}
                         dataKey="tps_overall"
-                        stroke={`var(--color-chart-${(i % 3) + 1})`}
+                        stroke={`oklch(0.6 ${0.1 + (i % 5) * 0.03} ${20 + i * 40})`}
                         strokeWidth={2}
                         name={`${plan.name} TPS`}
                         dot={false}
@@ -273,7 +286,7 @@ export default function Status() {
                       />
                     )
                   ))}
-                  {data.plans.map((plan, i) => (
+                  {trendPlans.map((plan, i) => (
                     plan.trend.length > 1 && (
                       <Line
                         key={`${plan.id}-ttft`}
@@ -281,29 +294,13 @@ export default function Status() {
                         type="monotone"
                         data={plan.trend}
                         dataKey="ttft_ms"
-                        stroke={`var(--color-chart-${(i % 3) + 1})`}
-                        strokeWidth={2}
+                        stroke={`oklch(0.6 ${0.1 + (i % 5) * 0.03} ${20 + i * 40})`}
+                        strokeWidth={1}
                         strokeDasharray="5 5"
                         name={`${plan.name} TTFT`}
                         dot={false}
                         connectNulls
-                      />
-                    )
-                  ))}
-                  {data.plans.map((plan, i) => (
-                    plan.trend.length > 1 && (
-                      <Line
-                        key={`${plan.id}-tps-gen`}
-                        yAxisId="left"
-                        type="monotone"
-                        data={plan.trend}
-                        dataKey="tps_generate"
-                        stroke={`var(--color-chart-${(i % 3) + 1})`}
-                        strokeWidth={2}
-                        strokeDasharray="3 3"
-                        name={`${plan.name} TPS Gen`}
-                        dot={false}
-                        connectNulls
+                        hide={true} // Hide TTFT by default to avoid clutter
                       />
                     )
                   ))}

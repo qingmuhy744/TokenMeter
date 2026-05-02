@@ -132,8 +132,15 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request<PaginatedResults>(`/results?${qs}`);
   },
-  getMatrix: (days: number = 7, tzOffset: number = 0) =>
-    request<MatrixItem[]>(`/results/matrix?days=${days}&tz_offset=${tzOffset}`),
+  getPublicResults: (params: Record<string, string>) => {
+    const qs = new URLSearchParams(params).toString();
+    return request<PaginatedResults>(`/public/results?${qs}`);
+  },
+  getMatrix: (days: number = 7, tzOffset: number = 0, mode: string = "all") => {
+    const isPublic = window.location.pathname.startsWith('/status') || window.location.pathname.startsWith('/public');
+    const path = isPublic ? "/public/matrix" : "/results/matrix";
+    return request<MatrixItem[]>(`${path}?days=${days}&tz_offset=${tzOffset}&mode=${mode}`);
+  },
   deleteResult: (id: number) => request(`/results/${id}`, { method: "DELETE" }),
   getStats: (planId: number, days: number = 7) =>
     request<Stats>(`/results/stats?plan_id=${planId}&days=${days}`),

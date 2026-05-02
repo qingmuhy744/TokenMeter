@@ -3,10 +3,15 @@ from typing import Literal
 
 from fastapi import APIRouter, Query
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 
 from backend.database import async_session
 from backend.models import TokenPlan, TestResult, Setting
-from backend.schemas import TestResultResponse, PaginatedResponse
+from backend.schemas import (
+    PublicTestResultResponse,
+    PublicPaginatedResponse,
+    MatrixItem,
+)
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -283,7 +288,7 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
     }
 
 
-@router.get("/results", response_model=PaginatedResponse)
+@router.get("/results", response_model=PublicPaginatedResponse)
 async def public_results(
     plan_id: int,
     page: int = Query(1, ge=1),
@@ -309,13 +314,145 @@ async def public_results(
 
     items = []
     for test_result, plan_name in rows:
-        item = TestResultResponse.model_validate(test_result)
+        item = PublicTestResultResponse.model_validate(test_result)
         item.plan_name = plan_name
         items.append(item)
 
-    return PaginatedResponse(
+    return PublicPaginatedResponse(
         items=items,
         total=total,
         page=page,
         size=size,
     )
+
+
+@router.get("/matrix", response_model=list[MatrixItem])
+async def public_matrix(
+    days: int = Query(7, ge=1),
+    tz_offset: int = Query(0),
+    mode: str = Query("all"),
+):
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=days)
+    since_24h = now - timedelta(hours=24)
+
+    async with async_session() as db:
+        plans_result = await db.execute(
+            select(TokenPlan)
+            .options(selectinload(TokenPlan.parent))
+            .where(TokenPlan.is_active)
+        )
+        plans = plans_result.scalars().all()
+        plan_ids = [p.id for p in plans]
+
+        results_data = await db.execute(
+            select(TestResult)
+            .where(TestResult.plan_id.in_(plan_ids))
+            .where(TestResult.created_at >= since)
+            .order_by(TestResult.created_at.desc())
+        )
+        all_results = results_data.scalars().all()
+
+    plan_results = {p.id: [] for p in plans}
+    for r in all_results:
+        r.created_at = (
+            r.created_at.replace(tzinfo=timezone.utc)
+            if r.created_at.tzinfo is None
+            else r.created_at
+        )
+        plan_results[r.plan_id].append(r)
+
+    matrix = []
+    for plan in plans:
+        results = plan_results[plan.id]
+        latest_status = (
+            "error"
+            if results and results[0].error
+            else ("success" if results else "none")
+        )
+        sparkline = [
+            r.ttft_ms
+            for r in sorted(
+                [r for r in results if r.created_at >= since_24h],
+                key=lambda x: x.created_at,
+            )
+        ]
+
+        success_results = [r for r in results if not r.error]
+        day_results = [
+            r
+            for r in success_results
+            if 8 <= (r.created_at + timedelta(minutes=tz_offset)).hour < 20
+        ]
+        night_results = [
+            r
+            for r in success_results
+            if not (8 <= (r.created_at + timedelta(minutes=tz_offset)).hour < 20)
+        ]
+
+        stats_results = success_results
+        if mode == "day":
+            stats_results = day_results
+        elif mode == "night":
+            stats_results = night_results
+
+        avg_ttft = avg_tps_overall = avg_tps_generate = day_avg_ttft = (
+            night_avg_ttft
+        ) = degradation = success_rate = None
+
+        if results:
+            mode_total = results
+            if mode == "day":
+                mode_total = [
+                    r
+                    for r in results
+                    if 8 <= (r.created_at + timedelta(minutes=tz_offset)).hour < 20
+                ]
+            elif mode == "night":
+                mode_total = [
+                    r
+                    for r in results
+                    if not (
+                        8 <= (r.created_at + timedelta(minutes=tz_offset)).hour < 20
+                    )
+                ]
+            if mode_total:
+                success_rate = len(stats_results) / len(mode_total)
+
+        if stats_results:
+            ttfts = [r.ttft_ms for r in stats_results if r.ttft_ms]
+            tps_o = [r.tps_overall for r in stats_results if r.tps_overall]
+            tps_g = [r.tps_generate for r in stats_results if r.tps_generate]
+            if ttfts:
+                avg_ttft = sum(ttfts) / len(ttfts)
+            if tps_o:
+                avg_tps_overall = sum(tps_o) / len(tps_o)
+            if tps_g:
+                avg_tps_generate = sum(tps_g) / len(tps_g)
+
+        d_ttfts = [r.ttft_ms for r in day_results if r.ttft_ms]
+        n_ttfts = [r.ttft_ms for r in night_results if r.ttft_ms]
+        if d_ttfts:
+            day_avg_ttft = sum(d_ttfts) / len(d_ttfts)
+        if n_ttfts:
+            night_avg_ttft = sum(n_ttfts) / len(n_ttfts)
+        if day_avg_ttft and night_avg_ttft:
+            degradation = (day_avg_ttft - night_avg_ttft) / night_avg_ttft
+
+        full_name = f"{plan.parent.name} > {plan.name}" if plan.parent else plan.name
+        matrix.append(
+            MatrixItem(
+                plan_id=plan.id,
+                full_name=full_name,
+                latest_status=latest_status,
+                sparkline=sparkline,
+                avg_ttft=avg_ttft,
+                avg_tps_overall=avg_tps_overall,
+                avg_tps_generate=avg_tps_generate,
+                day_avg_ttft=day_avg_ttft,
+                night_avg_ttft=night_avg_ttft,
+                degradation=degradation,
+                success_rate=success_rate,
+            )
+        )
+    return matrix
