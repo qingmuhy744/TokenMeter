@@ -3,12 +3,14 @@ import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
+import DashboardMatrix from "@/pages/DashboardMatrix";
 import Plans from "@/pages/Plans";
 import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import Status from "@/pages/Status";
+import PublicHistory from "@/pages/PublicHistory";
 import { Toaster } from "@/components/ui/sonner";
-import { LayoutDashboard, ListTodo, History as HistoryIcon, Settings as SettingsIcon, LogOut, Globe } from "lucide-react";
+import { LayoutDashboard, Table as TableIcon, ListTodo, History as HistoryIcon, Settings as SettingsIcon, LogOut, Globe } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
 function Sidebar() {
@@ -16,6 +18,7 @@ function Sidebar() {
   const { t, i18n } = useTranslation();
   const links = [
     { to: "/", icon: LayoutDashboard, label: t("nav.dashboard") },
+    { to: "/matrix", icon: TableIcon, label: "Matrix" },
     { to: "/plans", icon: ListTodo, label: t("nav.plans") },
     { to: "/history", icon: HistoryIcon, label: t("nav.history") },
     { to: "/settings", icon: SettingsIcon, label: t("nav.settings") },
@@ -77,9 +80,11 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/status" element={<Status />} />
+          <Route path="/public/history" element={<PublicHistory />} />
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/matrix" element={<DashboardMatrix />} />
             <Route path="/plans" element={<Plans />} />
             <Route path="/history" element={<History />} />
             <Route path="/settings" element={<Settings />} />

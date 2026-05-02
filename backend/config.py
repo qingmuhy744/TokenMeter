@@ -11,6 +11,8 @@ class Settings:
     DEFAULT_PROMPT: str = (
         "Please write a 500-word article about artificial intelligence."
     )
+    DEFAULT_MAX_TOKENS: int = 256
+    DEFAULT_TEST_COUNT: int = 3
     TIMEOUT_SECONDS: int = 30
 
     @property

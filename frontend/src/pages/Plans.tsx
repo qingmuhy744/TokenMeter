@@ -91,7 +91,13 @@ export default function Plans() {
               <div><Label>{t("plans.model")}</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
               <div><Label>{t("plans.customPrompt")}</Label><Input value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} /></div>
               <div className="grid grid-cols-3 gap-4">
-                <div><Label>{t("plans.maxTokens")}</Label><Input type="number" value={form.max_tokens} onChange={(e) => setForm({ ...form, max_tokens: +e.target.value })} /></div>
+                <div>
+                  <Label>{t("plans.maxTokens")}</Label>
+                  <Input type="number" value={form.max_tokens} onChange={(e) => setForm({ ...form, max_tokens: +e.target.value })} />
+                  <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                    {t("plans.maxTokensDesc")}
+                  </p>
+                </div>
                 <div><Label>{t("plans.testCount")}</Label><Input type="number" value={form.test_count} onChange={(e) => setForm({ ...form, test_count: +e.target.value })} /></div>
                 <div><Label>{t("plans.interval")}</Label><Input type="number" value={form.interval_minutes} onChange={(e) => setForm({ ...form, interval_minutes: +e.target.value })} /></div>
               </div>

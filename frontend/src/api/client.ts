@@ -59,6 +59,20 @@ export interface Stats {
   p95_ttft_ms: number | null;
 }
 
+export interface MatrixItem {
+  plan_id: number;
+  full_name: string;
+  latest_status: "success" | "error" | "none";
+  sparkline: (number | null)[];
+  avg_ttft: number | null;
+  avg_tps_overall: number | null;
+  avg_tps_generate: number | null;
+  day_avg_ttft: number | null;
+  night_avg_ttft: number | null;
+  degradation: number | null;
+  success_rate: number | null;
+}
+
 export interface Settings {
   default_prompt: string;
   timeout_seconds: number;
@@ -117,6 +131,15 @@ export const api = {
   getResults: (params: Record<string, string>) => {
     const qs = new URLSearchParams(params).toString();
     return request<PaginatedResults>(`/results?${qs}`);
+  },
+  getPublicResults: (params: Record<string, string>) => {
+    const qs = new URLSearchParams(params).toString();
+    return request<PaginatedResults>(`/public/results?${qs}`);
+  },
+  getMatrix: (days: number = 7, tzOffset: number = 0, mode: string = "all") => {
+    const isPublic = window.location.pathname.startsWith('/status') || window.location.pathname.startsWith('/public');
+    const path = isPublic ? "/public/matrix" : "/results/matrix";
+    return request<MatrixItem[]>(`${path}?days=${days}&tz_offset=${tzOffset}&mode=${mode}`);
   },
   deleteResult: (id: number) => request(`/results/${id}`, { method: "DELETE" }),
   getStats: (planId: number, days: number = 7) =>

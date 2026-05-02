@@ -11,15 +11,19 @@ class TokenPlan(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    api_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    api_base: Mapped[str] = mapped_column(String(500), nullable=False)
-    api_key: Mapped[str] = mapped_column(String(500), nullable=False)
-    model: Mapped[str] = mapped_column(String(100), nullable=False)
+    api_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    api_base: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(100), nullable=True)
     prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
-    max_tokens: Mapped[int] = mapped_column(Integer, default=256)
-    test_count: Mapped[int] = mapped_column(Integer, default=3)
+    max_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    test_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     interval_minutes: Mapped[int] = mapped_column(Integer, default=60)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    parent_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("token_plans.id"), nullable=True
+    )
+    multiplier: Mapped[float] = mapped_column(Float, default=1.0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -32,6 +36,56 @@ class TokenPlan(Base):
     results: Mapped[list["TestResult"]] = relationship(
         back_populates="plan", cascade="all, delete-orphan"
     )
+    parent: Mapped["TokenPlan | None"] = relationship(
+        "TokenPlan", remote_side=[id], back_populates="children"
+    )
+    children: Mapped[list["TokenPlan"]] = relationship(
+        "TokenPlan", back_populates="parent", cascade="all, delete-orphan"
+    )
+
+    def get_effective_value(self, field_name: str, max_depth: int = 3):
+        """获取生效的配置值（支持继承）"""
+        if max_depth <= 0:
+            return getattr(self, field_name)
+
+        val = getattr(self, field_name)
+        if val is None and self.parent_id is not None and self.parent:
+            return self.parent.get_effective_value(field_name, max_depth - 1)
+        return val
+
+    @property
+    def effective_api_key(self) -> str | None:
+        return self.get_effective_value("api_key")
+
+    @property
+    def effective_api_base(self) -> str | None:
+        return self.get_effective_value("api_base")
+
+    @property
+    def effective_api_type(self) -> str | None:
+        return self.get_effective_value("api_type")
+
+    @property
+    def effective_model(self) -> str | None:
+        return self.get_effective_value("model")
+
+    @property
+    def effective_prompt(self) -> str | None:
+        return self.get_effective_value("prompt")
+
+    @property
+    def effective_max_tokens(self) -> int:
+        from backend.config import settings
+
+        val = self.get_effective_value("max_tokens")
+        return val if val is not None else getattr(settings, "DEFAULT_MAX_TOKENS", 256)
+
+    @property
+    def effective_test_count(self) -> int:
+        from backend.config import settings
+
+        val = self.get_effective_value("test_count")
+        return val if val is not None else getattr(settings, "DEFAULT_TEST_COUNT", 3)
 
 
 class TestResult(Base):
