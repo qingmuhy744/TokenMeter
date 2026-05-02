@@ -65,6 +65,14 @@ MIGRATIONS = [
         ALTER TABLE token_plans ALTER COLUMN api_type TYPE VARCHAR(50);
     """).strip(),
     ),
+    (
+        "0.3.3",
+        "sql",
+        textwrap.dedent("""
+        ALTER TABLE token_plans ALTER COLUMN max_tokens DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN test_count DROP NOT NULL;
+    """).strip(),
+    ),
 ]
 
 
@@ -334,6 +342,14 @@ async def run_migrations(db):
                     # SQLite doesn't support 'IF NOT EXISTS' in ALTER TABLE ADD COLUMN.
                     # We strip it for non-PostgreSQL databases.
                     if not is_pg:
+                        # SQLite doesn't support ALTER COLUMN ... TYPE.
+                        # Since SQLite doesn't enforce string length limits, we can safely skip this.
+                        if "ALTER COLUMN" in stmt.upper():
+                            logger.warning(
+                                f"Skipping ALTER COLUMN on non-PostgreSQL DB: {stmt}"
+                            )
+                            continue
+
                         # Case-insensitive removal of 'IF NOT EXISTS'
                         import re
 
