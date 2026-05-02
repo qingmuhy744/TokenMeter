@@ -327,8 +327,14 @@ class TestAnthropicStream:
         )
         with open(fixture_path) as f:
             lines = json.load(f)
+
+        print(f"\nDEBUG: Loaded {len(lines)} lines from {fixture_path}")
+
         parser = AnthropicParser()
         tracker = parse_lines(parser, lines)
+
+        print(f"DEBUG: Final Tracker: {tracker}")
+
         # content_block_stop ends thinking state, text follows
         assert tracker.time_first_token is not None
         assert tracker.thinking_char_count > 0
