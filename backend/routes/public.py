@@ -296,15 +296,21 @@ async def public_results(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
 ):
+    # Security: Strictly limit public results to the last 24 hours
+    since_24h = datetime.now(timezone.utc) - timedelta(hours=24)
+
     async with async_session() as db:
         query = (
             select(TestResult, TokenPlan.name)
             .join(TokenPlan, TestResult.plan_id == TokenPlan.id)
             .where(TestResult.plan_id == plan_id)
+            .where(TestResult.created_at >= since_24h)  # STRICT LIMIT
             .order_by(TestResult.created_at.desc())
         )
-        count_query = select(func.count(TestResult.id)).where(
-            TestResult.plan_id == plan_id
+        count_query = (
+            select(func.count(TestResult.id))
+            .where(TestResult.plan_id == plan_id)
+            .where(TestResult.created_at >= since_24h)  # STRICT LIMIT
         )
 
         total_result = await db.execute(count_query)

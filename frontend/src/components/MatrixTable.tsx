@@ -110,13 +110,21 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       id: "select",
       header: "Compare",
       cell: ({ row }) => (
-        <div className="flex justify-center" onClick={e => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-            checked={selectedIds.includes(row.original.plan_id)}
-            onChange={() => onToggleSelection?.(row.original.plan_id)}
-          />
+        <div 
+          className="flex justify-center items-center h-full w-full py-3 cursor-default" 
+          onClick={e => e.stopPropagation()}
+        >
+          <div 
+            className="p-3 -m-3 hover:bg-primary/10 rounded-full transition-colors cursor-pointer group/cb"
+            onClick={() => onToggleSelection?.(row.original.plan_id)}
+          >
+            <input
+              type="checkbox"
+              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer transition-transform group-hover/cb:scale-110"
+              checked={selectedIds.includes(row.original.plan_id)}
+              readOnly
+            />
+          </div>
         </div>
       ),
     }),
