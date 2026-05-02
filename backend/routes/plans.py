@@ -189,8 +189,10 @@ async def trigger_test(plan_id: int, request: Request):
     if valid:
         valid.sort(key=lambda r: r.tps_overall or 0)
         median = valid[len(valid) // 2]
-    else:
+    elif results:
         median = results[0]
+    else:
+        raise HTTPException(status_code=400, detail="No test results generated")
 
     async with async_session() as db:
         test_result = TestResult(

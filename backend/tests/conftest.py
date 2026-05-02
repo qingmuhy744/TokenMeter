@@ -58,8 +58,7 @@ async def db_engine():
 @pytest.fixture
 async def db_session(db_engine, monkeypatch):
     """
-    Provides an in-memory test session AND patches async_session in every route
-    module that imports it, so all API endpoints see the same test DB.
+    Provides an in-memory test session AND patches engine/async_session globally.
     """
     import backend.routes.public as public_mod
     import backend.routes.results as results_mod
@@ -71,13 +70,14 @@ async def db_session(db_engine, monkeypatch):
         db_engine, class_=AsyncSession, expire_on_commit=False
     )
 
-    # We MUST ensure each call to async_session() returns a NEW session.
     def get_test_session():
         return session_factory()
 
-    # Patch async_session at the source AND in every module that
-    # imported it via "from backend.database import async_session".
+    # Patch engine AND async_session at the source
+    monkeypatch.setattr(database_mod, "engine", db_engine)
     monkeypatch.setattr(database_mod, "async_session", get_test_session)
+
+    # Patch in all modules that have already imported them
     monkeypatch.setattr(public_mod, "async_session", get_test_session)
     monkeypatch.setattr(results_mod, "async_session", get_test_session)
     monkeypatch.setattr(settings_mod, "async_session", get_test_session)

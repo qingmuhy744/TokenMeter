@@ -58,8 +58,10 @@ async def run_speed_test(plan_id: int):
     if valid:
         valid.sort(key=lambda r: r.tps_overall or 0)
         median = valid[len(valid) // 2]
-    else:
+    elif results:
         median = results[0]
+    else:
+        return
 
     async with async_session() as db:
         test_result = TestResult(
