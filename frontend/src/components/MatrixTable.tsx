@@ -110,10 +110,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       id: "select",
       header: "Compare",
       cell: ({ row }) => (
-        <div 
-          className="flex justify-center items-center h-full w-full py-3 cursor-default" 
-          onClick={e => e.stopPropagation()}
-        >
+        <div className="flex justify-center items-center h-full w-full py-3 cursor-default" onClick={e => e.stopPropagation()}>
           <div 
             className="p-3 -m-3 hover:bg-primary/10 rounded-full transition-colors cursor-pointer group/cb"
             onClick={() => onToggleSelection?.(row.original.plan_id)}
@@ -363,7 +360,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           </CardTitle>
           {loading && <div className="text-[10px] text-muted-foreground animate-pulse">Updating...</div>}
         </CardHeader>
-        <CardContent className="p-0 overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+        <CardContent className="p-0 overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent pb-4">
           <Table>
             <TableHeader className="bg-muted/50 sticky top-0 z-20">
               {table.getHeaderGroups().map(headerGroup => (
@@ -393,7 +390,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     key={row.id} 
                     className={cn(
                       "group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer text-sm",
-                      isSelected ? "bg-primary/[0.04]" : "bg-background"
+                      isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background"
                     )}
                     onClick={() => {
                       const target = isPublicContext ? `/public/history?plan_id=${row.original.plan_id}` : `/history?plan_id=${row.original.plan_id}`;
@@ -407,11 +404,11 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                           "px-4 py-3 align-middle transition-colors",
                           index === 0 && cn(
                             "sticky left-0 z-20 group-hover:bg-muted/90 border-r border-border/50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
-                            isSelected ? "bg-primary/[0.04]" : "bg-background/95 backdrop-blur-md"
+                            isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background/95 backdrop-blur-md"
                           ),
                           index === 1 && cn(
                             "sticky left-[72px] z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90",
-                            isSelected ? "bg-primary/[0.04]" : "bg-background/95 backdrop-blur-md"
+                            isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background/95 backdrop-blur-md"
                           )
                         )}
                       >
