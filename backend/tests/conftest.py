@@ -1,20 +1,13 @@
 import pytest
+import hashlib
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from httpx import AsyncClient, ASGITransport
 
 from backend.database import Base
-
-
-class _MockAsyncSessionCtx:
-    """Wraps a test AsyncSession as an async context manager."""
-
-    def __init__(self, session: AsyncSession):
-        self._session = session
-
-    async def __aenter__(self):
-        return self._session
-
-    async def __aexit__(self, *args):
-        pass
+import backend.database as database_mod
+from backend.models import User
+from backend.auth import hash_password
+from sqlalchemy import select
 
 
 @pytest.fixture(autouse=True)
@@ -50,12 +43,11 @@ async def db_engine():
 
 
 @pytest.fixture
-async def db_session(db_engine):
+async def db_session(db_engine, monkeypatch):
     """
     Provides an in-memory test session AND patches async_session in every route
-    module that imports it, so all API endpoints see the same test session.
+    module that imports it, so all API endpoints see the same test DB.
     """
-    import backend.database as database_mod
     import backend.routes.public as public_mod
     import backend.routes.results as results_mod
     import backend.routes.settings as settings_mod
@@ -65,32 +57,42 @@ async def db_session(db_engine):
     session_factory = async_sessionmaker(
         db_engine, class_=AsyncSession, expire_on_commit=False
     )
+
+    # We MUST ensure each call to async_session() returns a NEW session.
+    def get_test_session():
+        return session_factory()
+
+    # Patch async_session at the source AND in every module that
+    # imported it via "from backend.database import async_session".
+    monkeypatch.setattr(database_mod, "async_session", get_test_session)
+    monkeypatch.setattr(public_mod, "async_session", get_test_session)
+    monkeypatch.setattr(results_mod, "async_session", get_test_session)
+    monkeypatch.setattr(settings_mod, "async_session", get_test_session)
+    monkeypatch.setattr(plans_mod, "async_session", get_test_session)
+    monkeypatch.setattr(auth_mod, "async_session", get_test_session)
+
     async with session_factory() as session:
-
-        def ctx():
-            return _MockAsyncSessionCtx(session)
-
-        # Patch async_session at the source AND in every module that
-        # imported it via "from backend.database import async_session".
-        original_db = database_mod.async_session
-        original_public = public_mod.async_session
-        original_results = results_mod.async_session
-        original_settings = settings_mod.async_session
-        original_plans = plans_mod.async_session
-        original_auth = auth_mod.async_session
-
-        database_mod.async_session = ctx
-        public_mod.async_session = ctx
-        results_mod.async_session = ctx
-        settings_mod.async_session = ctx
-        plans_mod.async_session = ctx
-        auth_mod.async_session = ctx
-
         yield session
 
-        database_mod.async_session = original_db
-        public_mod.async_session = original_public
-        results_mod.async_session = original_results
-        settings_mod.async_session = original_settings
-        plans_mod.async_session = original_plans
-        auth_mod.async_session = original_auth
+
+@pytest.fixture
+async def auth_client(db_session):
+    from backend.main import app
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        pw_hash = hashlib.sha256("testpass".encode()).hexdigest()
+        result = await db_session.execute(
+            select(User).where(User.username == "testadmin")
+        )
+        existing = result.scalar_one_or_none()
+        if not existing:
+            db_session.add(
+                User(username="testadmin", password_hash=hash_password(pw_hash))
+            )
+            await db_session.commit()
+
+        await client.post(
+            "/api/auth/login", json={"username": "testadmin", "password": pw_hash}
+        )
+        yield client

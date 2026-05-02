@@ -4,6 +4,7 @@ import logging
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import async_session
 from backend.models import TokenPlan, TestResult
@@ -68,6 +69,22 @@ async def run_speed_test(plan_id: int):
             tps_generate=median.tps_generate,
             total_tokens=median.total_tokens,
             total_time_ms=median.total_time_ms,
+            input_tokens=median.input_tokens,
+            cache_read=median.cache_read,
+            char_count=median.char_count,
+            token_density=median.token_density,
+            ttfb_ms=median.ttfb_ms,
+            ttfr_ms=median.ttfr_ms,
+            think_time_ms=median.think_time_ms,
+            content_tokens=median.content_tokens,
+            thinking_tokens=median.thinking_tokens,
+            tps_content=median.tps_content,
+            content_char_count=median.content_char_count,
+            thinking_char_count=median.thinking_char_count,
+            ping_ms=median.ping_ms,
+            ping_samples=json.dumps(median.ping_samples)
+            if median.ping_samples is not None
+            else None,
             error=median.error,
             note=median.note,
             debug_chunks=json.dumps(median.debug_chunks)
@@ -78,9 +95,13 @@ async def run_speed_test(plan_id: int):
         await db.commit()
 
 
-async def sync_scheduled_jobs():
+async def sync_scheduled_jobs(db: AsyncSession | None = None):
     """Sync APScheduler jobs with active plans in database."""
-    async with async_session() as db:
+    if db is None:
+        async with async_session() as db:
+            result = await db.execute(select(TokenPlan).where(TokenPlan.is_active))
+            plans = result.scalars().all()
+    else:
         result = await db.execute(select(TokenPlan).where(TokenPlan.is_active))
         plans = result.scalars().all()
 
