@@ -2,6 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { api, type MatrixItem } from "@/api/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   createColumnHelper,
@@ -79,18 +81,22 @@ const getHeatmapColor = (value: number | null, type: 'ttft' | 'tps' | 'degradati
 const columnHelper = createColumnHelper<MatrixItem>();
 
 export default function MatrixTable() {
+  const navigate = useNavigate();
   const [data, setData] = useState<MatrixItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [days, setDays] = useState(7);
+  const [mode, setMode] = useState<'all' | 'day' | 'night'>('all');
 
   useEffect(() => {
+    setLoading(true);
     const tzOffset = -new Date().getTimezoneOffset();
-    api.getMatrix(7, tzOffset)
+    api.getMatrix(days, tzOffset, mode)
       .then(items => {
         setData(items.filter(item => item.avg_ttft !== null || item.latest_status !== null));
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [days, mode]);
 
   const columns = useMemo(() => [
     columnHelper.accessor("full_name", {
@@ -270,53 +276,100 @@ export default function MatrixTable() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  if (loading) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading performance matrix...</div>;
+  if (loading && data.length === 0) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading performance matrix...</div>;
 
   return (
-    <Card className="overflow-hidden border border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
-      <CardHeader className="bg-muted/30 border-b border-border/50 py-4">
-        <CardTitle className="text-lg font-semibold tracking-tight">7-Day Performance Matrix</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0 overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-        <Table>
-          <TableHeader className="bg-muted/50 sticky top-0 z-20">
-            {table.getHeaderGroups().map(headerGroup => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border/50">
-                {headerGroup.headers.map((header, index) => (
-                  <TableHead 
-                    key={header.id} 
-                    className={cn(
-                      "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground transition-colors",
-                      index === 0 && "sticky left-0 bg-muted/95 backdrop-blur-md z-30 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
-                    )}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map(row => (
-              <TableRow key={row.id} className="group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0">
-                {row.getVisibleCells().map((cell, index) => (
-                  <TableCell 
-                    key={cell.id} 
-                    className={cn(
-                      "px-4 py-3 align-middle transition-colors",
-                      index === 0 && "sticky left-0 bg-background/95 backdrop-blur-md z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90"
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex bg-muted p-1 rounded-lg">
+          <Button 
+            variant={days === 1 ? "default" : "ghost"} 
+            size="sm" className="h-8 text-xs px-3"
+            onClick={() => setDays(1)}
+          >1d</Button>
+          <Button 
+            variant={days === 7 ? "default" : "ghost"} 
+            size="sm" className="h-8 text-xs px-3"
+            onClick={() => setDays(7)}
+          >7d</Button>
+          <Button 
+            variant={days === 30 ? "default" : "ghost"} 
+            size="sm" className="h-8 text-xs px-3"
+            onClick={() => setDays(30)}
+          >30d</Button>
+        </div>
+
+        <div className="flex bg-muted p-1 rounded-lg">
+          <Button 
+            variant={mode === 'all' ? "default" : "ghost"} 
+            size="sm" className="h-8 text-xs px-3"
+            onClick={() => setMode('all')}
+          >All</Button>
+          <Button 
+            variant={mode === 'day' ? "default" : "ghost"} 
+            size="sm" className="h-8 text-xs px-3"
+            onClick={() => setMode('day')}
+          >Day</Button>
+          <Button 
+            variant={mode === 'night' ? "default" : "ghost"} 
+            size="sm" className="h-8 text-xs px-3"
+            onClick={() => setMode('night')}
+          >Night</Button>
+        </div>
+      </div>
+
+      <Card className="overflow-hidden border border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
+        <CardHeader className="bg-muted/30 border-b border-border/50 py-4 flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-lg font-semibold tracking-tight">
+            {days}-Day Performance Matrix
+          </CardTitle>
+          {loading && <div className="text-[10px] text-muted-foreground animate-pulse">Updating...</div>}
+        </CardHeader>
+        <CardContent className="p-0 overflow-x-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+          <Table>
+            <TableHeader className="bg-muted/50 sticky top-0 z-20">
+              {table.getHeaderGroups().map(headerGroup => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border/50">
+                  {headerGroup.headers.map((header, index) => (
+                    <TableHead 
+                      key={header.id} 
+                      className={cn(
+                        "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground transition-colors",
+                        index === 0 && "sticky left-0 bg-muted/95 backdrop-blur-md z-30 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
+                      )}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(header.column.columnDef.header, header.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map(row => (
+                <TableRow 
+                  key={row.id} 
+                  className="group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer"
+                  onClick={() => navigate(`/history?plan_id=${row.original.plan_id}`)}
+                >
+                  {row.getVisibleCells().map((cell, index) => (
+                    <TableCell 
+                      key={cell.id} 
+                      className={cn(
+                        "px-4 py-3 align-middle transition-colors",
+                        index === 0 && "sticky left-0 bg-background/95 backdrop-blur-md z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90"
+                      )}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

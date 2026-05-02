@@ -26,6 +26,7 @@ async def get_results_matrix(
     request: Request,
     days: int = Query(7, ge=1),
     tz_offset: int = Query(0),  # minutes, e.g. 480 for UTC+8
+    mode: str = Query("all"),  # all, day, night
 ):
     await get_current_user(request)
     now = datetime.now(timezone.utc)
@@ -62,19 +63,34 @@ async def get_results_matrix(
     for plan in plans:
         results = plan_results[plan.id]
 
-        # Latest status
+        # Latest status (always based on latest result regardless of mode)
         latest_status = "none"
         if results:
             latest_status = "error" if results[0].error else "success"
 
-        # Sparkline (last 24h)
+        # Sparkline (last 24h, always based on all results for trend)
         sparkline_results = [r for r in results if r.created_at >= since_24h]
-        # Sort by created_at ascending for sparkline
         sparkline_results.sort(key=lambda x: x.created_at)
         sparkline = [r.ttft_ms for r in sparkline_results]
 
-        # Filter successful results for averages
+        # Statistics and Day/Night splitting
         success_results = [r for r in results if not r.error]
+
+        day_results = []
+        night_results = []
+        for r in success_results:
+            local_dt = r.created_at + timedelta(minutes=tz_offset)
+            if 8 <= local_dt.hour < 20:
+                day_results.append(r)
+            else:
+                night_results.append(r)
+
+        # Decide which results to use for main stats based on mode
+        stats_results = success_results
+        if mode == "day":
+            stats_results = day_results
+        elif mode == "night":
+            stats_results = night_results
 
         avg_ttft = None
         avg_tps_overall = None
@@ -84,16 +100,31 @@ async def get_results_matrix(
         degradation = None
         success_rate = None
 
-        if results:
-            success_rate = len(success_results) / len(results)
+        # Success rate is also mode-dependent
+        mode_total_results = results
+        if mode == "day":
+            mode_total_results = [
+                r
+                for r in results
+                if 8 <= (r.created_at + timedelta(minutes=tz_offset)).hour < 20
+            ]
+        elif mode == "night":
+            mode_total_results = [
+                r
+                for r in results
+                if not (8 <= (r.created_at + timedelta(minutes=tz_offset)).hour < 20)
+            ]
 
-        if success_results:
-            ttfts = [r.ttft_ms for r in success_results if r.ttft_ms is not None]
+        if mode_total_results:
+            success_rate = len(stats_results) / len(mode_total_results)
+
+        if stats_results:
+            ttfts = [r.ttft_ms for r in stats_results if r.ttft_ms is not None]
             tps_overalls = [
-                r.tps_overall for r in success_results if r.tps_overall is not None
+                r.tps_overall for r in stats_results if r.tps_overall is not None
             ]
             tps_generates = [
-                r.tps_generate for r in success_results if r.tps_generate is not None
+                r.tps_generate for r in stats_results if r.tps_generate is not None
             ]
 
             if ttfts:
@@ -103,32 +134,21 @@ async def get_results_matrix(
             if tps_generates:
                 avg_tps_generate = sum(tps_generates) / len(tps_generates)
 
-            # Day/Night split
-            day_ttfts = []
-            night_ttfts = []
-            for r in success_results:
-                if r.ttft_ms is None:
-                    continue
-                # Adjust time for timezone
-                local_dt = r.created_at + timedelta(minutes=tz_offset)
-                if 8 <= local_dt.hour < 20:
-                    day_ttfts.append(r.ttft_ms)
-                else:
-                    night_ttfts.append(r.ttft_ms)
+        # Always calculate comparison values for degradation regardless of mode
+        d_ttfts = [r.ttft_ms for r in day_results if r.ttft_ms is not None]
+        n_ttfts = [r.ttft_ms for r in night_results if r.ttft_ms is not None]
+        if d_ttfts:
+            day_avg_ttft = sum(d_ttfts) / len(d_ttfts)
+        if n_ttfts:
+            night_avg_ttft = sum(n_ttfts) / len(n_ttfts)
 
-            if day_ttfts:
-                day_avg_ttft = sum(day_ttfts) / len(day_ttfts)
-            if night_ttfts:
-                night_avg_ttft = sum(night_ttfts) / len(night_ttfts)
+        if (
+            day_avg_ttft is not None
+            and night_avg_ttft is not None
+            and night_avg_ttft > 0
+        ):
+            degradation = (day_avg_ttft - night_avg_ttft) / night_avg_ttft
 
-            if (
-                day_avg_ttft is not None
-                and night_avg_ttft is not None
-                and night_avg_ttft > 0
-            ):
-                degradation = (day_avg_ttft - night_avg_ttft) / night_avg_ttft
-
-        # Full name: Parent > Child
         full_name = plan.name
         if plan.parent:
             full_name = f"{plan.parent.name} > {plan.name}"
