@@ -328,9 +328,16 @@ class TestAnthropicStream:
         with open(fixture_path) as f:
             lines = json.load(f)
 
-        print(f"\nDEBUG: Loaded {len(lines)} lines from {fixture_path}")
+        print(
+            f"\nDEBUG: Loaded {len(lines)} items (type: {type(lines)}) from {fixture_path}"
+        )
+        if len(lines) > 0:
+            print(f"DEBUG: First item: {repr(lines[0])}")
+        if len(lines) > 1:
+            print(f"DEBUG: Second item: {repr(lines[1])}")
 
         parser = AnthropicParser()
+
         tracker = parse_lines(parser, lines)
 
         print(f"DEBUG: Final Tracker: {tracker}")
