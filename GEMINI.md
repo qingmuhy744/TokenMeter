@@ -26,6 +26,10 @@ make docker     # 构建 Docker 镜像
 
 SQLite 文件: `token_speed.db`（.gitignore 已排除）
 
+### 数据库操作与调试
+
+- **PostgreSQL**: 关于如何通过 SSH 连入并使用 Docker 操作调试数据库（192.168.8.3），请参考本地 `.env` 文件中的注释说明。
+
 测试前备份，测试后恢复：
 ```bash
 cp token_speed.db token_speed.db.bak   # 备份
