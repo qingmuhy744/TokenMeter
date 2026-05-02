@@ -365,7 +365,8 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       key={header.id} 
                       className={cn(
                         "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground transition-colors",
-                        index === 1 && "sticky left-0 bg-muted/95 backdrop-blur-md z-30 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
+                        index === 0 && "sticky left-0 bg-muted/95 backdrop-blur-md z-40 border-b border-border/50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
+                        index === 1 && "sticky left-[72px] bg-muted/95 backdrop-blur-md z-30 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
                       )}
                     >
                       {header.isPlaceholder
@@ -383,7 +384,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   <TableRow 
                     key={row.id} 
                     className={cn(
-                      "group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer",
+                      "group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer text-sm",
                       isSelected && "bg-primary/[0.04]"
                     )}
                     onClick={() => {
@@ -396,7 +397,8 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                         key={cell.id} 
                         className={cn(
                           "px-4 py-3 align-middle transition-colors",
-                          index === 1 && "sticky left-0 bg-background/95 backdrop-blur-md z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90"
+                          index === 0 && "sticky left-0 bg-background/95 backdrop-blur-md z-20 group-hover:bg-muted/90 border-r border-border/50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
+                          index === 1 && "sticky left-[72px] bg-background/95 backdrop-blur-md z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90"
                         )}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
