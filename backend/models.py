@@ -11,15 +11,19 @@ class TokenPlan(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    api_type: Mapped[str] = mapped_column(String(20), nullable=False)
-    api_base: Mapped[str] = mapped_column(String(500), nullable=False)
-    api_key: Mapped[str] = mapped_column(String(500), nullable=False)
-    model: Mapped[str] = mapped_column(String(100), nullable=False)
+    api_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    api_base: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    api_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(100), nullable=True)
     prompt: Mapped[str | None] = mapped_column(Text, nullable=True)
     max_tokens: Mapped[int] = mapped_column(Integer, default=256)
     test_count: Mapped[int] = mapped_column(Integer, default=3)
     interval_minutes: Mapped[int] = mapped_column(Integer, default=60)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    parent_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("token_plans.id"), nullable=True
+    )
+    multiplier: Mapped[float] = mapped_column(Float, default=1.0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
@@ -31,6 +35,12 @@ class TokenPlan(Base):
 
     results: Mapped[list["TestResult"]] = relationship(
         back_populates="plan", cascade="all, delete-orphan"
+    )
+    parent: Mapped["TokenPlan | None"] = relationship(
+        "TokenPlan", remote_side=[id], back_populates="children"
+    )
+    children: Mapped[list["TokenPlan"]] = relationship(
+        "TokenPlan", back_populates="parent", cascade="all, delete-orphan"
     )
 
 
