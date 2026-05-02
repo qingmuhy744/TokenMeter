@@ -112,3 +112,69 @@ async def test_token_plan_inheritance_fields(db_session: AsyncSession):
     result_child = await db_session.execute(stmt_child)
     child_loaded = result_child.scalar_one()
     assert child_loaded.parent.id == parent.id
+
+
+@pytest.mark.asyncio
+async def test_token_plan_effective_properties(db_session: AsyncSession):
+    # 创建父计划 (套餐)
+    parent = TokenPlan(
+        name="Parent Plan",
+        api_type="openai",
+        api_base="https://api.openai.com/v1",
+        api_key="sk-parent",
+        model="gpt-4",
+        max_tokens=512,
+        test_count=5,
+    )
+    db_session.add(parent)
+    await db_session.commit()
+
+    # 创建子计划，大部分字段继承
+    child = TokenPlan(
+        name="Child Plan",
+        parent_id=parent.id,
+        api_type=None,
+        api_base=None,
+        api_key=None,
+        model=None,
+        # 假设我们将这些也设为 None 以测试继承
+        max_tokens=None,
+        test_count=None,
+    )
+    db_session.add(child)
+    await db_session.commit()
+
+    # 重新加载并预加载 parent
+    stmt = (
+        select(TokenPlan)
+        .options(selectinload(TokenPlan.parent))
+        .where(TokenPlan.id == child.id)
+    )
+    result = await db_session.execute(stmt)
+    child_loaded = result.scalar_one()
+
+    # 验证有效值继承
+    assert child_loaded.effective_api_type == "openai"
+    assert child_loaded.effective_api_base == "https://api.openai.com/v1"
+    assert child_loaded.effective_api_key == "sk-parent"
+    assert child_loaded.effective_model == "gpt-4"
+    assert child_loaded.effective_max_tokens == 512
+    assert child_loaded.effective_test_count == 5
+
+
+@pytest.mark.asyncio
+async def test_token_plan_defaults(db_session: AsyncSession):
+    # 创建没有父级的计划，不设置某些字段
+    plan = TokenPlan(
+        name="Standalone Plan",
+        api_type="openai",
+        max_tokens=None,
+        test_count=None,
+    )
+    db_session.add(plan)
+    await db_session.commit()
+    await db_session.refresh(plan)
+
+    # 验证有效值返回默认值
+    assert plan.effective_max_tokens == 256
+    assert plan.effective_test_count == 3

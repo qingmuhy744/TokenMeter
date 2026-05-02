@@ -59,6 +59,20 @@ export interface Stats {
   p95_ttft_ms: number | null;
 }
 
+export interface MatrixItem {
+  plan_id: number;
+  full_name: string;
+  latest_status: "success" | "error" | "none";
+  sparkline: (number | null)[];
+  avg_ttft: number | null;
+  avg_tps_overall: number | null;
+  avg_tps_generate: number | null;
+  day_avg_ttft: number | null;
+  night_avg_ttft: number | null;
+  degradation: number | null;
+  success_rate: number | null;
+}
+
 export interface Settings {
   default_prompt: string;
   timeout_seconds: number;
@@ -118,6 +132,8 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request<PaginatedResults>(`/results?${qs}`);
   },
+  getMatrix: (days: number = 7, tzOffset: number = 0) =>
+    request<MatrixItem[]>(`/results/matrix?days=${days}&tz_offset=${tzOffset}`),
   deleteResult: (id: number) => request(`/results/${id}`, { method: "DELETE" }),
   getStats: (planId: number, days: number = 7) =>
     request<Stats>(`/results/stats?plan_id=${planId}&days=${days}`),

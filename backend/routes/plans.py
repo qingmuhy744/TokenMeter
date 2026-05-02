@@ -1,6 +1,7 @@
 import json
 import logging
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi import APIRouter, HTTPException, Request, Response
 
@@ -47,6 +48,8 @@ async def export_plans(request: Request):
                 "test_count": plan.test_count,
                 "interval_minutes": plan.interval_minutes,
                 "is_active": plan.is_active,
+                "parent_id": plan.parent_id,
+                "multiplier": plan.multiplier,
             }
         )
 
@@ -148,35 +151,48 @@ async def delete_plan(plan_id: int, request: Request):
 async def trigger_test(plan_id: int, request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        result = await db.execute(select(TokenPlan).where(TokenPlan.id == plan_id))
+        result = await db.execute(
+            select(TokenPlan)
+            .options(selectinload(TokenPlan.parent))
+            .where(TokenPlan.id == plan_id)
+        )
         plan = result.scalar_one_or_none()
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
 
     tester = SpeedTester(timeout=settings.TIMEOUT_SECONDS)
-    prompt = plan.prompt or settings.DEFAULT_PROMPT
+    prompt = plan.effective_prompt or settings.DEFAULT_PROMPT
 
     logger.info(
-        "Manual test triggered: plan=%d name=%s model=%s",
+        "Manual test triggered: plan=%d name=%s model=%s (effective)",
         plan_id,
         plan.name,
-        plan.model,
+        plan.effective_model,
     )
 
     results = []
-    for i in range(plan.test_count):
-        if plan.api_type == "openai":
+    test_count = plan.effective_test_count
+    for i in range(test_count):
+        if plan.effective_api_type == "openai":
             r = await tester.test_openai(
-                plan.api_base, plan.api_key, plan.model, prompt, plan.max_tokens
+                plan.effective_api_base,
+                plan.effective_api_key,
+                plan.effective_model,
+                prompt,
+                plan.effective_max_tokens,
             )
         else:
             r = await tester.test_anthropic(
-                plan.api_base, plan.api_key, plan.model, prompt, plan.max_tokens
+                plan.effective_api_base,
+                plan.effective_api_key,
+                plan.effective_model,
+                prompt,
+                plan.effective_max_tokens,
             )
         logger.info(
             "  Run %d/%d: tokens=%d ttft=%s tps=%s error=%s note=%s",
             i + 1,
-            plan.test_count,
+            test_count,
             r.total_tokens,
             f"{r.ttft_ms:.0f}" if r.ttft_ms else "N/A",
             f"{r.tps_overall:.1f}" if r.tps_overall else "N/A",

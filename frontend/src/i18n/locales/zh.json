@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "仪表盘",
+    "matrix": "性能矩阵",
     "plans": "测速计划",
     "history": "测试历史",
     "settings": "设置"

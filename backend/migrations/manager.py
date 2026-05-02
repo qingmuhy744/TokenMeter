@@ -45,7 +45,68 @@ MIGRATIONS = [
         ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_samples TEXT;
     """).strip(),
     ),
+    (
+        "0.3.0",
+        "sql",
+        textwrap.dedent("""
+        ALTER TABLE token_plans ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES token_plans(id);
+        ALTER TABLE token_plans ADD COLUMN IF NOT EXISTS multiplier FLOAT DEFAULT 1.0;
+    """).strip(),
+    ),
+    (
+        "0.3.1",
+        "func",
+        "convert_to_suites",
+    ),
+    (
+        "0.3.2",
+        "sql",
+        textwrap.dedent("""
+        ALTER TABLE token_plans ALTER COLUMN api_type TYPE VARCHAR(50);
+    """).strip(),
+    ),
 ]
+
+
+async def convert_to_suites(db):
+    """Convert all existing independent plans into suites with one child model."""
+    from sqlalchemy import select, update
+    from backend.models import TokenPlan, TestResult
+
+    # 查找所有没有父级且有模型的计划
+    result = await db.execute(select(TokenPlan).where(TokenPlan.parent_id.is_(None)))
+    plans = result.scalars().all()
+
+    for p in plans:
+        if p.model is None:
+            continue
+
+        old_plan_id = p.id
+        old_model = p.model
+
+        # 1. 创建子模型，只设置必要的字段，其余字段保持 None 以触发继承
+        child = TokenPlan(
+            name=p.name,
+            model=old_model,
+            parent_id=old_plan_id,
+            multiplier=1.0,
+            is_active=p.is_active,
+        )
+        db.add(child)
+        await db.flush()  # 获取子模型的 ID
+
+        # 2. 将历史结果迁移到新子模型
+        await db.execute(
+            update(TestResult)
+            .where(TestResult.plan_id == old_plan_id)
+            .values(plan_id=child.id)
+        )
+
+        # 3. 将父级转化为纯套餐
+        p.model = None
+        # p.name 保持不变，作为套餐名
+
+    await db.commit()
 
 
 async def rehash_passwords_sha256(db):

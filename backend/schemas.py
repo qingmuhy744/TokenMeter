@@ -41,20 +41,24 @@ def _validate_api_base(url: str) -> str:
 
 class PlanCreate(BaseModel):
     name: str
-    api_type: Literal["openai", "anthropic"]
-    api_base: str
-    api_key: str
-    model: str
+    api_type: Literal["openai", "anthropic"] | None = None
+    api_base: str | None = None
+    api_key: str | None = None
+    model: str | None = None
     prompt: str | None = None
-    max_tokens: int = 256
-    test_count: int = 3
+    max_tokens: int | None = None
+    test_count: int | None = None
     interval_minutes: int = 60
     is_active: bool = True
+    parent_id: int | None = None
+    multiplier: float = 1.0
 
     @field_validator("api_base")
     @classmethod
-    def validate_api_base(cls, v: str) -> str:
-        return _validate_api_base(v)
+    def validate_api_base(cls, v: str | None) -> str | None:
+        if v is not None:
+            return _validate_api_base(v)
+        return v
 
 
 class PlanUpdate(BaseModel):
@@ -68,6 +72,8 @@ class PlanUpdate(BaseModel):
     test_count: int | None = None
     interval_minutes: int | None = None
     is_active: bool | None = None
+    parent_id: int | None = None
+    multiplier: float | None = None
 
     @field_validator("api_base")
     @classmethod
@@ -80,15 +86,17 @@ class PlanUpdate(BaseModel):
 class PlanResponse(BaseModel):
     id: int
     name: str
-    api_type: str
-    api_base: str
-    api_key: str
-    model: str
+    api_type: str | None
+    api_base: str | None
+    api_key: str | None
+    model: str | None
     prompt: str | None
-    max_tokens: int
-    test_count: int
+    max_tokens: int | None
+    test_count: int | None
     interval_minutes: int
     is_active: bool
+    parent_id: int | None = None
+    multiplier: float = 1.0
     created_at: datetime
     updated_at: datetime
 
@@ -96,7 +104,9 @@ class PlanResponse(BaseModel):
 
     @field_validator("api_key")
     @classmethod
-    def mask_api_key(cls, v: str) -> str:
+    def mask_api_key(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
         if len(v) <= 8:
             return "****"
         return f"{v[:4]}...{v[-4:]}"
@@ -156,6 +166,20 @@ class StatsResponse(BaseModel):
     median_ttft_ms: float | None
     median_tps_overall: float | None
     p95_ttft_ms: float | None
+
+
+class MatrixItem(BaseModel):
+    plan_id: int
+    full_name: str
+    latest_status: Literal["success", "error", "none"]
+    sparkline: list[float | None]
+    avg_ttft: float | None
+    avg_tps_overall: float | None
+    avg_tps_generate: float | None
+    day_avg_ttft: float | None
+    night_avg_ttft: float | None
+    degradation: float | None
+    success_rate: float | None
 
 
 class LoginRequest(BaseModel):

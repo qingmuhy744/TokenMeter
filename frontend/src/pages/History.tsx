@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
 import type { Plan, PaginatedResults, TestResult } from "@/api/client";
@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceArea } from "recharts";
 
 export default function History() {
   const { t } = useTranslation();
@@ -37,15 +37,47 @@ export default function History() {
     }
   };
 
-  const chartData = [...results.items]
-    .filter((r) => !r.error && r.tps_overall)
-    .reverse()
-    .map((r) => ({
-      time: new Date(r.created_at).toLocaleTimeString(),
-      tps_overall: r.tps_overall ?? 0,
-      tps_generate: r.tps_generate ?? 0,
-      ttft: r.ttft_ms ? Math.round(r.ttft_ms) : 0,
-    }));
+  const chartData = useMemo(() => {
+    return [...results.items]
+      .filter((r) => !r.error && r.tps_overall)
+      .reverse()
+      .map((r) => {
+        const date = new Date(r.created_at);
+        return {
+          time: date.toLocaleString([], { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          rawTime: date,
+          isDay: date.getHours() >= 8 && date.getHours() < 20,
+          tps_overall: r.tps_overall ?? 0,
+          tps_generate: r.tps_generate ?? 0,
+          ttft: r.ttft_ms ? Math.round(r.ttft_ms) : 0,
+        };
+      });
+  }, [results.items]);
+
+  // Generate ReferenceArea ranges for day/night shading
+  const shadingAreas = useMemo(() => {
+    if (chartData.length < 2) return [];
+    const areas = [];
+    let startIdx = 0;
+    
+    for (let i = 1; i < chartData.length; i++) {
+      if (chartData[i].isDay !== chartData[startIdx].isDay) {
+        areas.push({
+          x1: chartData[startIdx].time,
+          x2: chartData[i - 1].time,
+          isDay: chartData[startIdx].isDay
+        });
+        startIdx = i;
+      }
+    }
+    // Add the last segment
+    areas.push({
+      x1: chartData[startIdx].time,
+      x2: chartData[chartData.length - 1].time,
+      isDay: chartData[startIdx].isDay
+    });
+    return areas;
+  }, [chartData]);
 
   return (
     <div className="space-y-6">
@@ -73,11 +105,21 @@ export default function History() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
-                <XAxis dataKey="time" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="time" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                 <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: '8px' }} />
                 <Legend />
+                {shadingAreas.map((area, idx) => (
+                  <ReferenceArea
+                    key={idx}
+                    x1={area.x1}
+                    x2={area.x2}
+                    yAxisId="left"
+                    fill={area.isDay ? "oklch(0.95 0.05 85)" : "oklch(0.9 0.02 260)"}
+                    fillOpacity={0.4}
+                  />
+                ))}
                 <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="var(--color-chart-1)" strokeWidth={2} name={t("history.tpsOverall")} dot={false} />
                 <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="var(--color-chart-2)" strokeWidth={2} name={t("history.tpsGenerate")} dot={false} />
                 <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="var(--color-chart-3)" strokeWidth={2} name={t("history.ttftMs")} dot={false} />
@@ -86,6 +128,7 @@ export default function History() {
           </CardContent>
         </Card>
       )}
+
       <Table>
         <TableHeader>
           <TableRow>
