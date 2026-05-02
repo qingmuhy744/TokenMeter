@@ -74,10 +74,10 @@ export default function Status() {
 
   const trendPlans = useMemo(() => {
     if (!data) return [];
-    // Only show top 10 models with most trend data to keep legend clean
+    // Strictly limit to 5 models to ensure the chart remains readable
     return [...data.plans]
       .sort((a, b) => b.trend.length - a.trend.length)
-      .slice(0, 10);
+      .slice(0, 5);
   }, [data]);
 
   useEffect(() => {
