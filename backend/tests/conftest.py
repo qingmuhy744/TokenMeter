@@ -1,5 +1,6 @@
 import pytest
 import hashlib
+from unittest.mock import AsyncMock
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from httpx import AsyncClient, ASGITransport
 
@@ -8,6 +9,18 @@ import backend.database as database_mod
 from backend.models import User
 from backend.auth import hash_password
 from sqlalchemy import select
+
+
+@pytest.fixture(autouse=True)
+def _disable_scheduler(monkeypatch):
+    """Disable scheduler during tests to prevent background tasks from hanging DB teardown."""
+    import backend.services.scheduler as scheduler_mod
+
+    monkeypatch.setattr(scheduler_mod, "start_scheduler", lambda: None)
+    monkeypatch.setattr(scheduler_mod, "shutdown_scheduler", lambda: None)
+    monkeypatch.setattr(
+        scheduler_mod, "sync_scheduled_jobs", AsyncMock(return_value=None)
+    )
 
 
 @pytest.fixture(autouse=True)
