@@ -72,7 +72,6 @@ async def rehash_passwords_sha256(db):
         )
 
     if reset_count > 0:
-        await db.commit()
         logger.info(
             f"Rehashed {reset_count} user(s). Check logs above for new setup keys."
         )
