@@ -79,7 +79,7 @@ class TestMiniMaxM25Stream:
             # Thinking block — content has opening tag at start of chunk
             'data: {"id":"test-id","object":"chat.completion.chunk","created":1777596831,"model":"MiniMax-M2.5","choices":[{"index":0,"delta":{"content":"<think>think about this problem\\n"}}],"usage":{"prompt_tokens":29,"completion_tokens":20,"total_tokens":49,"prompt_tokens_details":null}}',
             # Content block — content has closing tag at start of chunk
-            'data: {"id":"test-id","object":"chat.completion.chunk","created":1777596832,"model":"MiniMax-M2.5","choices":[{"index":0,"delta":{"content":"\\n\\n"}}],"usage":{"prompt_tokens":29,"completion_tokens":21,"total_tokens":50,"prompt_tokens_details":null}}',
+            'data: {"id":"test-id","object":"chat.completion.chunk","created":1777596832,"model":"MiniMax-M2.5","choices":[{"index":0,"delta":{"content":"</think>\\n\\n"}}],"usage":{"prompt_tokens":29,"completion_tokens":21,"total_tokens":50,"prompt_tokens_details":null}}',
             # Whitespace after thinking — not real content (TTFT skipped)
             'data: {"id":"test-id","object":"chat.completion.chunk","created":1777596833,"model":"MiniMax-M2.5","choices":[{"index":0,"delta":{"content":"\\n\\n"}}],"usage":{"prompt_tokens":29,"completion_tokens":22,"total_tokens":51,"prompt_tokens_details":null}}',
             # Actual content starts here — this sets TTFT
@@ -339,13 +339,14 @@ class TestOpenAIThinkingStateMachine:
         assert parser._in_content is True  # Set on first content chunk
 
     def test_whitespace_after_think_end_skipped(self):
-        """Whitespace immediately after `` is not counted as content."""
+        """Whitespace immediately after </think> is not counted as content."""
         lines = [
-            make_openai_chunk(content="<think>think about this\n"),
+            make_openai_chunk(content="<think>think about this</think>\n"),
             make_openai_chunk(content="   "),  # Whitespace after thinking
             make_openai_chunk(content="actual content"),
             "data: [DONE]",
         ]
+
         parser = OpenAIParser()
         tracker = parse_lines(parser, lines)
         # The whitespace should be counted in char_count but not trigger TTFT

@@ -18,10 +18,10 @@ MIGRATIONS = [
         "0.1.0",
         "sql",
         textwrap.dedent("""
-        ALTER TABLE test_results ADD COLUMN input_tokens INTEGER;
-        ALTER TABLE test_results ADD COLUMN cache_read INTEGER;
-        ALTER TABLE test_results ADD COLUMN char_count INTEGER;
-        ALTER TABLE test_results ADD COLUMN token_density FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS input_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS cache_read INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS token_density FLOAT;
     """).strip(),
     ),
     (
@@ -33,16 +33,16 @@ MIGRATIONS = [
         "0.2.1",
         "sql",
         textwrap.dedent("""
-        ALTER TABLE test_results ADD COLUMN ttfb_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN ttfr_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN think_time_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN content_tokens INTEGER;
-        ALTER TABLE test_results ADD COLUMN thinking_tokens INTEGER;
-        ALTER TABLE test_results ADD COLUMN tps_content FLOAT;
-        ALTER TABLE test_results ADD COLUMN content_char_count INTEGER;
-        ALTER TABLE test_results ADD COLUMN thinking_char_count INTEGER;
-        ALTER TABLE test_results ADD COLUMN ping_ms FLOAT;
-        ALTER TABLE test_results ADD COLUMN ping_samples TEXT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ttfb_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ttfr_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS think_time_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS content_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS thinking_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS tps_content FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS content_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS thinking_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_samples TEXT;
     """).strip(),
     ),
 ]
@@ -252,6 +252,7 @@ async def run_migrations(db):
             if "postgresql" in settings.database_url:
                 await db.rollback()
 
+    is_pg = "postgresql" in settings.database_url
     for version, mtype, content in MIGRATIONS:
         if version > current:
             logger.info(f"Applying migration to {version}...")
@@ -260,11 +261,25 @@ async def run_migrations(db):
                     stmt = stmt.strip()
                     if not stmt:
                         continue
+
+                    # SQLite doesn't support 'IF NOT EXISTS' in ALTER TABLE ADD COLUMN.
+                    # We strip it for non-PostgreSQL databases.
+                    if not is_pg:
+                        # Case-insensitive removal of 'IF NOT EXISTS'
+                        import re
+
+                        stmt = re.sub(
+                            r"\s+IF\s+NOT\s+EXISTS\s+",
+                            " ",
+                            stmt,
+                            flags=re.IGNORECASE,
+                        )
+
                     try:
                         await db.execute(text(stmt))
                     except Exception as e:
                         # Rollback on PostgreSQL to clear any aborted transaction state.
-                        if "postgresql" in settings.database_url:
+                        if is_pg:
                             try:
                                 await db.rollback()
                             except Exception:
@@ -275,7 +290,10 @@ async def run_migrations(db):
                             logger.warning(
                                 f"Column already exists in {version}, skipping: {stmt}"
                             )
-                        elif "InFailedSQLTransactionError" in type(e).__name__:
+                        elif (
+                            "infailedsqltransactionerror" in err_str
+                            or "transaction is aborted" in err_str
+                        ):
                             # Transaction was aborted. Rollback above cleared the state —
                             # retry once so the statement runs in a fresh transaction.
                             try:

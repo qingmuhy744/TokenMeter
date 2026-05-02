@@ -78,52 +78,165 @@ class OpenAIParser(BaseParser):
             if reasoning:
                 if tracker.time_first_reasoning is None:
                     tracker.time_first_reasoning = now
+                self._is_thinking = True
+                self._in_content = False
                 tracker.thinking_char_count += len(reasoning)
                 tracker.char_count += len(reasoning)
                 tracker.delta_count += 1
                 char_delta += len(reasoning)
 
             if content:
-                import re
+                # If we are thinking, look for </think>
+                if self._is_thinking:
+                    if "</think>" in content:
+                        idx = content.index("</think>")
+                        before = content[:idx]
+                        after = content[idx + len("</think>") :]
 
-                parts = re.split(r"(<think>|</think>)", content)
-                for part in parts:
-                    if not part:
-                        continue
-                    if part == "<think>":
+                        if before:
+                            tracker.thinking_char_count += len(before)
+                            tracker.char_count += len(before)
+                            char_delta += len(before)
+
+                        tracker.time_think_end = now
+                        self._is_thinking = False
+                        self._in_content = True
+
+                        if after.strip():
+                            if tracker.time_first_token is None:
+                                tracker.time_first_token = now
+                            tracker.content_char_count += len(after)
+                            tracker.char_count += len(after)
+                            tracker.delta_count += 1
+                            char_delta += len(after)
+                        elif after:
+                            # Just whitespace after </think>
+                            tracker.char_count += len(after)
+                            char_delta += len(after)
+                    else:
+                        # Still thinking
+                        tracker.thinking_char_count += len(content)
+                        tracker.char_count += len(content)
+                        char_delta += len(content)
+                        # We don't increment delta_count for thinking chunks to keep TPS focused on generation
+                elif self._in_content:
+                    # Already in content state
+                    if tracker.time_think_end is not None and not content.strip():
+                        # Still skipping leading whitespace after </think>
+                        tracker.char_count += len(content)
+                        char_delta += len(content)
+                    else:
+                        if tracker.time_first_token is None:
+                            tracker.time_first_token = now
+                        tracker.content_char_count += len(content)
+                        tracker.char_count += len(content)
+                        tracker.delta_count += 1
+                        char_delta += len(content)
+                else:
+                    # Neither thinking nor in_content yet
+                    if "<think>" in content:
+                        idx = content.index("<think>")
+                        before = content[:idx]
+                        after = content[idx + len("<think>") :]
+
+                        if before.strip():
+                            if tracker.time_first_token is None:
+                                tracker.time_first_token = now
+                            tracker.content_char_count += len(before)
+                            tracker.char_count += len(before)
+                            tracker.delta_count += 1
+                            char_delta += len(before)
+                        elif before:
+                            tracker.char_count += len(before)
+                            char_delta += len(before)
+
                         if tracker.time_first_reasoning is None:
                             tracker.time_first_reasoning = now
                         self._is_thinking = True
-                        tracker.thinking_char_count += len(part)
-                        tracker.char_count += len(part)
-                        char_delta += len(part)
-                    elif part == "</think>":
-                        tracker.time_think_end = now
-                        self._is_thinking = False
-                        tracker.thinking_char_count += len(part)
-                        tracker.char_count += len(part)
-                        char_delta += len(part)
-                    else:
-                        if self._is_thinking:
-                            tracker.thinking_char_count += len(part)
-                        else:
-                            # Content state
+                        
+                        # Check if </think> is ALSO in this same chunk (after <think>)
+                        if "</think>" in after:
+                            idx2 = after.index("</think>")
+                            think_content = after[:idx2]
+                            post_content = after[idx2 + len("</think>") :]
+                            
+                            if think_content:
+                                tracker.thinking_char_count += len(think_content)
+                                tracker.char_count += len(think_content)
+                                char_delta += len(think_content)
+                            
+                            tracker.time_think_end = now
+                            self._is_thinking = False
                             self._in_content = True
-                            if (
-                                tracker.time_think_end is not None
-                                and tracker.time_first_token is None
-                                and not part.strip()
-                            ):
-                                # Skip leading whitespace after </think> for TTFT
-                                tracker.content_char_count += len(part)
-                            else:
+                            
+                            if post_content.strip():
                                 if tracker.time_first_token is None:
                                     tracker.time_first_token = now
-                                tracker.content_char_count += len(part)
+                                tracker.content_char_count += len(post_content)
+                                tracker.char_count += len(post_content)
                                 tracker.delta_count += 1
+                                char_delta += len(post_content)
+                            elif post_content:
+                                tracker.char_count += len(post_content)
+                                char_delta += len(post_content)
+                        else:
+                            # Still thinking after <think>
+                            if after:
+                                tracker.thinking_char_count += len(after)
+                                tracker.char_count += len(after)
+                                char_delta += len(after)
+                    else:
+                        # No <think> tag, start content immediately
+                        self._in_content = True
+                        if tracker.time_first_token is None:
+                            tracker.time_first_token = now
+                        tracker.content_char_count += len(content)
+                        tracker.char_count += len(content)
+                        tracker.delta_count += 1
+                        char_delta += len(content)
 
-                        tracker.char_count += len(part)
-                        char_delta += len(part)
+
+                        if after:
+                            tracker.thinking_char_count += len(after)
+                            tracker.char_count += len(after)
+                            tracker.delta_count += 1
+                            char_delta += len(after)
+                    elif "</think>" in content:
+                        # Bare </think> tag (thinking already started via reasoning_content)
+                        idx = content.index("</think>")
+                        before = content[:idx]
+                        after = content[idx + len("</think>") :]
+
+                        if before:
+                            tracker.thinking_char_count += len(before)
+                            tracker.char_count += len(before)
+                            char_delta += len(before)
+
+                        if tracker.time_first_reasoning is None:
+                            tracker.time_first_reasoning = now
+                        tracker.time_think_end = now
+                        self._is_thinking = False
+                        self._in_content = True
+
+                        if after.strip():
+                            if tracker.time_first_token is None:
+                                tracker.time_first_token = now
+                            tracker.content_char_count += len(after)
+                            tracker.char_count += len(after)
+                            tracker.delta_count += 1
+                            char_delta += len(after)
+                    else:
+                        if tracker.time_think_end is not None and not content.strip():
+                            tracker.char_count += len(content)
+                            char_delta += len(content)
+                        elif content.strip():
+                            self._in_content = True
+                            if tracker.time_first_token is None:
+                                tracker.time_first_token = now
+                            tracker.content_char_count += len(content)
+                            tracker.char_count += len(content)
+                            tracker.delta_count += 1
+                            char_delta += len(content)
 
             if choices[0].get("finish_reason"):
                 self._finish_reason = choices[0]["finish_reason"]
