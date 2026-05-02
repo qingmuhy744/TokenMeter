@@ -140,7 +140,21 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
         </div>
       ),
-      cell: info => <span className="font-semibold whitespace-nowrap">{info.getValue()}</span>,
+      cell: info => {
+        const isPublicContext = window.location.pathname.startsWith('/status') || window.location.pathname.startsWith('/public');
+        return (
+          <span 
+            className="font-semibold whitespace-nowrap cursor-pointer hover:text-primary hover:underline"
+            title="Click to view details"
+            onClick={() => {
+              const target = isPublicContext ? `/public/history?plan_id=${info.row.original.plan_id}` : `/history?plan_id=${info.row.original.plan_id}`;
+              navigate(target);
+            }}
+          >
+            {info.getValue()}
+          </span>
+        );
+      },
     }),
     columnHelper.accessor("latest_status", {
       header: "Status",
@@ -297,7 +311,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         );
       },
     }),
-  ], [t, selectedIds, onToggleSelection]);
+  ], [t, selectedIds, onToggleSelection, navigate]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -312,8 +326,6 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
   });
 
   if (loading && data.length === 0) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading performance matrix...</div>;
-
-  const isPublicContext = window.location.pathname.startsWith('/status') || window.location.pathname.startsWith('/public');
 
   return (
     <div className="space-y-4">
@@ -357,9 +369,16 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
 
       <Card className="overflow-hidden border border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
         <CardHeader className="bg-muted/30 border-b border-border/50 py-4 flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-lg font-semibold tracking-tight">
-            {days}-Day Performance Matrix
-          </CardTitle>
+          <div>
+            <CardTitle className="text-lg font-semibold tracking-tight">
+              {days}-Day Performance Matrix
+            </CardTitle>
+            <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-2">
+              <span>🖱️ Drag to scroll</span>
+              <span className="opacity-50">•</span>
+              <span>🔗 Click model name for details</span>
+            </p>
+          </div>
           {loading && <div className="text-[10px] text-muted-foreground animate-pulse">Updating...</div>}
         </CardHeader>
         <CardContent 
@@ -394,13 +413,9 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   <TableRow 
                     key={row.id} 
                     className={cn(
-                      "group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer text-sm",
+                      "group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 text-sm",
                       isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background"
                     )}
-                    onClick={() => {
-                      const target = isPublicContext ? `/public/history?plan_id=${row.original.plan_id}` : `/history?plan_id=${row.original.plan_id}`;
-                      navigate(target);
-                    }}
                   >
                     {row.getVisibleCells().map((cell, index) => (
                       <TableCell 
