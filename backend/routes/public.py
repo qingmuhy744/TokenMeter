@@ -137,9 +137,11 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
     since = datetime.now(timezone.utc) - _range_to_timedelta(range)
 
     async with async_session() as db:
-        # Get active plans
+        # Get only actual models (those that have a parent suite)
         plans_result = await db.execute(
-            select(TokenPlan).where(TokenPlan.is_active == True).order_by(TokenPlan.id)  # noqa: E712
+            select(TokenPlan)
+            .where(TokenPlan.is_active, TokenPlan.parent_id.is_not(None))
+            .order_by(TokenPlan.id)
         )
         plans = plans_result.scalars().all()
         plan_ids = [p.id for p in plans]
