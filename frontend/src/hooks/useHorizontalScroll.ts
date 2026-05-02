@@ -13,12 +13,17 @@ export function useHorizontalScroll() {
     // --- 1. Mouse Wheel to Horizontal Scroll ---
     const onWheel = (e: WheelEvent) => {
       // If the scroll is already purely horizontal (e.g. trackpad), let the browser handle it
-      if (e.deltaX !== 0) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      
+      // If we are at the very left or very right edge and trying to scroll further out, let it pass to scroll the page vertically
+      const isAtLeftEdge = el.scrollLeft === 0 && e.deltaY < 0;
+      const isAtRightEdge = el.scrollLeft >= (el.scrollWidth - el.clientWidth) && e.deltaY > 0;
+      
+      if (isAtLeftEdge || isAtRightEdge) {
+        return; // Don't prevent default, allow page to scroll vertically
+      }
 
-      el.scrollTo({
-        left: el.scrollLeft + e.deltaY * 1.5,
-        behavior: "auto"
-      });
+      el.scrollLeft += e.deltaY;
       e.preventDefault();
     };
 
@@ -30,26 +35,33 @@ export function useHorizontalScroll() {
     const onMouseDown = (e: MouseEvent) => {
       // Don't intercept clicks on interactive elements
       const target = e.target as HTMLElement;
-      if (['INPUT', 'BUTTON', 'A', 'LABEL', 'SELECT'].includes(target.tagName) || target.closest('button') || target.closest('input')) {
+      if (
+        ['INPUT', 'BUTTON', 'A', 'SELECT', 'TEXTAREA'].includes(target.tagName) || 
+        target.closest('button') || 
+        target.closest('input') ||
+        target.closest('a')
+      ) {
         return;
       }
       
       isDown = true;
       el.style.cursor = 'grabbing';
-      el.style.userSelect = 'none'; // Prevent text selection while dragging
+      el.style.userSelect = 'none'; 
       startX = e.pageX - el.offsetLeft;
       scrollLeft = el.scrollLeft;
     };
 
     const onMouseLeave = () => {
+      if (!isDown) return;
       isDown = false;
-      el.style.cursor = 'grab';
+      el.style.cursor = '';
       el.style.removeProperty('user-select');
     };
 
     const onMouseUp = () => {
+      if (!isDown) return;
       isDown = false;
-      el.style.cursor = 'grab';
+      el.style.cursor = '';
       el.style.removeProperty('user-select');
     };
 
@@ -60,9 +72,6 @@ export function useHorizontalScroll() {
       const walk = (x - startX) * 1.5; // Scroll speed multiplier
       el.scrollLeft = scrollLeft - walk;
     };
-
-    // Initialize cursor
-    el.style.cursor = 'grab';
 
     // Attach events
     el.addEventListener("wheel", onWheel, { passive: false });
