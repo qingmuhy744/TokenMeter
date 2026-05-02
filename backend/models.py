@@ -21,10 +21,10 @@ class TokenPlan(Base):
     interval_minutes: Mapped[int] = mapped_column(Integer, default=60)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
@@ -51,11 +51,21 @@ class TestResult(Base):
     cache_read: Mapped[int | None] = mapped_column(Integer, nullable=True)
     char_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     token_density: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ttfb_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ttfr_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    think_time_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    content_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    thinking_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    tps_content: Mapped[float | None] = mapped_column(Float, nullable=True)
+    content_char_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    thinking_char_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    ping_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ping_samples: Mapped[str | None] = mapped_column(Text, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     debug_chunks: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=lambda: datetime.now(timezone.utc)
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
 
     plan: Mapped["TokenPlan"] = relationship(back_populates="results")

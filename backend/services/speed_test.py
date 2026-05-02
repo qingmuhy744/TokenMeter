@@ -1,9 +1,11 @@
 import time
 import json
+import asyncio
 import logging
 import httpx
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -13,9 +15,14 @@ class RequestTracker:
     """Tracks timing and token state for a single streaming request."""
 
     time_sent: float
+    time_first_byte: float | None = None
     time_first_token: float | None = None
+    time_first_reasoning: float | None = None
+    time_think_end: float | None = None
     time_finished: float | None = None
     char_count: int = 0
+    content_char_count: int = 0
+    thinking_char_count: int = 0
     delta_count: int = 0
     input_tokens: int | None = None
     output_tokens: int | None = None
@@ -45,6 +52,8 @@ class OpenAIParser(BaseParser):
     def __init__(self):
         self._seen_done = False
         self._finish_reason: str | None = None
+        self._is_thinking = False
+        self._in_content = False
 
     def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
         if line == "data: [DONE]":
@@ -59,28 +68,68 @@ class OpenAIParser(BaseParser):
         except json.JSONDecodeError:
             return 0
 
-        # T1: first non-empty delta.content
-        if tracker.time_first_token is None:
-            choices = data.get("choices", [])
-            if choices:
-                delta = choices[0].get("delta", {})
-                content = delta.get("content", "")
-                if content:
-                    tracker.time_first_token = now
-                    tracker.char_count += len(content)
-                    tracker.delta_count += 1
-                    return len(content)
-
-        # Track content even after first token
         choices = data.get("choices", [])
+        char_delta = 0
         if choices:
             delta = choices[0].get("delta", {})
             content = delta.get("content", "")
-            if content:
-                tracker.char_count += len(content)
-                tracker.delta_count += 1
+            reasoning = delta.get("reasoning_content", "")
 
-        # Capture usage (authoritative for token counts)
+            if reasoning:
+                if tracker.time_first_reasoning is None:
+                    tracker.time_first_reasoning = now
+                tracker.thinking_char_count += len(reasoning)
+                tracker.char_count += len(reasoning)
+                tracker.delta_count += 1
+                char_delta += len(reasoning)
+
+            if content:
+                import re
+
+                parts = re.split(r"(<think>|</think>)", content)
+                for part in parts:
+                    if not part:
+                        continue
+                    if part == "<think>":
+                        if tracker.time_first_reasoning is None:
+                            tracker.time_first_reasoning = now
+                        self._is_thinking = True
+                        tracker.thinking_char_count += len(part)
+                        tracker.char_count += len(part)
+                        char_delta += len(part)
+                    elif part == "</think>":
+                        tracker.time_think_end = now
+                        self._is_thinking = False
+                        tracker.thinking_char_count += len(part)
+                        tracker.char_count += len(part)
+                        char_delta += len(part)
+                    else:
+                        if self._is_thinking:
+                            tracker.thinking_char_count += len(part)
+                        else:
+                            # Content state
+                            self._in_content = True
+                            if (
+                                tracker.time_think_end is not None
+                                and tracker.time_first_token is None
+                                and not part.strip()
+                            ):
+                                # Skip leading whitespace after </think> for TTFT
+                                tracker.content_char_count += len(part)
+                            else:
+                                if tracker.time_first_token is None:
+                                    tracker.time_first_token = now
+                                tracker.content_char_count += len(part)
+                                tracker.delta_count += 1
+
+                        tracker.char_count += len(part)
+                        char_delta += len(part)
+
+            if choices[0].get("finish_reason"):
+                self._finish_reason = choices[0]["finish_reason"]
+                if tracker.time_finished is None:
+                    tracker.time_finished = now
+
         usage = data.get("usage", {})
         if usage:
             if usage.get("prompt_tokens"):
@@ -90,13 +139,7 @@ class OpenAIParser(BaseParser):
             if usage.get("total_tokens"):
                 tracker.total_tokens = usage["total_tokens"]
 
-        # Early finish_reason (don't exit yet — must wait for [DONE] or usage)
-        if data.get("choices", [{}])[0].get("finish_reason"):
-            self._finish_reason = data["choices"][0]["finish_reason"]
-            if tracker.time_finished is None:
-                tracker.time_finished = now
-
-        return 0
+        return char_delta
 
     def is_done(self, tracker: RequestTracker) -> bool:
         return self._seen_done
@@ -106,6 +149,7 @@ class AnthropicParser(BaseParser):
     """Parser for Anthropic /v1/messages SSE streams."""
 
     def __init__(self):
+        self._is_thinking = False
         self._current_event: str = ""
 
     def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
@@ -126,21 +170,39 @@ class AnthropicParser(BaseParser):
             tracker.input_tokens = usage.get("input_tokens")
             tracker.cache_read = usage.get("cache_read_input_tokens")
 
-        elif data_type in ("content_block_delta", "message_delta"):
+        elif data_type == "content_block_start":
+            block_type = data.get("content_block", {}).get("type", "")
+            if block_type == "thinking":
+                self._is_thinking = True
+
+        elif data_type == "content_block_delta":
             delta = data.get("delta", {})
+            delta_type = delta.get("type", "")
             text = delta.get("text", "")
             thinking = delta.get("thinking", "")
 
-            # T1: first non-empty text or thinking
-            if tracker.time_first_token is None and (text or thinking):
-                tracker.time_first_token = now
-
-            if text:
-                tracker.char_count += len(text)
-                tracker.delta_count += 1
-            if thinking:
+            if delta_type == "thinking_delta" and thinking:
+                if tracker.time_first_reasoning is None:
+                    tracker.time_first_reasoning = now
+                self._is_thinking = True
+                tracker.thinking_char_count += len(thinking)
                 tracker.char_count += len(thinking)
                 tracker.delta_count += 1
+
+            elif delta_type == "text_delta" and text:
+                if self._is_thinking:
+                    tracker.time_think_end = now
+                    self._is_thinking = False
+                if tracker.time_first_token is None:
+                    tracker.time_first_token = now
+                tracker.content_char_count += len(text)
+                tracker.char_count += len(text)
+                tracker.delta_count += 1
+
+        elif data_type == "content_block_stop":
+            if self._is_thinking:
+                tracker.time_think_end = now
+                self._is_thinking = False
 
         elif data_type == "message_delta":
             usage = data.get("usage", {})
@@ -173,6 +235,24 @@ class SpeedTestResult:
     error: str | None = None
     note: str | None = None
     debug_chunks: list[str] = field(default_factory=list)
+
+
+def _clean_ping_samples(samples: list[float]) -> float | None:
+    """IQR 软剔除后取中值。"""
+    if not samples:
+        return None
+    if len(samples) <= 2:
+        return sorted(samples)[len(samples) // 2]
+    s = sorted(samples)
+    q1 = s[len(s) // 4]
+    q3 = s[3 * len(s) // 4]
+    iqr = q3 - q1
+    lo = q1 - 1.5 * iqr
+    hi = q3 + 1.5 * iqr
+    cleaned = [x for x in s if lo <= x <= hi]
+    if not cleaned:
+        return s[len(s) // 2]
+    return cleaned[len(cleaned) // 2]
 
 
 class SpeedTester:
@@ -224,6 +304,31 @@ class SpeedTester:
         logger.info("Testing Anthropic: %s model=%s", url, model)
         return await self._stream_request(url, headers, body, AnthropicParser())
 
+    async def _measure_ping(
+        self, url: str, interval: float = 1.0, event: asyncio.Event | None = None
+    ) -> list[float]:
+        """并行 ping：固定间隔发 HTTP HEAD，直到 event 被设置。"""
+        samples: list[float] = []
+        parsed = urlparse(url)
+        ping_url = f"{parsed.scheme}://{parsed.netloc}"
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=5.0, read=5.0),
+            trust_env=True,
+        ) as client:
+            while event is None or not event.is_set():
+                start = time.monotonic()
+                try:
+                    await client.head(ping_url)
+                except Exception:
+                    pass
+                else:
+                    rtt = (time.monotonic() - start) * 1000
+                    samples.append(rtt)
+                if event and event.is_set():
+                    break
+                await asyncio.sleep(interval)
+        return samples
+
     async def _stream_request(
         self, url: str, headers: dict, body: dict, parser: BaseParser
     ) -> SpeedTestResult:
@@ -231,6 +336,10 @@ class SpeedTester:
         result = SpeedTestResult()
         last_chunk_time = tracker.time_sent
         debug_chunks: list[str] = []
+        ping_done = asyncio.Event()
+        ping_task = asyncio.create_task(
+            self._measure_ping(url, interval=1.0, event=ping_done)
+        )
 
         try:
             async with httpx.AsyncClient(
@@ -247,6 +356,7 @@ class SpeedTester:
                 ) as response:
                     logger.info("Response status: %d", response.status_code)
                     response.raise_for_status()
+                    tracker.time_first_byte = time.monotonic()
                     buffer = ""
                     async for raw_bytes in response.aiter_bytes():
                         buffer += raw_bytes.decode("utf-8", errors="replace")
@@ -269,6 +379,15 @@ class SpeedTester:
             tracker.error = str(e)
             tracker.time_finished = last_chunk_time
             logger.error("Speed test failed: %s", e)
+        finally:
+            ping_done.set()
+
+        try:
+            ping_samples = await ping_task
+        except Exception:
+            ping_samples = []
+        result.ping_samples = ping_samples
+        result.ping_ms = _clean_ping_samples(ping_samples)
 
         total_ms = (tracker.time_finished or tracker.time_sent) - tracker.time_sent
 
@@ -281,8 +400,25 @@ class SpeedTester:
         result.input_tokens = tracker.input_tokens
         result.cache_read = tracker.cache_read
         result.char_count = tracker.char_count
+        result.content_char_count = tracker.content_char_count
+        result.thinking_char_count = tracker.thinking_char_count
         result.total_time_ms = total_ms * 1000
         result.error = tracker.error
+
+        # TTFB: Time To First Byte
+        if tracker.time_first_byte is not None:
+            result.ttfb_ms = (tracker.time_first_byte - tracker.time_sent) * 1000
+        # TTFR: Time To First Reasoning
+        if tracker.time_first_reasoning is not None:
+            result.ttfr_ms = (tracker.time_first_reasoning - tracker.time_sent) * 1000
+        # Think time
+        if (
+            tracker.time_think_end is not None
+            and tracker.time_first_reasoning is not None
+        ):
+            result.think_time_ms = (
+                tracker.time_think_end - tracker.time_first_reasoning
+            ) * 1000
 
         output_tokens = tracker.output_tokens or tracker.total_tokens or 0
         if output_tokens == 0 and tracker.delta_count > 0:
@@ -306,6 +442,24 @@ class SpeedTester:
                 result.tps_generate = output_tokens / (generate_ms)
                 if tracker.char_count > 0:
                     result.token_density = tracker.char_count / output_tokens
+                    # Estimate thinking/content tokens via char ratio
+                    thinking_chars = tracker.thinking_char_count or 0
+                    content_chars = tracker.content_char_count or 0
+                    if thinking_chars + content_chars > 0:
+                        total_chars = thinking_chars + content_chars
+                        result.thinking_tokens = round(
+                            thinking_chars / total_chars * output_tokens
+                        )
+                        result.content_tokens = round(
+                            content_chars / total_chars * output_tokens
+                        )
+                        content_generate_ms = (
+                            tracker.time_finished or tracker.time_sent
+                        ) - tracker.time_first_token
+                        if content_generate_ms > 0 and result.content_tokens:
+                            result.tps_content = (
+                                result.content_tokens / content_generate_ms
+                            )
 
         logger.info(
             "Test done: tokens=%d char_count=%d ttft=%.0fms tps=%.1f density=%.2f error=%s",

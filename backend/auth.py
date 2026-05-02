@@ -1,6 +1,7 @@
 import time
 import secrets
 import bcrypt
+import hashlib
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import select
 
@@ -77,7 +78,9 @@ async def login(body: LoginRequest, request: Request):
     async with async_session() as db:
         result = await db.execute(select(User).where(User.username == body.username))
         user = result.scalar_one_or_none()
-    if not user or not verify_password(body.password, user.password_hash):
+    if not user or not verify_password(
+        body.password.get_secret_value(), user.password_hash
+    ):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     request.session[SESSION_KEY] = user.id
     return {"message": "Logged in", "username": user.username}
@@ -98,12 +101,12 @@ async def me(request: Request):
 @router.post("/change-password")
 async def change_password(body: ChangePasswordRequest, request: Request):
     user = await get_current_user(request)
-    if not verify_password(body.old_password, user.password_hash):
+    if not verify_password(body.old_password.get_secret_value(), user.password_hash):
         raise HTTPException(status_code=400, detail="Wrong old password")
     async with async_session() as db:
         result = await db.execute(select(User).where(User.id == user.id))
         u = result.scalar_one()
-        u.password_hash = hash_password(body.new_password)
+        u.password_hash = hash_password(body.new_password.get_secret_value())
         await db.commit()
     return {"message": "Password changed"}
 
@@ -119,8 +122,10 @@ async def ensure_admin():
         if result.scalar_one_or_none():
             return
         setup_token = generate_password()
+        # Hash with SHA256 first because the frontend will send the SHA256 hash
+        client_hash = hashlib.sha256(setup_token.encode()).hexdigest()
         admin = User(
-            username=settings.ADMIN_USER, password_hash=hash_password(setup_token)
+            username=settings.ADMIN_USER, password_hash=hash_password(client_hash)
         )
         db.add(admin)
         await db.commit()

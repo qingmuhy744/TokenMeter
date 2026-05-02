@@ -223,6 +223,22 @@ async def trigger_test(plan_id: int, request: Request):
             tps_generate=median.tps_generate,
             total_tokens=median.total_tokens,
             total_time_ms=median.total_time_ms,
+            input_tokens=median.input_tokens,
+            cache_read=median.cache_read,
+            char_count=median.char_count,
+            token_density=median.token_density,
+            ttfb_ms=median.ttfb_ms,
+            ttfr_ms=median.ttfr_ms,
+            think_time_ms=median.think_time_ms,
+            content_tokens=median.content_tokens,
+            thinking_tokens=median.thinking_tokens,
+            tps_content=median.tps_content,
+            content_char_count=median.content_char_count,
+            thinking_char_count=median.thinking_char_count,
+            ping_ms=median.ping_ms,
+            ping_samples=json.dumps(median.ping_samples)
+            if median.ping_samples is not None
+            else None,
             error=median.error,
             note=median.note,
             debug_chunks=json.dumps(median.debug_chunks)

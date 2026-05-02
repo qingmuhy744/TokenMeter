@@ -29,7 +29,18 @@ def _reset_login_rate_limit():
 
 @pytest.fixture
 async def db_engine():
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    import os
+
+    # Default to SQLite memory for local speed, allow override for CI/matrix
+    db_url = os.getenv("TEST_DATABASE_URL")
+    if not db_url:
+        db_url = "sqlite+aiosqlite:///:memory:"
+
+    # Handle PostgreSQL URL conversion if needed (sqlalchemy requires +asyncpg)
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+    engine = create_async_engine(db_url)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield engine
@@ -49,6 +60,7 @@ async def db_session(db_engine):
     import backend.routes.results as results_mod
     import backend.routes.settings as settings_mod
     import backend.routes.plans as plans_mod
+    import backend.auth as auth_mod
 
     session_factory = async_sessionmaker(
         db_engine, class_=AsyncSession, expire_on_commit=False
@@ -58,19 +70,21 @@ async def db_session(db_engine):
         def ctx():
             return _MockAsyncSessionCtx(session)
 
-        # Patch async_session at the source AND in every route module that
+        # Patch async_session at the source AND in every module that
         # imported it via "from backend.database import async_session".
         original_db = database_mod.async_session
         original_public = public_mod.async_session
         original_results = results_mod.async_session
         original_settings = settings_mod.async_session
         original_plans = plans_mod.async_session
+        original_auth = auth_mod.async_session
 
         database_mod.async_session = ctx
         public_mod.async_session = ctx
         results_mod.async_session = ctx
         settings_mod.async_session = ctx
         plans_mod.async_session = ctx
+        auth_mod.async_session = ctx
 
         yield session
 
@@ -79,3 +93,4 @@ async def db_session(db_engine):
         results_mod.async_session = original_results
         settings_mod.async_session = original_settings
         plans_mod.async_session = original_plans
+        auth_mod.async_session = original_auth

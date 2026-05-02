@@ -11,3 +11,8 @@ dist/
 .python-version
 .worktrees/
 *.db.bak
+htmlcov/
+.coverage
+.coverage.*
+.cache
+.DS_Store

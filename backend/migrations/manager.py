@@ -1,6 +1,8 @@
 import logging
 import textwrap
 import os
+import hashlib
+import bcrypt
 from sqlalchemy import create_engine, select, text, inspect
 from sqlalchemy.orm import sessionmaker
 from backend.models import Setting, User, TokenPlan, TestResult
@@ -16,22 +18,86 @@ MIGRATIONS = [
         "0.1.0",
         "sql",
         textwrap.dedent("""
-        ALTER TABLE test_results ADD COLUMN input_tokens INTEGER;
-        ALTER TABLE test_results ADD COLUMN cache_read INTEGER;
-        ALTER TABLE test_results ADD COLUMN char_count INTEGER;
-        ALTER TABLE test_results ADD COLUMN token_density FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS input_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS cache_read INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS token_density FLOAT;
+    """).strip(),
+    ),
+    (
+        "0.2.0",
+        "func",
+        "rehash_passwords_sha256",
+    ),
+    (
+        "0.2.1",
+        "sql",
+        textwrap.dedent("""
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ttfb_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ttfr_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS think_time_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS content_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS thinking_tokens INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS tps_content FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS content_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS thinking_char_count INTEGER;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_ms FLOAT;
+        ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_samples TEXT;
     """).strip(),
     ),
 ]
+
+
+async def rehash_passwords_sha256(db):
+    """Re-hash passwords from bcrypt(raw) to bcrypt(SHA256(raw)).
+
+    Before SHA256 was added to the frontend, password hashes were bcrypt(raw_password).
+    After SHA256, the login flow became: frontend sends SHA256(password) -> bcrypt.
+    Old hashes stored as bcrypt(raw_password) can't be verified by bcrypt(SHA256(password)).
+    Since we can't reverse bcrypt, we reset all passwords and log new setup tokens.
+    """
+    result = await db.execute(select(User))
+    users = result.scalars().all()
+
+    reset_count = 0
+    for user in users:
+        setup_token = _generate_password()
+        client_hash = hashlib.sha256(setup_token.encode()).hexdigest()
+        user.password_hash = bcrypt.hashpw(
+            client_hash.encode(), bcrypt.gensalt()
+        ).decode()
+        reset_count += 1
+        logger.warning(
+            f"Password reset for user '{user.username}'. New setup key: {setup_token}"
+        )
+
+    if reset_count > 0:
+        logger.info(
+            f"Rehashed {reset_count} user(s). Check logs above for new setup keys."
+        )
+
+
+def _generate_password(length: int = 16) -> str:
+    import secrets
+
+    return secrets.token_urlsafe(length)[:length]
 
 
 def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
     """Synchronous migration helper for row-by-row copy."""
     # Use sync engines for simpler row-by-row iteration
     sync_sqlite = create_engine(f"sqlite:///{sqlite_path}")
-    sync_pg = create_engine(
-        pg_url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
-    )
+
+    # Ensure we use a sync postgres driver (psycopg2) for the migration engine
+    sync_pg_url = pg_url
+    if sync_pg_url.startswith("postgresql+asyncpg://"):
+        sync_pg_url = sync_pg_url.replace(
+            "postgresql+asyncpg://", "postgresql+psycopg2://", 1
+        )
+    elif sync_pg_url.startswith("postgresql://"):
+        sync_pg_url = sync_pg_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+    sync_pg = create_engine(sync_pg_url)
 
     SqliteSession = sessionmaker(sync_sqlite)
     PgSession = sessionmaker(sync_pg)
@@ -44,7 +110,7 @@ def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
             logger.info(f"Copying table: {table_name}")
 
             # Get columns present in SQLite
-            inspector = inspect(src)
+            inspector = inspect(sync_sqlite)
             existing_columns = [
                 col["name"] for col in inspector.get_columns(table_name)
             ]
@@ -117,12 +183,21 @@ async def set_current_version(db, version):
 
 async def run_migrations(db):
     """Run all pending migrations."""
+    # 0. Identify latest version
+    latest_version = MIGRATIONS[-1][0] if MIGRATIONS else "0.0.0"
+
     # 1. Handle SQLite -> PG Migration if needed
+    migration_performed = False
     if "postgresql" in settings.database_url and os.path.exists(settings.DB_PATH):
         # Double check if PG is empty by checking if there are any users
         try:
             result = await db.execute(select(User))
-            if result.first() is None:
+            is_empty = result.first() is None
+
+            # CRITICAL: Close the transaction and release locks before sync migration
+            await db.rollback()
+
+            if is_empty:
                 logger.info(
                     "PostgreSQL detected and empty, and SQLite file exists. Triggering migration."
                 )
@@ -135,6 +210,7 @@ async def run_migrations(db):
                     # Cleanup
                     os.remove(settings.DB_PATH)
                     logger.info(f"Removed old SQLite file: {settings.DB_PATH}")
+                    migration_performed = True
                 except Exception as e:
                     logger.error(f"Migration failed: {e}")
         except Exception as e:
@@ -144,29 +220,102 @@ async def run_migrations(db):
     current = await get_current_version(db)
     logger.info(f"Current database version: {current}")
 
+    # Special case: If this is a fresh install (version 0.0.0) AND no SQLite migration was performed,
+    # it means Base.metadata.create_all already created the latest schema.
+    # We should only mark it as the latest version if there is truly no data.
+    if current == "0.0.0" and not migration_performed:
+        # Check if we have any data. If we have tables but version is 0.0.0,
+        # it's either a fresh install or a legacy DB without versioning.
+        try:
+            has_data = False
+            for model in [User, TokenPlan, TestResult, Setting]:
+                res = await db.execute(select(model).limit(1))
+                if res.first():
+                    has_data = True
+                    break
+
+            if not has_data:
+                logger.info(
+                    f"Fresh installation detected, setting version to {latest_version}"
+                )
+                await set_current_version(db, latest_version)
+                await db.commit()
+                return
+            else:
+                logger.info(
+                    "Legacy database detected (v0.0.0 with data). Running migrations..."
+                )
+        except Exception as e:
+            # If check fails, play it safe and run migrations
+            logger.warning(f"Data check failed, proceeding with migrations: {e}")
+            try:
+                await db.rollback()
+            except Exception:
+                pass
+
+    # Detect database type from the session's bind
+    try:
+        bind = db.get_bind()
+        is_pg = bind.dialect.name == "postgresql"
+    except Exception:
+        # Fallback to settings if bind check fails
+        is_pg = "postgresql" in settings.database_url
+
     for version, mtype, content in MIGRATIONS:
         if version > current:
             logger.info(f"Applying migration to {version}...")
             if mtype == "sql":
-                # Split by semicolon and run each statement
-                # Simple split is fine for basic migrations
                 for stmt in content.split(";"):
                     stmt = stmt.strip()
-                    if stmt:
-                        try:
-                            await db.execute(text(stmt))
-                        except Exception as e:
-                            # Ignore errors like "duplicate column" which might happen
-                            # if migrations were partially applied or manually run
-                            if (
-                                "duplicate column" in str(e).lower()
-                                or "already exists" in str(e).lower()
-                            ):
-                                logger.warning(
-                                    f"Column already exists in {version}, skipping: {stmt}"
-                                )
-                            else:
-                                raise e
+                    if not stmt:
+                        continue
+
+                    # SQLite doesn't support 'IF NOT EXISTS' in ALTER TABLE ADD COLUMN.
+                    # We strip it for non-PostgreSQL databases.
+                    if not is_pg:
+                        # Case-insensitive removal of 'IF NOT EXISTS'
+                        import re
+
+                        stmt = re.sub(
+                            r"\s+IF\s+NOT\s+EXISTS\s+",
+                            " ",
+                            stmt,
+                            flags=re.IGNORECASE,
+                        )
+
+                    try:
+                        await db.execute(text(stmt))
+                    except Exception as e:
+                        err_str = str(e).lower()
+                        # Duplicate column error is not fatal (idempotency)
+                        if "duplicate column" in err_str or "already exists" in err_str:
+                            logger.warning(
+                                f"Column already exists in {version}, skipping: {stmt}"
+                            )
+                            # On PostgreSQL, we MUST rollback to clear the aborted transaction state
+                            # but we can continue to the next statement in a NEW transaction.
+                            if is_pg:
+                                await db.rollback()
+                            continue
+
+                        # If the transaction is aborted, we need to rollback and retry
+                        if is_pg and (
+                            "infailedsqltransactionerror" in err_str
+                            or "transaction is aborted" in err_str
+                        ):
+                            try:
+                                await db.rollback()
+                                await db.execute(text(stmt))
+                            except Exception as retry_e:
+                                raise retry_e from None
+                        else:
+                            raise
+            elif mtype == "func":
+                migration_func = globals().get(content)
+                if migration_func:
+                    await migration_func(db)
+                else:
+                    logger.error(f"Migration function '{content}' not found, skipping.")
 
             await set_current_version(db, version)
             await db.commit()

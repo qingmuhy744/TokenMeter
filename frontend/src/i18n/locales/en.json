@@ -52,7 +52,9 @@
     "total": "Total",
     "prev": "Prev",
     "next": "Next",
-    "page": "Page"
+    "page": "Page",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this test result?"
   },
   "settings": {
     "title": "Settings",

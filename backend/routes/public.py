@@ -238,6 +238,19 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
                     "tps_generate": round(latest.tps_generate, 1)
                     if latest.tps_generate
                     else None,
+                    "tps_content": round(latest.tps_content, 1)
+                    if latest.tps_content
+                    else None,
+                    "ttfb_ms": round(latest.ttfb_ms) if latest.ttfb_ms else None,
+                    "ttfr_ms": round(latest.ttfr_ms) if latest.ttfr_ms else None,
+                    "think_time_ms": round(latest.think_time_ms)
+                    if latest.think_time_ms
+                    else None,
+                    "thinking_tokens": latest.thinking_tokens,
+                    "content_tokens": latest.content_tokens,
+                    "content_char_count": latest.content_char_count,
+                    "thinking_char_count": latest.thinking_char_count,
+                    "ping_ms": round(latest.ping_ms) if latest.ping_ms else None,
                     "error": latest.error,
                     "is_unavailable": _is_unavailable(latest.error),
                     "created_at": latest_at.isoformat().replace("+00:00", "Z"),
