@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
-import type { Plan, PaginatedResults, TestResult } from "@/api/client";
+import type { Plan, PaginatedResults, TestResult, Stats } from "@/api/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -13,24 +13,27 @@ interface HistoryViewProps {
   planId?: string;
   isPublic?: boolean;
   onDelete?: (id: number) => Promise<void>;
+  statsDays?: number;
 }
 
-export default function HistoryView({ planId: initialPlanId, isPublic = false, onDelete }: HistoryViewProps) {
+export default function HistoryView({ planId: initialPlanId, isPublic = false, onDelete, statsDays = 7 }: HistoryViewProps) {
   const { t } = useTranslation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [results, setResults] = useState<PaginatedResults>({ items: [], total: 0, page: 1, size: 20 });
+  const [stats, setStats] = useState<Stats | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string>(() => {
-    return initialPlanId || "all";
+    const params = new URLSearchParams(window.location.search);
+    return initialPlanId || params.get("plan_id") || "all";
   });
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    // If we're not public, we can fetch all plans for the dropdown
     if (!isPublic) {
       api.getPlans().then(setPlans);
     }
   }, [isPublic]);
 
+  // Fetch paginated results for the table
   useEffect(() => {
     const params: Record<string, string> = { page: String(page), size: "20" };
     if (selectedPlan !== "all") params.plan_id = selectedPlan;
@@ -39,9 +42,29 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
     fetchFn().then(setResults);
   }, [selectedPlan, page, isPublic]);
 
+  // Fetch stats for the selected period
+  useEffect(() => {
+    let active = true;
+    if (selectedPlan !== "all") {
+      api.getStats(parseInt(selectedPlan), statsDays).then(res => {
+        if (active) setStats(res);
+      });
+    } else {
+      // Move to next microtask to satisfy React Compiler's rule against sync setState in effect
+      Promise.resolve().then(() => {
+        if (active) setStats(null);
+      });
+    }
+    return () => { active = false; };
+  }, [selectedPlan, statsDays]);
+
+  // Filter chart data to strictly last 24h
   const chartData = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
     return [...results.items]
-      .filter((r) => !r.error)
+      .filter((r) => !r.error && new Date(r.created_at) >= cutoff)
       .reverse()
       .map((r) => {
         const date = new Date(r.created_at);
@@ -59,24 +82,36 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       });
   }, [results.items]);
 
+  // Contiguous shading logic: find transitions and draw areas
   const shadingAreas = useMemo(() => {
     if (chartData.length < 2) return [];
     const areas = [];
     let startIdx = 0;
+    
+    // We iterate through all points. Since it's sorted, we group by isDay status.
     for (let i = 1; i < chartData.length; i++) {
       if (chartData[i].isDay !== chartData[startIdx].isDay) {
-        areas.push({ x1: chartData[startIdx].time, x2: chartData[i - 1].time, isDay: chartData[startIdx].isDay });
+        // We found a transition. Draw area from start to current point.
+        areas.push({
+          x1: chartData[startIdx].time,
+          x2: chartData[i].time, // End exactly at the next point's start to ensure no gaps
+          isDay: chartData[startIdx].isDay
+        });
         startIdx = i;
       }
     }
-    areas.push({ x1: chartData[startIdx].time, x2: chartData[chartData.length - 1].time, isDay: chartData[startIdx].isDay });
+    // Final segment
+    areas.push({
+      x1: chartData[startIdx].time,
+      x2: chartData[chartData.length - 1].time,
+      isDay: chartData[startIdx].isDay
+    });
     return areas;
   }, [chartData]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{isPublic ? t("history.trend") : t("history.title")}</h1>
         {!isPublic && (
           <div className="flex gap-4">
             <Select value={selectedPlan} onValueChange={(v) => { setSelectedPlan(v ?? "all"); setPage(1); }}>
@@ -98,9 +133,41 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
         )}
       </div>
 
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-primary/5 border-primary/10">
+            <CardContent className="pt-4">
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{statsDays}d Avg TTFT</p>
+              <p className="text-2xl font-bold font-mono">{stats.avg_ttft_ms?.toFixed(0) || '-'}ms</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-primary/5 border-primary/10">
+            <CardContent className="pt-4">
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{statsDays}d Avg TPS</p>
+              <p className="text-2xl font-bold font-mono">{stats.avg_tps_overall?.toFixed(1) || '-'}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-primary/5 border-primary/10">
+            <CardContent className="pt-4">
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{statsDays}d P95 TTFT</p>
+              <p className="text-2xl font-bold font-mono">{stats.p95_ttft_ms?.toFixed(0) || '-'}ms</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-primary/5 border-primary/10">
+            <CardContent className="pt-4">
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total Tests</p>
+              <p className="text-2xl font-bold font-mono">{stats.count}</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {chartData.length > 1 && (
         <Card className="shadow-md">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium opacity-70">{t("history.trend")}</CardTitle></CardHeader>
+          <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-sm font-medium opacity-70">Trend (Last 24 Hours Only)</CardTitle>
+            <span className="text-[10px] text-muted-foreground italic">Detailed points restricted to 24h for performance</span>
+          </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
@@ -127,10 +194,10 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     }}
                   />
                 ))}
-                <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="oklch(0.6 0.2 250)" strokeWidth={2.5} name={t("history.tpsOverall")} dot={false} />
-                <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="oklch(0.7 0.15 145)" strokeWidth={2} strokeDasharray="5 5" name={t("history.tpsGenerate")} dot={false} />
-                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="oklch(0.6 0.15 25)" strokeWidth={2.5} name={t("history.ttftMs")} dot={false} />
-                <Line yAxisId="right" type="monotone" dataKey="think" stroke="oklch(0.5 0.1 85)" strokeWidth={1.5} strokeDasharray="3 3" name={t("history.thinkTimeMs")} dot={false} />
+                <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="oklch(0.6 0.2 250)" strokeWidth={2.5} name={t("history.tpsOverall")} dot={false} connectNulls />
+                <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="oklch(0.7 0.15 145)" strokeWidth={2} strokeDasharray="5 5" name={t("history.tpsGenerate")} dot={false} connectNulls />
+                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="oklch(0.6 0.15 25)" strokeWidth={2.5} name={t("history.ttftMs")} dot={false} connectNulls />
+                <Line yAxisId="right" type="monotone" dataKey="think" stroke="oklch(0.5 0.1 85)" strokeWidth={1.5} strokeDasharray="3 3" name={t("history.thinkTimeMs")} dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -191,7 +258,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
               {results.items.map((r: TestResult) => (
                 <TableRow key={r.id} className="hover:bg-muted/30 transition-colors group">
                   <TableCell className="text-xs font-mono">{new Date(r.created_at).toLocaleString()}</TableCell>
-                  <TableCell className="font-medium whitespace-nowrap">{r.plan_name || `Plan ${r.plan_id}`}</TableCell>
+                  <TableCell className="font-medium whitespace-nowrap">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
                   <TableCell className={cn("text-right font-mono", r.ttft_ms && r.ttft_ms > 1000 ? "text-orange-500" : "")}>
                     {r.ttft_ms?.toFixed(0)}<span className="text-[10px] ml-0.5 opacity-50">ms</span>
                   </TableCell>
