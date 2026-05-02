@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { api } from "@/api/client";
 
@@ -32,7 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    checkAuth();
+    const init = async () => {
+      await checkAuth();
+    };
+    init();
   }, [checkAuth]);
 
   const login = async (username: string, password: string) => {

@@ -1,17 +1,47 @@
 services:
   app:
-    build: .
+    # 默认使用预构建镜像。如果你想在本地修改代码并构建，请注释掉 image 并解开 build 封印。
+    image: ghcr.io/qingmuhy744/tokenmeter:latest
+    # build: .
     ports:
       - "8000:8000"
+    depends_on:
+      # 如果你解开了下面 db 服务的封印，请解开这里的 db 并删掉下面的空数组 []
+      # db:
+      #   condition: service_healthy
+      []
     volumes:
       - app-data:/data
     environment:
       - DB_PATH=/data/token_speed.db
+      # ========================================================================
+      # 🚀 想用更猛的 PostgreSQL？解开下面这个 DATABASE_URL 的封印。
+      # 注意：一旦解开启动，系统会自动把 SQLite 里的数据搬到 PG 里（自动迁移）。
+      # 这是一个单程票，就像你对前任的爱，一旦搬走就再也回不去了（除非你自己手动撸 SQL 逆向迁移）。
+      # ========================================================================
+      # - DATABASE_URL=postgresql://tm_user:tm_password@db:5432/tokenmeter
+      
       # SECRET_KEY=your-secret-key-here  # 不配置则自动生成随机密钥
       # - HTTP_PROXY=http://host.docker.internal:7890
       # - HTTPS_PROXY=http://host.docker.internal:7890
       # - NO_PROXY=localhost,127.0.0.1
     restart: unless-stopped
 
+  # db:
+  #   image: postgres:16-alpine
+  #   restart: always
+  #   environment:
+  #     - POSTGRES_USER=tm_user
+  #     - POSTGRES_PASSWORD=tm_password
+  #     - POSTGRES_DB=tokenmeter
+  #   volumes:
+  #     - pg-data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U tm_user -d tokenmeter"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
 volumes:
   app-data:
+  # pg-data:

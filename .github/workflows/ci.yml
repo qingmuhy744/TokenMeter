@@ -2,13 +2,35 @@ name: CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: [main, dev, develop]
   pull_request:
-    branches: [main]
+    branches: [main, dev, develop]
+
+permissions:
+  contents: read
 
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        db-type: [sqlite, postgres]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        # Set health checks to wait for Postgres to be ready
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -22,12 +44,16 @@ jobs:
         run: uv sync
 
       - name: Lint Python
+        if: matrix.db-type == 'sqlite' # Only lint once
         run: uv run ruff check backend/
 
       - name: Test Python
+        env:
+          TEST_DATABASE_URL: ${{ matrix.db-type == 'postgres' && 'postgresql://user:password@localhost:5432/testdb' || '' }}
         run: uv run pytest -v
 
       - name: Set up Node
+        if: matrix.db-type == 'sqlite' # Only build once
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -35,18 +61,21 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install frontend deps
+        if: matrix.db-type == 'sqlite'
         run: cd frontend && npm ci
 
       - name: Type check frontend
+        if: matrix.db-type == 'sqlite'
         run: cd frontend && npx tsc --noEmit
 
       - name: Build frontend
+        if: matrix.db-type == 'sqlite'
         run: cd frontend && npm run build
 
   build-docker:
     needs: lint-and-test
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/develop'
     permissions:
       contents: read
       packages: write
@@ -59,6 +88,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract branch name
         id: branch
@@ -73,7 +108,7 @@ jobs:
           TAG="${IMAGE}:${DATE}-${SHA}"
           if [ "${{ steps.branch.outputs.branch }}" = "main" ]; then
             TAG="${TAG},${IMAGE}:latest"
-          elif [ "${{ steps.branch.outputs.branch }}" = "dev" ]; then
+          elif [ "${{ steps.branch.outputs.branch }}" = "dev" ] || [ "${{ steps.branch.outputs.branch }}" = "develop" ]; then
             TAG="${TAG},${IMAGE}:dev"
           fi
           echo "tags=$TAG" >> "$GITHUB_OUTPUT"
@@ -82,5 +117,9 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: linux/amd64,linux/arm64
           push: true
+          provenance: false
           tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

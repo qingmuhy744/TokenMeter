@@ -104,9 +104,24 @@ if frontend_dist.exists():
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        # Try to serve the exact file first (e.g. favicon.svg)
-        file_path = frontend_dist / full_path
-        if full_path and file_path.is_file():
-            return FileResponse(str(file_path))
+        if not full_path:
+            return FileResponse(str(index_file))
+
+        try:
+            # Safely resolve paths using pathlib to prevent directory traversal.
+            base_path = frontend_dist.resolve()
+
+            # Strip leading slashes to prevent pathlib from treating full_path as an absolute path,
+            # which would cause it to override base_path.
+            safe_path = full_path.lstrip("/")
+            target_path = (base_path / safe_path).resolve()
+
+            # The critical check: is_relative_to ensures it hasn't escaped base_path
+            if target_path.is_relative_to(base_path) and target_path.is_file():
+                return FileResponse(str(target_path))
+        except (ValueError, RuntimeError):
+            # Ignore resolution errors (e.g., malformed paths)
+            pass
+
         # Fallback to index.html for all SPA routes
         return FileResponse(str(index_file))

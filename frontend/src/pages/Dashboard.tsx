@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
+import type { Plan } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
-interface PlanWithResult {
-  id: number; name: string; api_type: string; model: string; is_active: boolean;
-  latest_result: { ttft_ms: number | null; tps_overall: number | null; error: string | null; created_at: string; } | null;
-}
-
 export default function Dashboard() {
   const { t } = useTranslation();
-  const [plans, setPlans] = useState<PlanWithResult[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   useEffect(() => { api.getPlans().then(setPlans); }, []);
 
   const chartData = plans.filter((p) => p.latest_result && !p.latest_result.error).map((p) => ({

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
+import type { Plan } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,7 +21,7 @@ const defaultForm = {
 
 export default function Plans() {
   const { t } = useTranslation();
-  const [plans, setPlans] = useState<any[]>([]);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -37,13 +39,15 @@ export default function Plans() {
       }
       else { await api.createPlan(form); toast.success(t("plans.planCreated")); }
       setOpen(false); setForm(defaultForm); setEditingId(null); loadPlans();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
-  const handleEdit = (plan: any) => {
+  const handleEdit = (plan: Plan) => {
     const key = plan.api_key;
     setOriginalKey(key);
-    setForm({ name: plan.name, api_type: plan.api_type, api_base: plan.api_base,
+    setForm({ name: plan.name, api_type: plan.api_type as "openai" | "anthropic", api_base: plan.api_base,
       api_key: key, model: plan.model, prompt: plan.prompt || "",
       max_tokens: plan.max_tokens, test_count: plan.test_count,
       interval_minutes: plan.interval_minutes, is_active: plan.is_active });
@@ -58,7 +62,9 @@ export default function Plans() {
   const handleTest = async (id: number) => {
     toast.info(t("plans.runningTest"));
     try { await api.triggerTest(id); toast.success(t("plans.testCompleted")); loadPlans(); }
-    catch (e: any) { toast.error(e.message); }
+    catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
   return (
@@ -81,7 +87,7 @@ export default function Plans() {
                 </Select>
               </div>
               <div><Label>{t("plans.apiBaseUrl")}</Label><Input value={form.api_base} onChange={(e) => setForm({ ...form, api_base: e.target.value })} /></div>
-              <div><Label>{t("plans.apiKey")}</Label><Input type="password" value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} /></div>
+              <div><Label>{t("plans.apiKey")}</Label><PasswordInput value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} /></div>
               <div><Label>{t("plans.model")}</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
               <div><Label>{t("plans.customPrompt")}</Label><Input value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} /></div>
               <div className="grid grid-cols-3 gap-4">

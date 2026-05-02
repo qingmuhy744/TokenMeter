@@ -4,7 +4,7 @@ from backend.main import app
 
 
 @pytest.mark.asyncio
-async def test_public_status_no_auth():
+async def test_public_status_no_auth(db_session):
     """Public status endpoint should work without authentication."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -17,7 +17,7 @@ async def test_public_status_no_auth():
 
 
 @pytest.mark.asyncio
-async def test_public_status_range_param():
+async def test_public_status_range_param(db_session):
     """Status endpoint accepts range query parameter."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -28,7 +28,7 @@ async def test_public_status_range_param():
 
 
 @pytest.mark.asyncio
-async def test_public_status_invalid_range():
+async def test_public_status_invalid_range(db_session):
     """Status endpoint rejects invalid range values."""
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
