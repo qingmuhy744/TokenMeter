@@ -1,9 +1,7 @@
 import { useRef, useEffect } from "react";
 
 /**
- * A hook that enables horizontal scrolling using the mouse wheel.
- * By default, it translates vertical scroll into horizontal scroll.
- * If Shift or Ctrl key is held, it also triggers horizontal scroll.
+ * A hook that enables horizontal scrolling using the mouse wheel AND mouse drag.
  */
 export function useHorizontalScroll() {
   const elRef = useRef<HTMLDivElement>(null);
@@ -12,26 +10,76 @@ export function useHorizontalScroll() {
     const el = elRef.current;
     if (!el) return;
 
+    // --- 1. Mouse Wheel to Horizontal Scroll ---
     const onWheel = (e: WheelEvent) => {
       // If the scroll is already purely horizontal (e.g. trackpad), let the browser handle it
       if (e.deltaX !== 0) return;
 
-      // Translate vertical delta to horizontal scroll
-      // We check for Ctrl or Shift to match common power-user expectations, 
-      // but also enable it by default if the element is horizontally scrollable 
-      // and we're hovering over it to make it discoverable.
       el.scrollTo({
-        left: el.scrollLeft + e.deltaY * 1.5, // Multiplier for better sensitivity
-        behavior: "auto" // Auto is smoother for discrete wheel clicks
+        left: el.scrollLeft + e.deltaY * 1.5,
+        behavior: "auto"
       });
-
-      // Prevent the page from scrolling vertically when we're interacting with the table
       e.preventDefault();
     };
 
-    // Passive: false is required to allow e.preventDefault()
+    // --- 2. Mouse Drag to Scroll ---
+    let isDown = false;
+    let startX: number;
+    let scrollLeft: number;
+
+    const onMouseDown = (e: MouseEvent) => {
+      // Don't intercept clicks on interactive elements
+      const target = e.target as HTMLElement;
+      if (['INPUT', 'BUTTON', 'A', 'LABEL', 'SELECT'].includes(target.tagName) || target.closest('button') || target.closest('input')) {
+        return;
+      }
+      
+      isDown = true;
+      el.style.cursor = 'grabbing';
+      el.style.userSelect = 'none'; // Prevent text selection while dragging
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+    };
+
+    const onMouseLeave = () => {
+      isDown = false;
+      el.style.cursor = 'grab';
+      el.style.removeProperty('user-select');
+    };
+
+    const onMouseUp = () => {
+      isDown = false;
+      el.style.cursor = 'grab';
+      el.style.removeProperty('user-select');
+    };
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      const walk = (x - startX) * 1.5; // Scroll speed multiplier
+      el.scrollLeft = scrollLeft - walk;
+    };
+
+    // Initialize cursor
+    el.style.cursor = 'grab';
+
+    // Attach events
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    el.addEventListener("mousedown", onMouseDown);
+    el.addEventListener("mouseleave", onMouseLeave);
+    el.addEventListener("mouseup", onMouseUp);
+    el.addEventListener("mousemove", onMouseMove);
+
+    return () => {
+      // Cleanup
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("mousedown", onMouseDown);
+      el.removeEventListener("mouseleave", onMouseLeave);
+      el.removeEventListener("mouseup", onMouseUp);
+      el.removeEventListener("mousemove", onMouseMove);
+      el.style.removeProperty('cursor');
+    };
   }, []);
 
   return elRef;
