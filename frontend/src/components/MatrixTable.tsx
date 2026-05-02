@@ -148,7 +148,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       ),
     }),
     columnHelper.accessor("sparkline", {
-      header: "24h TTFT",
+      header: "24h TPS",
       cell: info => <Sparkline data={info.getValue()} />,
       enableSorting: false,
     }),

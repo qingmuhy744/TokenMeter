@@ -373,7 +373,7 @@ async def public_matrix(
             else ("success" if results else "none")
         )
         sparkline = [
-            r.ttft_ms
+            r.tps_overall
             for r in sorted(
                 [r for r in results if r.created_at >= since_24h],
                 key=lambda x: x.created_at,

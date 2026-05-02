@@ -71,7 +71,7 @@ async def get_results_matrix(
         # Sparkline (last 24h, always based on all results for trend)
         sparkline_results = [r for r in results if r.created_at >= since_24h]
         sparkline_results.sort(key=lambda x: x.created_at)
-        sparkline = [r.ttft_ms for r in sparkline_results]
+        sparkline = [r.tps_overall for r in sparkline_results]
 
         # Statistics and Day/Night splitting
         success_results = [r for r in results if not r.error]
