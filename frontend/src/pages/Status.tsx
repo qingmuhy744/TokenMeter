@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,14 +59,6 @@ function fetchStatus(range: string): Promise<StatusData> {
   return fetch(`/api/public/status?range=${range}`).then((r) => r.json());
 }
 
-function timeAgo(iso: string): string {
-  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
-}
-
 function formatTime(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
@@ -73,6 +66,7 @@ function formatTime(iso: string): string {
 }
 
 export default function Status() {
+  const { t } = useTranslation();
   const [data, setData] = useState<StatusData | null>(null);
   const [range, setRange] = useState("24h");
   const [loading, setLoading] = useState(true);
@@ -85,6 +79,12 @@ export default function Status() {
     }
   });
   const [metric, setMetric] = useState<ComparisonMetric>('tps_overall');
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Persist selections to localStorage whenever they change
   useEffect(() => {
@@ -144,17 +144,25 @@ export default function Status() {
       setSelectedIds(prev => prev.filter(i => i !== id));
     } else {
       if (selectedIds.length >= 5) {
-        toast.warning("Comparison limit reached (max 5 models)");
+        toast.warning(t("status.modelsSelected") + " (max 5)");
         return;
       }
       setSelectedIds(prev => [...prev, id]);
     }
   };
 
+  const timeAgo = (iso: string): string => {
+    const seconds = Math.floor((now - new Date(iso).getTime()) / 1000);
+    if (seconds < 60) return `${seconds}s ${t("common.ago") || "ago"}`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${t("common.ago") || "ago"}`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ${t("common.ago") || "ago"}`;
+    return `${Math.floor(seconds / 86400)}d ${t("common.ago") || "ago"}`;
+  };
+
   if (loading || !data) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground animate-pulse">Loading status...</p>
+        <p className="text-muted-foreground animate-pulse">{t("status.loading")}</p>
       </div>
     );
   }
@@ -177,11 +185,11 @@ export default function Status() {
       {/* Header */}
       <div className="border-b">
         <div className="max-w-5xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold tracking-tight">TokenMeter Status</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("status.title")}</h1>
           <div className="flex items-center gap-2 mt-2">
             <div className={`h-2.5 w-2.5 rounded-full ${allOperational ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"}`} />
             <span className="text-sm text-muted-foreground font-medium">
-              {allOperational ? "All systems operational" : "Some systems are experiencing issues"}
+              {allOperational ? t("status.allSystemsOperational") : t("status.someSystemsIssues")}
             </span>
           </div>
         </div>
@@ -210,6 +218,12 @@ export default function Status() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.plans.map((plan) => {
             const isSelected = selectedIds.includes(plan.id);
+            const statusLabel = plan.latest_result && !plan.latest_result.error && !plan.latest_result.is_unavailable 
+              ? t("status.operational") 
+              : plan.latest_result?.is_unavailable 
+                ? t("status.unavailable") 
+                : t("status.degraded");
+
             return (
               <Card 
                 key={plan.id} 
@@ -225,13 +239,13 @@ export default function Status() {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base truncate mr-2 font-bold" title={plan.name}>{plan.name}</CardTitle>
                     <Badge variant={plan.latest_result && !plan.latest_result.error && !plan.latest_result.is_unavailable ? "default" : "destructive"}>
-                      {plan.latest_result && !plan.latest_result.error && !plan.latest_result.is_unavailable ? "Operational" : plan.latest_result?.is_unavailable ? "Unavailable" : "Degraded"}
+                      {statusLabel}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between mt-1">
                     <p className="text-xs text-muted-foreground truncate max-w-[150px] font-mono">{plan.api_type} / {plan.model}</p>
                     <div className="flex items-center gap-1.5 bg-muted px-2 py-0.5 rounded-full" onClick={e => e.stopPropagation()}>
-                      <span className="text-[10px] font-medium text-muted-foreground">Compare</span>
+                      <span className="text-[10px] font-medium text-muted-foreground">{t("status.compare")}</span>
                       <Switch 
                         id={`compare-${plan.id}`}
                         checked={isSelected}
@@ -246,21 +260,21 @@ export default function Status() {
                     <>
                       <div className="grid grid-cols-3 gap-2 text-sm">
                         <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">TTFT</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t("history.ttftMs")}</p>
                           <p className="text-lg font-semibold font-mono">{plan.latest_result.ttft_ms ?? "—"}ms</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">TPS All</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t("history.tpsOverall")}</p>
                           <p className="text-lg font-semibold font-mono">{plan.latest_result.tps_overall ?? "—"}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">TPS Gen</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t("history.tpsGenerate")}</p>
                           <p className="text-lg font-semibold font-mono">{plan.latest_result.tps_generate ?? "—"}</p>
                         </div>
                       </div>
                       <div className="pt-2 border-t border-border/50 flex items-center justify-between">
                         <p className="text-[10px] text-muted-foreground">
-                          Last test: {timeAgo(plan.latest_result.created_at)}
+                          {t("status.lastTest")}: {timeAgo(plan.latest_result.created_at)}
                         </p>
                         {plan.availability_pct !== null && (
                           <div className="flex items-center gap-2">
@@ -276,7 +290,7 @@ export default function Status() {
                       </div>
                     </>
                   ) : (
-                    <p className="text-muted-foreground text-sm py-4 italic text-center">No test results yet</p>
+                    <p className="text-muted-foreground text-sm py-4 italic text-center">{t("status.noResults")}</p>
                   )}
                 </CardContent>
               </Card>
@@ -292,8 +306,8 @@ export default function Status() {
           <CardHeader className="bg-muted/30 border-b border-border/50 py-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-xl font-bold tracking-tight">Comparison Trend</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">Select up to 5 models to compare performance metrics</p>
+                <CardTitle className="text-xl font-bold tracking-tight">{t("status.comparisonTrend")}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">{t("status.compareDesc")}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex bg-background border rounded-lg p-1">
@@ -301,21 +315,21 @@ export default function Status() {
                     variant={metric === 'tps_overall' ? "default" : "ghost"} 
                     size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
                     onClick={() => setMetric('tps_overall')}
-                  >TPS Overall</Button>
+                  >{t("history.tpsOverall")}</Button>
                   <Button 
                     variant={metric === 'tps_generate' ? "default" : "ghost"} 
                     size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
                     onClick={() => setMetric('tps_generate')}
-                  >TPS Generate</Button>
+                  >{t("history.tpsGenerate")}</Button>
                   <Button 
                     variant={metric === 'ttft_ms' ? "default" : "ghost"} 
                     size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
                     onClick={() => setMetric('ttft_ms')}
-                  >TTFT (ms)</Button>
+                  >{t("history.ttftMs")}</Button>
                 </div>
                 {selectedIds.length > 0 && (
                   <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 font-bold px-3 py-1">
-                    {selectedIds.length} / 5 Selected
+                    {selectedIds.length} / 5 {t("status.modelsSelected")}
                   </Badge>
                 )}
               </div>
@@ -350,9 +364,9 @@ export default function Status() {
                 </ResponsiveContainer>
               ) : (
                 <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted/20 animate-in fade-in duration-700">
-                   <p className="text-muted-foreground font-bold text-lg">No data for selected models in this range</p>
+                   <p className="text-muted-foreground font-bold text-lg">{t("status.noDataInRange")}</p>
                    <p className="text-sm text-muted-foreground mt-2 max-w-[300px] text-center">
-                    Try switching the time window (24h/7d/30d) above.
+                    {t("status.trySwitchRange")}
                   </p>
                 </div>
               )
@@ -361,9 +375,9 @@ export default function Status() {
                 <div className="bg-muted p-4 rounded-full mb-4">
                   <Switch checked={false} className="scale-125" disabled />
                 </div>
-                <p className="text-muted-foreground font-bold text-lg">No models selected for comparison</p>
+                <p className="text-muted-foreground font-bold text-lg">{t("status.noModelsSelected")}</p>
                 <p className="text-sm text-muted-foreground mt-2 max-w-[300px] text-center">
-                  Click on any of the model cards at the top of the page to add them to this chart.
+                  {t("status.clickCardToCompare")}
                 </p>
               </div>
             )}
@@ -376,7 +390,7 @@ export default function Status() {
         <div className="max-w-5xl mx-auto px-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-4">
           <a href="https://github.com/qingmuhy744/TokenMeter" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors font-medium">GitHub Repository</a>
           <span className="opacity-30">|</span>
-          <span>&copy; 2026 TokenMeter - Real-time LLM Performance Monitoring</span>
+          <span>&copy; 2026 {t("status.footerText")}</span>
         </div>
       </div>
     </div>

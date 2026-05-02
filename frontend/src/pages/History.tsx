@@ -1,7 +1,9 @@
+import { useState } from "react";
 import HistoryView from "@/components/HistoryView";
 import { api } from "@/api/client";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 
 export default function History() {
   const { t } = useTranslation();

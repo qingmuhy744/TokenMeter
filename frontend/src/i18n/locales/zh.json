@@ -96,6 +96,27 @@
     "refresh": "刷新",
     "clickRefresh": "点击刷新加载日志"
   },
+  "status": {
+    "title": "系统状态",
+    "loading": "正在加载状态...",
+    "allSystemsOperational": "所有系统运行正常",
+    "someSystemsIssues": "部分系统存在问题",
+    "operational": "运行正常",
+    "unavailable": "服务不可用",
+    "degraded": "性能劣化",
+    "lastTest": "最近测试",
+    "availability": "可用性",
+    "noResults": "暂无测试结果",
+    "compare": "对比",
+    "comparisonTrend": "性能对比趋势",
+    "compareDesc": "在上方卡片中选择最多 5 个模型进行性能对比",
+    "modelsSelected": "已选模型",
+    "noDataInRange": "所选模型在当前时间段内没有数据",
+    "trySwitchRange": "请尝试切换上方的时间窗口（24h/7d/30d）。",
+    "noModelsSelected": "尚未选择对比模型",
+    "clickCardToCompare": "点击页面顶部的任何模型卡片即可将其加入对比图表。",
+    "footerText": "TokenMeter - 实时 LLM 性能监控"
+  },
   "login": {
     "title": "登录",
     "username": "用户名",
