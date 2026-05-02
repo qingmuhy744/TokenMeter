@@ -76,8 +76,20 @@ export default function Status() {
   const [data, setData] = useState<StatusData | null>(null);
   const [range, setRange] = useState("24h");
   const [loading, setLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem("tm_selected_compare_ids");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [metric, setMetric] = useState<ComparisonMetric>('tps_overall');
+
+  // Persist selections to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("tm_selected_compare_ids", JSON.stringify(selectedIds));
+  }, [selectedIds]);
 
   // Derived plans for the trend chart based on user selection
   const trendPlans = useMemo(() => {
