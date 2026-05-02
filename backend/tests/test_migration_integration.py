@@ -146,7 +146,9 @@ async def test_run_migrations_sqlite_to_pg_e2e(db_engine):
         assert sett.value == "e2e_value"
 
         res = await session.execute(
-            select(TokenPlan).where(TokenPlan.name == "E2E Plan")
+            select(TokenPlan).where(
+                TokenPlan.name == "E2E Plan", TokenPlan.parent_id.is_(None)
+            )
         )
         plan = res.scalar_one()
         assert plan.api_key == "e2ekey"
