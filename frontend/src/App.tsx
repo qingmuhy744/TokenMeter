@@ -8,6 +8,7 @@ import Plans from "@/pages/Plans";
 import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import Status from "@/pages/Status";
+import PublicHistory from "@/pages/PublicHistory";
 import { Toaster } from "@/components/ui/sonner";
 import { LayoutDashboard, Table as TableIcon, ListTodo, History as HistoryIcon, Settings as SettingsIcon, LogOut, Globe } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
@@ -79,6 +80,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/status" element={<Status />} />
+          <Route path="/public/history" element={<PublicHistory />} />
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/" element={<Dashboard />} />

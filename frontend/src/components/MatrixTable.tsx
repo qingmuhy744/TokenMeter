@@ -278,6 +278,8 @@ export default function MatrixTable() {
 
   if (loading && data.length === 0) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading performance matrix...</div>;
 
+  const isPublicContext = window.location.pathname.startsWith('/status') || window.location.pathname.startsWith('/public');
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -351,7 +353,10 @@ export default function MatrixTable() {
                 <TableRow 
                   key={row.id} 
                   className="group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer"
-                  onClick={() => navigate(`/history?plan_id=${row.original.plan_id}`)}
+                  onClick={() => {
+                    const target = isPublicContext ? `/public/history?plan_id=${row.original.plan_id}` : `/history?plan_id=${row.original.plan_id}`;
+                    navigate(target);
+                  }}
                 >
                   {row.getVisibleCells().map((cell, index) => (
                     <TableCell 

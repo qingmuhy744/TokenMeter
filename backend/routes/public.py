@@ -6,6 +6,7 @@ from sqlalchemy import select, func
 
 from backend.database import async_session
 from backend.models import TokenPlan, TestResult, Setting
+from backend.schemas import TestResultResponse, PaginatedResponse
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -153,7 +154,6 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
         latest_map = {r.plan_id: r for r in latest_results_res.scalars().all()}
 
         # Bulk fetch all results in range for availability and stats
-        # We fetch all because we need them for P95 and median calculations which are hard in SQLite
         range_results_res = await db.execute(
             select(TestResult)
             .where(TestResult.plan_id.in_(plan_ids))
@@ -281,3 +281,41 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
         "custom_banner": custom_banner.value if custom_banner else None,
         "range": range,
     }
+
+
+@router.get("/results", response_model=PaginatedResponse)
+async def public_results(
+    plan_id: int,
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+):
+    async with async_session() as db:
+        query = (
+            select(TestResult, TokenPlan.name)
+            .join(TokenPlan, TestResult.plan_id == TokenPlan.id)
+            .where(TestResult.plan_id == plan_id)
+            .order_by(TestResult.created_at.desc())
+        )
+        count_query = select(func.count(TestResult.id)).where(
+            TestResult.plan_id == plan_id
+        )
+
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+
+        query = query.offset((page - 1) * size).limit(size)
+        result = await db.execute(query)
+        rows = result.all()
+
+    items = []
+    for test_result, plan_name in rows:
+        item = TestResultResponse.model_validate(test_result)
+        item.plan_name = plan_name
+        items.append(item)
+
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        size=size,
+    )
