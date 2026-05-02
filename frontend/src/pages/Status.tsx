@@ -277,7 +277,7 @@ export default function Status() {
         </div>
 
         {/* Matrix Table */}
-        <MatrixTable />
+        <MatrixTable selectedIds={selectedIds} onToggleSelection={toggleSelection} />
 
         {/* Trend chart */}
         <Card className="overflow-hidden border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">

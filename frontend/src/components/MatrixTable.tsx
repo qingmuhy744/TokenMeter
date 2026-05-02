@@ -81,7 +81,12 @@ const getHeatmapColor = (value: number | null, type: 'ttft' | 'tps' | 'degradati
 
 const columnHelper = createColumnHelper<MatrixItem>();
 
-export default function MatrixTable() {
+interface MatrixTableProps {
+  selectedIds?: number[];
+  onToggleSelection?: (id: number) => void;
+}
+
+export default function MatrixTable({ selectedIds = [], onToggleSelection }: MatrixTableProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<MatrixItem[]>([]);
@@ -95,13 +100,26 @@ export default function MatrixTable() {
     const tzOffset = -new Date().getTimezoneOffset();
     api.getMatrix(days, tzOffset, mode)
       .then(items => {
-        // Filter out items with no results (suites that don't run tests themselves)
         setData(items.filter(item => item.avg_ttft !== null && item.latest_status !== "none"));
       })
       .finally(() => setLoading(false));
   }, [days, mode]);
 
   const columns = useMemo(() => [
+    columnHelper.display({
+      id: "select",
+      header: "Compare",
+      cell: ({ row }) => (
+        <div className="flex justify-center" onClick={e => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+            checked={selectedIds.includes(row.original.plan_id)}
+            onChange={() => onToggleSelection?.(row.original.plan_id)}
+          />
+        </div>
+      ),
+    }),
     columnHelper.accessor("full_name", {
       header: ({ column }) => (
         <div 
@@ -272,7 +290,7 @@ export default function MatrixTable() {
         );
       },
     }),
-  ], [t]);
+  ], [t, selectedIds, onToggleSelection]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -347,7 +365,7 @@ export default function MatrixTable() {
                       key={header.id} 
                       className={cn(
                         "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground transition-colors",
-                        index === 0 && "sticky left-0 bg-muted/95 backdrop-blur-md z-30 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
+                        index === 1 && "sticky left-0 bg-muted/95 backdrop-blur-md z-30 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
                       )}
                     >
                       {header.isPlaceholder
@@ -359,28 +377,34 @@ export default function MatrixTable() {
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows.map(row => (
-                <TableRow 
-                  key={row.id} 
-                  className="group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer"
-                  onClick={() => {
-                    const target = isPublicContext ? `/public/history?plan_id=${row.original.plan_id}` : `/history?plan_id=${row.original.plan_id}`;
-                    navigate(target);
-                  }}
-                >
-                  {row.getVisibleCells().map((cell, index) => (
-                    <TableCell 
-                      key={cell.id} 
-                      className={cn(
-                        "px-4 py-3 align-middle transition-colors",
-                        index === 0 && "sticky left-0 bg-background/95 backdrop-blur-md z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90"
-                      )}
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
+              {table.getRowModel().rows.map(row => {
+                const isSelected = selectedIds.includes(row.original.plan_id);
+                return (
+                  <TableRow 
+                    key={row.id} 
+                    className={cn(
+                      "group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 cursor-pointer",
+                      isSelected && "bg-primary/[0.04]"
+                    )}
+                    onClick={() => {
+                      const target = isPublicContext ? `/public/history?plan_id=${row.original.plan_id}` : `/history?plan_id=${row.original.plan_id}`;
+                      navigate(target);
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell, index) => (
+                      <TableCell 
+                        key={cell.id} 
+                        className={cn(
+                          "px-4 py-3 align-middle transition-colors",
+                          index === 1 && "sticky left-0 bg-background/95 backdrop-blur-md z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90"
+                        )}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
