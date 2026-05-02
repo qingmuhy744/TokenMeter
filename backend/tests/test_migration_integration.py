@@ -153,7 +153,7 @@ async def test_run_migrations_sqlite_to_pg_e2e(db_engine):
         plan = res.scalar_one()
         assert plan.api_key == "e2ekey"
 
-    # 4. Verify version was updated to 0.2.0 (latest after rehash migration)
+    # 4. Verify version was updated to latest
     async with async_session_factory() as session:
         res = await session.execute(select(Setting).where(Setting.key == "db_version"))
         version_setting = res.scalar_one()
