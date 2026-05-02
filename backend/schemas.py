@@ -157,6 +157,41 @@ class TestResultResponse(BaseModel):
         return _ensure_utc(v)
 
 
+class PublicTestResultResponse(BaseModel):
+    """脱敏后的测试结果，供游客查看"""
+
+    id: int
+    plan_id: int
+    plan_name: str | None = None
+    ttft_ms: float | None
+    tps_overall: float | None
+    tps_generate: float | None
+    total_tokens: int | None
+    total_time_ms: float | None
+    ttfb_ms: float | None = None
+    ttfr_ms: float | None = None
+    think_time_ms: float | None = None
+    tps_content: float | None = None
+    thinking_tokens: int | None = None
+    ping_ms: float | None = None
+    error: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+    @field_serializer("created_at")
+    @classmethod
+    def serialize_dt(cls, v: datetime) -> datetime:
+        return _ensure_utc(v)
+
+
+class PublicPaginatedResponse(BaseModel):
+    items: list[PublicTestResultResponse]
+    total: int
+    page: int
+    size: int
+
+
 class StatsResponse(BaseModel):
     plan_id: int
     count: int

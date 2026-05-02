@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { api, type MatrixItem } from "@/api/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,6 +82,7 @@ const getHeatmapColor = (value: number | null, type: 'ttft' | 'tps' | 'degradati
 const columnHelper = createColumnHelper<MatrixItem>();
 
 export default function MatrixTable() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<MatrixItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +96,6 @@ export default function MatrixTable() {
     api.getMatrix(days, tzOffset, mode)
       .then(items => {
         // Filter out items with no results (suites that don't run tests themselves)
-        // Check for avg_ttft and ensure latest_status is not "none"
         setData(items.filter(item => item.avg_ttft !== null && item.latest_status !== "none"));
       })
       .finally(() => setLoading(false));
@@ -271,7 +272,7 @@ export default function MatrixTable() {
         );
       },
     }),
-  ], []);
+  ], [t]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
