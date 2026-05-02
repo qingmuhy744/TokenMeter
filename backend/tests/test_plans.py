@@ -1,32 +1,5 @@
-import hashlib
-
 import pytest
-from httpx import AsyncClient, ASGITransport
-from backend.main import app
-from backend.models import User
-from backend.auth import hash_password
-from sqlalchemy import select
-
-
-@pytest.fixture
-async def auth_client(db_session):
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        pw_hash = hashlib.sha256("testpass".encode()).hexdigest()
-        result = await db_session.execute(
-            select(User).where(User.username == "testadmin")
-        )
-        existing = result.scalar_one_or_none()
-        if not existing:
-            db_session.add(
-                User(username="testadmin", password_hash=hash_password(pw_hash))
-            )
-            await db_session.commit()
-
-        await client.post(
-            "/api/auth/login", json={"username": "testadmin", "password": pw_hash}
-        )
-        yield client
+from httpx import AsyncClient
 
 
 @pytest.mark.asyncio

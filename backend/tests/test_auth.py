@@ -4,7 +4,7 @@ from backend.main import app
 
 
 @pytest.mark.asyncio
-async def test_me_requires_auth():
+async def test_me_requires_auth(db_session):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp = await client.get("/api/auth/me")
@@ -12,11 +12,8 @@ async def test_me_requires_auth():
 
 
 @pytest.mark.asyncio
-async def test_login_creates_session():
-    from backend.database import init_db
-
-    await init_db()
-
+async def test_login_creates_session(db_session):
+    # No need to call init_db(), db_session fixture already created tables
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         from backend.database import async_session
@@ -202,7 +199,7 @@ async def test_ensure_admin_logic(db_session):
 
 
 @pytest.mark.asyncio
-async def test_lifespan_calls_ensure_admin():
+async def test_lifespan_calls_ensure_admin(db_session):
     from unittest.mock import patch, AsyncMock
     from backend.main import app, lifespan
 

@@ -1,50 +1,28 @@
 import json
 import logging
-
-from fastapi import APIRouter, HTTPException, Request, Response
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
+from fastapi import APIRouter, HTTPException, Request, Response
 
 from backend.database import async_session
 from backend.models import TokenPlan, TestResult
-from backend.schemas import PlanCreate, PlanUpdate, PlanResponse, PlanWithLatestResult
-from backend.auth import get_current_user
+from backend.schemas import PlanCreate, PlanUpdate, PlanResponse
 from backend.services.speed_test import SpeedTester
 from backend.services.scheduler import sync_scheduled_jobs
 from backend.config import settings
+from backend.auth import get_current_user
 
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/plans", tags=["plans"])
+logger = logging.getLogger(__name__)
 
 
-@router.get("")
+@router.get("", response_model=list[PlanResponse])
 async def list_plans(request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        # Get all plans
-        result = await db.execute(select(TokenPlan).order_by(TokenPlan.id.desc()))
+        result = await db.execute(select(TokenPlan).order_by(TokenPlan.id.asc()))
         plans = result.scalars().all()
-
-        # Get latest results for all plans in one go
-        # This is much more efficient than loading all results for all plans
-        latest_results_query = select(TestResult).where(
-            TestResult.id.in_(
-                select(func.max(TestResult.id)).group_by(TestResult.plan_id)
-            )
-        )
-        latest_results_res = await db.execute(latest_results_query)
-        latest_results_map = {r.plan_id: r for r in latest_results_res.scalars().all()}
-
-    response = []
-    for plan in plans:
-        latest = latest_results_map.get(plan.id)
-        response.append(
-            PlanWithLatestResult(
-                **PlanResponse.model_validate(plan).model_dump(),
-                latest_result=latest,
-            )
-        )
-    return response
+        return [PlanResponse.model_validate(p) for p in plans]
 
 
 @router.get("/export")
@@ -103,15 +81,16 @@ async def import_plans(body: list[PlanCreate], request: Request):
 
         try:
             await db.commit()
+            # Sync jobs using the same session to avoid connection competition
+            await sync_scheduled_jobs(db)
         except SQLAlchemyError as e:
             logger.error("Failed to commit imported plans: %s", str(e))
             raise HTTPException(status_code=400, detail="Database error during import")
 
-    await sync_scheduled_jobs()
     return {"message": f"Imported {imported_count} plans", "count": imported_count}
 
 
-@router.post("")
+@router.post("", response_model=PlanResponse)
 async def create_plan(body: PlanCreate, request: Request):
     await get_current_user(request)
     async with async_session() as db:
@@ -119,23 +98,22 @@ async def create_plan(body: PlanCreate, request: Request):
         db.add(plan)
         await db.commit()
         await db.refresh(plan)
+        await sync_scheduled_jobs(db)
+        return PlanResponse.model_validate(plan)
 
-    await sync_scheduled_jobs()
-    return PlanResponse.model_validate(plan)
 
-
-@router.get("/{plan_id}")
+@router.get("/{plan_id}", response_model=PlanResponse)
 async def get_plan(plan_id: int, request: Request):
     await get_current_user(request)
     async with async_session() as db:
         result = await db.execute(select(TokenPlan).where(TokenPlan.id == plan_id))
         plan = result.scalar_one_or_none()
-    if not plan:
-        raise HTTPException(status_code=404, detail="Plan not found")
-    return PlanResponse.model_validate(plan)
+        if not plan:
+            raise HTTPException(status_code=404, detail="Plan not found")
+        return PlanResponse.model_validate(plan)
 
 
-@router.put("/{plan_id}")
+@router.put("/{plan_id}", response_model=PlanResponse)
 async def update_plan(plan_id: int, body: PlanUpdate, request: Request):
     await get_current_user(request)
     async with async_session() as db:
@@ -147,9 +125,8 @@ async def update_plan(plan_id: int, body: PlanUpdate, request: Request):
             setattr(plan, field, value)
         await db.commit()
         await db.refresh(plan)
-
-    await sync_scheduled_jobs()
-    return PlanResponse.model_validate(plan)
+        await sync_scheduled_jobs(db)
+        return PlanResponse.model_validate(plan)
 
 
 @router.delete("/{plan_id}")
@@ -162,8 +139,8 @@ async def delete_plan(plan_id: int, request: Request):
             raise HTTPException(status_code=404, detail="Plan not found")
         await db.delete(plan)
         await db.commit()
+        await sync_scheduled_jobs(db)
 
-    await sync_scheduled_jobs()
     return {"message": "Deleted"}
 
 
@@ -212,8 +189,10 @@ async def trigger_test(plan_id: int, request: Request):
     if valid:
         valid.sort(key=lambda r: r.tps_overall or 0)
         median = valid[len(valid) // 2]
-    else:
+    elif results:
         median = results[0]
+    else:
+        raise HTTPException(status_code=400, detail="No test results generated")
 
     async with async_session() as db:
         test_result = TestResult(

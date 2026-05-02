@@ -270,11 +270,11 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
                 }
             )
 
-    # Get custom banner
-    banner_result = await db.execute(
-        select(Setting).where(Setting.key == "custom_banner")
-    )
-    custom_banner = banner_result.scalar_one_or_none()
+        # Get custom banner (INSIDE the same session)
+        banner_result = await db.execute(
+            select(Setting).where(Setting.key == "custom_banner")
+        )
+        custom_banner = banner_result.scalar_one_or_none()
 
     return {
         "plans": plan_data,
