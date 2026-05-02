@@ -73,6 +73,21 @@ MIGRATIONS = [
         ALTER TABLE token_plans ALTER COLUMN test_count DROP NOT NULL;
     """).strip(),
     ),
+    (
+        "0.3.4",
+        "sql",
+        textwrap.dedent("""
+        ALTER TABLE token_plans ALTER COLUMN api_type DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN api_base DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN api_key DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN model DROP NOT NULL;
+    """).strip(),
+    ),
+    (
+        "0.3.5",
+        "func",
+        "convert_to_suites",
+    ),
 ]
 
 
