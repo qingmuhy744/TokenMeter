@@ -1,7 +1,8 @@
 import HistoryView from "@/components/HistoryView";
 import { useSearchParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function PublicHistory() {
   const [searchParams] = useSearchParams();
@@ -11,12 +12,13 @@ export default function PublicHistory() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/status" className="flex items-center">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Status
-            </Link>
-          </Button>
+          <Link 
+            to="/status" 
+            className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "flex items-center")}
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Status
+          </Link>
         </div>
         <HistoryView planId={planId} isPublic={true} />
       </div>

@@ -115,8 +115,16 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     x1={area.x1}
                     x2={area.x2}
                     yAxisId="left"
-                    fill={area.isDay ? "oklch(0.95 0.05 85)" : "oklch(0.9 0.02 260)"}
+                    fill={area.isDay ? "oklch(0.96 0.05 90)" : "oklch(0.94 0.03 260)"}
                     fillOpacity={0.4}
+                    label={{ 
+                      value: area.isDay ? "☀️ " + t("history.day") : "🌙 " + t("history.night"), 
+                      position: 'insideTopLeft', 
+                      fill: 'currentColor', 
+                      fontSize: 10, 
+                      opacity: 0.5,
+                      offset: 10
+                    }}
                   />
                 ))}
                 <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="oklch(0.6 0.2 250)" strokeWidth={2.5} name={t("history.tpsOverall")} dot={false} />
