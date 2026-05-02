@@ -317,6 +317,26 @@ class TestAnthropicStream:
         assert tracker.time_first_token is None
         assert tracker.thinking_char_count > 0
 
+    def test_minimax_m25_anthropic_format_content_block_stop(self):
+        """MiniMax-M2.7 Anthropic format: thinking → content_block_stop → text content."""
+        import json
+        import os
+
+        fixture_path = os.path.join(
+            os.path.dirname(__file__), "fixtures", "minimax_m25_anthropic.json"
+        )
+        with open(fixture_path) as f:
+            lines = json.load(f)
+        parser = AnthropicParser()
+        tracker = parse_lines(parser, lines)
+        # content_block_stop ends thinking state, text follows
+        assert tracker.time_first_token is not None
+        assert tracker.thinking_char_count > 0
+        assert tracker.content_char_count > 0
+        assert tracker.time_first_reasoning is not None
+        assert tracker.time_think_end is not None
+        assert tracker.is_finished
+
 
 # ---------------------------------------------------------------------------
 # OpenAI thinking state machine edge cases
@@ -394,23 +414,3 @@ class TestOpenAIThinkingStateMachine:
             tracker.thinking_char_count + tracker.content_char_count
             == tracker.char_count
         )
-
-    def test_minimax_m25_anthropic_format_content_block_stop(self):
-        """MiniMax-M2.7 Anthropic format: thinking → content_block_stop → text content."""
-        import json
-        import os
-
-        fixture_path = os.path.join(
-            os.path.dirname(__file__), "fixtures", "minimax_m25_anthropic.json"
-        )
-        with open(fixture_path) as f:
-            lines = json.load(f)
-        parser = AnthropicParser()
-        tracker = parse_lines(parser, lines)
-        # content_block_stop ends thinking state, text follows
-        assert tracker.time_first_token is not None
-        assert tracker.thinking_char_count > 0
-        assert tracker.content_char_count > 0
-        assert tracker.time_first_reasoning is not None
-        assert tracker.time_think_end is not None
-        assert tracker.is_finished

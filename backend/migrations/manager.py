@@ -248,10 +248,19 @@ async def run_migrations(db):
         except Exception as e:
             # If check fails, play it safe and run migrations
             logger.warning(f"Data check failed, proceeding with migrations: {e}")
-            if "postgresql" in settings.database_url:
+            try:
                 await db.rollback()
+            except Exception:
+                pass
 
-    is_pg = "postgresql" in settings.database_url
+    # Detect database type from the session's bind
+    try:
+        bind = db.get_bind()
+        is_pg = bind.dialect.name == "postgresql"
+    except Exception:
+        # Fallback to settings if bind check fails
+        is_pg = "postgresql" in settings.database_url
+
     for version, mtype, content in MIGRATIONS:
         if version > current:
             logger.info(f"Applying migration to {version}...")
@@ -277,25 +286,25 @@ async def run_migrations(db):
                     try:
                         await db.execute(text(stmt))
                     except Exception as e:
-                        # Rollback on PostgreSQL to clear any aborted transaction state.
-                        if is_pg:
-                            try:
-                                await db.rollback()
-                            except Exception:
-                                pass
-
                         err_str = str(e).lower()
+                        # Duplicate column error is not fatal (idempotency)
                         if "duplicate column" in err_str or "already exists" in err_str:
                             logger.warning(
                                 f"Column already exists in {version}, skipping: {stmt}"
                             )
-                        elif (
+                            # On PostgreSQL, we MUST rollback to clear the aborted transaction state
+                            # but we can continue to the next statement in a NEW transaction.
+                            if is_pg:
+                                await db.rollback()
+                            continue
+
+                        # If the transaction is aborted, we need to rollback and retry
+                        if is_pg and (
                             "infailedsqltransactionerror" in err_str
                             or "transaction is aborted" in err_str
                         ):
-                            # Transaction was aborted. Rollback above cleared the state —
-                            # retry once so the statement runs in a fresh transaction.
                             try:
+                                await db.rollback()
                                 await db.execute(text(stmt))
                             except Exception as retry_e:
                                 raise retry_e from None
