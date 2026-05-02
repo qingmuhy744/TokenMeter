@@ -111,17 +111,12 @@ export default function Status() {
       .then((res) => {
         if (active) {
           setData(res);
-          // Auto-select the first 3 models on first load if nothing selected
-          if (selectedIds.length === 0 && res.plans.length > 0) {
-            setSelectedIds(res.plans.slice(0, 3).map(p => p.id));
-          }
         }
       })
       .finally(() => {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range]);
 
   // Auto-refresh every 60s
