@@ -328,21 +328,11 @@ class TestAnthropicStream:
         with open(fixture_path) as f:
             lines = json.load(f)
 
-        print(
-            f"\nDEBUG: Loaded {len(lines)} items (type: {type(lines)}) from {fixture_path}"
-        )
-        if len(lines) > 0:
-            print(f"DEBUG: First item: {repr(lines[0])}")
-        if len(lines) > 1:
-            print(f"DEBUG: Second item: {repr(lines[1])}")
-
         parser = AnthropicParser()
-
         tracker = parse_lines(parser, lines)
 
-        print(f"DEBUG: Final Tracker: {tracker}")
-
         # content_block_stop ends thinking state, text follows
+
         assert tracker.time_first_token is not None
         assert tracker.thinking_char_count > 0
         assert tracker.content_char_count > 0
