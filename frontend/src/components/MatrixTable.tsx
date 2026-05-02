@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useHorizontalScroll } from "@/hooks/useHorizontalScroll";
 import {
   createColumnHelper,
   flexRender,
@@ -90,7 +89,6 @@ interface MatrixTableProps {
 export default function MatrixTable({ selectedIds = [], onToggleSelection }: MatrixTableProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const scrollRef = useHorizontalScroll();
   const [data, setData] = useState<MatrixItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -383,8 +381,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </CardHeader>
         <CardContent className="p-0 pb-4">
           <div 
-            ref={scrollRef}
-            className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent"
+            className="w-full max-h-[600px] overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent"
           >
             <Table className="w-full min-w-[800px]">
               <TableHeader className="bg-muted/50 sticky top-0 z-20">

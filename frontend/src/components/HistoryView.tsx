@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceArea } from "recharts";
 import { cn } from "@/lib/utils";
-import { useHorizontalScroll } from "@/hooks/useHorizontalScroll";
 
 interface HistoryViewProps {
   planId?: string;
@@ -19,7 +18,6 @@ interface HistoryViewProps {
 
 export default function HistoryView({ planId: initialPlanId, isPublic = false, onDelete, statsDays = 7 }: HistoryViewProps) {
   const { t } = useTranslation();
-  const scrollRef = useHorizontalScroll();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [results, setResults] = useState<PaginatedResults>({ items: [], total: 0, page: 1, size: 20 });
   const [stats, setStats] = useState<Stats | null>(null);
@@ -208,8 +206,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
 
       <Card className="shadow-md overflow-hidden">
         <div 
-          ref={scrollRef}
-          className="w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent pb-4"
+          className="w-full max-h-[600px] overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent pb-4"
         >
           <Table className="w-full min-w-[1000px]">
             <TableHeader className="bg-muted/50">
