@@ -347,10 +347,10 @@ class TestAnthropicStream:
 
 
 class TestOpenAIThinkingStateMachine:
-    """Tests for the dual-flag state machine (_is_thinking, _in_content)."""
+    """Tests for the regex-based thinking isolation logic."""
 
     def test_no_thinking_stays_idle(self):
-        """Stream with no `` tags never enters thinking state."""
+        """Stream with no `<think>` tags never enters thinking state."""
         lines = [
             make_openai_chunk(content="some content"),
             make_openai_chunk(content="more content"),
@@ -359,7 +359,6 @@ class TestOpenAIThinkingStateMachine:
         parser = OpenAIParser()
         parse_lines(parser, lines)
         assert parser._is_thinking is False
-        assert parser._in_content is True  # Set on first content chunk
 
     def test_whitespace_after_think_end_skipped(self):
         """Whitespace immediately after </think> is not counted as content."""
