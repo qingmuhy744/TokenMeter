@@ -1,7 +1,7 @@
+import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { useState, useEffect, useCallback } from "react";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import DashboardMatrix from "@/pages/DashboardMatrix";
@@ -13,7 +13,18 @@ import PublicHistory from "@/pages/PublicHistory";
 import PlanDetail from "@/pages/PlanDetail";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { LayoutDashboard, Table as TableIcon, ListTodo, History as HistoryIcon, Settings as SettingsIcon, LogOut, Globe, Menu, X } from "lucide-react";
+import {
+  LayoutDashboard,
+  Table as TableIcon,
+  ListTodo,
+  History as HistoryIcon,
+  Settings as SettingsIcon,
+  LogOut,
+  Globe,
+  Menu,
+  X,
+  ChevronRight,
+} from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -54,42 +65,87 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       />
       
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-60 border-r bg-background flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:bg-muted/30",
+        "fixed inset-y-0 left-0 z-50 w-72 bg-sidebar border-r border-sidebar-border flex flex-col transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-4 font-bold text-lg flex items-center justify-between">
-          <span>TokenMeter</span>
-          <button onClick={onClose} className="md:hidden p-1 hover:bg-muted rounded-md">
-            <X className="h-5 w-5" />
+        <div className="p-5 flex items-center justify-between border-b border-sidebar-border/50">
+          <div className="flex items-center gap-2.5">
+            <div className="size-7 rounded-lg bg-primary flex items-center justify-center shadow-glow-amber">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <span className="font-heading text-sm font-bold tracking-tight text-sidebar-foreground">TokenMeter</span>
+          </div>
+          <button onClick={onClose} className="md:hidden size-7 flex items-center justify-center text-sidebar-foreground/50 hover:text-sidebar-foreground rounded-lg hover:bg-sidebar-accent transition-colors">
+            <X className="size-4" />
           </button>
-</div>
-        <nav className="flex-1 space-y-1 px-2">
+        </div>
+
+        <nav className="flex-1 space-y-0.5 px-3 py-4">
           {links.map(({ to, icon: Icon, label, external }) => (
             external ? (
-              <a key={to} href={to} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-muted text-muted-foreground hover:text-foreground">
-                <Icon className="h-4 w-4" />
-                {label}
+              <a
+                key={to}
+                href={to}
+                target="_blank"
+                rel="noreferrer"
+                className="group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-150"
+              >
+                <span className="flex items-center justify-center size-4">
+                  <Icon className="size-4" />
+                </span>
+                <span className="flex-1">{label}</span>
+                <ChevronRight className="size-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-150" />
               </a>
             ) : (
-              <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`
-              }>
-                <Icon className="h-4 w-4" />
-                {label}
+              <NavLink
+                key={to}
+                to={to}
+                end={to === "/"}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
+                    isActive
+                      ? "bg-amber-muted text-amber shadow-sm"
+                      : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span className={`flex items-center justify-center size-4 transition-colors ${isActive ? "text-amber" : ""}`}>
+                      <Icon className="size-4" />
+                    </span>
+                    <span className="flex-1">{label}</span>
+                    {isActive && (
+                      <span className="size-1.5 rounded-full bg-amber shadow-[0_0_6px_oklch(0.72_0.18_65/0.5)]" />
+                    )}
+                  </>
+                )}
               </NavLink>
             )
           ))}
         </nav>
-        <div className="p-3 border-t">
-          <div className="flex items-center justify-between px-1">
-            <button onClick={toggleLang} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <Globe className="h-3.5 w-3.5" />
+
+        <div className="p-3 border-t border-sidebar-border/50 mx-3">
+          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors">
+            <button
+              onClick={toggleLang}
+              className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+            >
+              <Globe className="size-3" />
               {i18n.language === "zh" ? "EN" : "中文"}
             </button>
-            <button onClick={logout} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <LogOut className="h-3.5 w-3.5" />
-              {t("nav.logout")}
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-sidebar-foreground/60">{user?.username}</span>
+              <button
+                onClick={logout}
+                className="size-6 flex items-center justify-center rounded-lg text-sidebar-foreground/40 hover:text-red hover:bg-red/10 transition-colors"
+              >
+                <LogOut className="size-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </>
@@ -102,20 +158,36 @@ function Layout() {
   const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen bg-background">
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b flex items-center px-4 md:hidden">
-          <button 
+
+      {isSidebarOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 w-72 bg-sidebar shadow-2xl animate-slide-in-left">
+            <Sidebar mobile onClose={() => setIsSidebarOpen(false)} />
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header className="md:hidden h-14 flex items-center px-4 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-40">
+          <button
             onClick={() => setIsSidebarOpen(true)}
-            className="p-2 -ml-2 hover:bg-muted rounded-md"
+            className="size-8 flex items-center justify-center text-foreground/60 hover:text-foreground rounded-lg hover:bg-muted transition-colors"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="size-5" />
           </button>
-          <span className="ml-2 font-bold">TokenMeter</span>
+          <div className="ml-3 font-heading text-sm font-bold tracking-tight text-foreground/90">TokenMeter</div>
         </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <Outlet />
+
+        <main className="flex-1 overflow-auto p-4 md:p-8">
+          <div className="max-w-7xl mx-auto animate-fade-in-up">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
@@ -124,7 +196,18 @@ function Layout() {
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen bg-background">
+      <div className="flex flex-col items-center gap-4">
+        <div className="size-8 rounded-lg bg-primary/20 border border-primary/30 animate-pulse flex items-center justify-center">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-primary">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+        </div>
+        <span className="text-sm text-muted-foreground font-medium font-heading">Loading...</span>
+      </div>
+    </div>
+  );
   if (!user) return <Navigate to="/login" />;
   return <>{children}</>;
 }
@@ -134,21 +217,21 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <TooltipProvider>
-        <Routes>
-          <Route path="/status" element={<Status />} />
-          <Route path="/public/history" element={<PublicHistory />} />
-          <Route path="/public/plan/:id" element={<PlanDetail />} />
-          <Route path="/plan/:id" element={<PlanDetail />} />
-          <Route path="/login" element={<Login />} />
-          <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/matrix" element={<DashboardMatrix />} />
-            <Route path="/plans" element={<Plans />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/settings" element={<Settings />} />
-          </Route>
-        </Routes>
-        <Toaster />
+          <Routes>
+            <Route path="/status" element={<Status />} />
+            <Route path="/public/history" element={<PublicHistory />} />
+            <Route path="/public/plan/:id" element={<PlanDetail />} />
+            <Route path="/plan/:id" element={<PlanDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/matrix" element={<DashboardMatrix />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Routes>
+          <Toaster />
         </TooltipProvider>
       </BrowserRouter>
     </AuthProvider>

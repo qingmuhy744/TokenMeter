@@ -15,49 +15,74 @@ export default function Dashboard() {
     name: p.name, tps: p.latest_result!.tps_overall ?? 0, ttft: p.latest_result!.ttft_ms ?? 0,
   }));
 
+  const activeCount = plans.filter(p => p.is_active).length;
+  const errorCount = plans.filter(p => p.latest_result?.error).length;
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{t("dashboard.title")}</h1>
-        <p className="text-slate-500 text-sm">Monitor LLM performance and response metrics in real-time.</p>
+    <div className="space-y-8">
+      <div className="flex flex-col gap-1 animate-fade-in-up">
+        <h1 className="text-2xl font-heading font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
+        <p className="text-muted-foreground text-sm">Monitor LLM performance and response metrics in real-time.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {plans.map((plan) => (
-          <Card key={plan.id} className="rounded-2xl border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden bg-white">
-            <CardHeader className="pb-4 bg-slate-50/50 border-b border-slate-100">
+      <div className="grid grid-cols-3 gap-4 animate-fade-in-up animate-delay-100">
+        <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Plans</p>
+          <p className="text-2xl font-bold text-foreground mt-1 font-heading">{activeCount}</p>
+        </div>
+        <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Plans</p>
+          <p className="text-2xl font-bold text-foreground mt-1 font-heading">{plans.length}</p>
+        </div>
+        <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">With Errors</p>
+          <p className="text-2xl font-bold text-red mt-1 font-heading">{errorCount}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {plans.map((plan, i) => (
+          <Card
+            key={plan.id}
+            className="hover:ring-amber/20 hover:shadow-glow-amber transition-all duration-300"
+            style={{ animationDelay: `${0.15 + i * 0.05}s` }}
+          >
+            <CardHeader className="pb-3 border-b border-white/5">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-semibold text-slate-900">{plan.name}</CardTitle>
-                <Badge 
+                <CardTitle className="text-sm font-heading font-semibold text-foreground/90">{plan.name}</CardTitle>
+                <Badge
                   variant={plan.is_active ? "default" : "secondary"}
-                  className={plan.is_active ? "bg-green-50 text-green-700 border-green-100 hover:bg-green-100" : "bg-slate-100 text-slate-600 border-slate-200"}
+                  className={plan.is_active ? "bg-green/10 text-green border-green/20" : ""}
                 >
                   {plan.is_active ? t("dashboard.active") : t("dashboard.inactive")}
                 </Badge>
               </div>
-              <p className="text-xs text-slate-500 font-medium tracking-wide uppercase mt-1">{plan.api_type} · {plan.model}</p>
+              <p className="text-xs text-muted-foreground font-mono mt-1">{plan.api_type} · {plan.model}</p>
             </CardHeader>
-            <CardContent className="pt-6">
+            <CardContent className="pt-4">
               {plan.latest_result ? (
                 plan.latest_result.error ? (
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-100">
-                    <p className="text-red-600 text-sm font-medium">{plan.latest_result.error}</p>
+                  <div className="p-3 rounded-xl bg-red/10 border border-red/20">
+                    <p className="text-red text-sm font-medium">{plan.latest_result.error}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("dashboard.ttft")}</p>
-                      <p className="text-2xl font-bold text-slate-900 tracking-tight">{plan.latest_result.ttft_ms?.toFixed(0)}<span className="text-sm font-medium text-slate-400 ml-1">ms</span></p>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest font-mono">{t("dashboard.ttft")}</p>
+                      <p className="text-xl font-bold text-foreground tracking-tight font-heading">
+                        {plan.latest_result.ttft_ms?.toFixed(0)}
+                        <span className="text-xs font-medium text-muted-foreground ml-1 font-mono">ms</span>
+                      </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t("dashboard.tps")}</p>
-                      <p className="text-2xl font-bold text-slate-900 tracking-tight">{plan.latest_result.tps_overall?.toFixed(1)}</p>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest font-mono">{t("dashboard.tps")}</p>
+                      <p className="text-xl font-bold text-foreground tracking-tight font-heading">{plan.latest_result.tps_overall?.toFixed(1)}</p>
                     </div>
                   </div>
                 )
               ) : (
-                <div className="flex items-center justify-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  <p className="text-slate-400 text-sm font-medium italic">{t("dashboard.noResults")}</p>
+                <div className="flex items-center justify-center py-4 rounded-xl bg-muted/50 border border-dashed border-white/5">
+                  <p className="text-muted-foreground text-sm font-medium italic">{t("dashboard.noResults")}</p>
                 </div>
               )}
             </CardContent>
@@ -66,40 +91,42 @@ export default function Dashboard() {
       </div>
 
       {chartData.length > 0 && (
-        <Card className="rounded-2xl border-slate-200/60 shadow-sm bg-white overflow-hidden">
-          <CardHeader className="border-b border-slate-100 pb-4">
-            <CardTitle className="text-lg font-semibold text-slate-900">{t("dashboard.tpsComparison")}</CardTitle>
+        <Card>
+          <CardHeader className="border-b border-white/5 pb-4">
+            <CardTitle className="text-base font-heading font-semibold text-foreground/90">{t("dashboard.tpsComparison")}</CardTitle>
           </CardHeader>
-          <CardContent className="pt-8">
+          <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={350}>
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }}
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'oklch(0.55 0.01 75)', fontSize: 12, fontWeight: 500 }}
                   dy={10}
                 />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: '#64748b', fontSize: 12 }}
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'oklch(0.55 0.01 75)', fontSize: 12 }}
                 />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(241, 245, 249, 0.6)' }}
-                  contentStyle={{ 
-                    borderRadius: '12px', 
-                    border: '1px solid rgba(226, 232, 240, 0.6)',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-                    padding: '12px'
+                <Tooltip
+                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                  contentStyle={{
+                    backgroundColor: 'oklch(0.14 0.012 260)',
+                    borderRadius: '12px',
+                    border: '1px solid oklch(0.22 0.015 260 / 0.5)',
+                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.4)',
+                    padding: '12px',
+                    color: 'oklch(0.93 0.005 80)',
                   }}
                 />
-                <Bar 
-                  dataKey="tps" 
-                  fill="oklch(0.6 0.2 250)" 
-                  name="TPS" 
-                  radius={[6, 6, 0, 0]} 
-                  barSize={40}
+                <Bar
+                  dataKey="tps"
+                  fill="oklch(0.72 0.18 65)"
+                  name="TPS"
+                  radius={[4, 4, 0, 0]}
+                  barSize={32}
                 />
               </BarChart>
             </ResponsiveContainer>

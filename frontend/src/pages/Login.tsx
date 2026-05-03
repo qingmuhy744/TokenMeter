@@ -5,8 +5,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
 
 export default function Login() {
   const { t } = useTranslation();
@@ -23,6 +21,7 @@ export default function Login() {
       await login(username, password);
       navigate("/");
     } catch {
+      const { toast } = await import("sonner");
       toast.error("Invalid credentials");
     } finally {
       setLoading(false);
@@ -30,19 +29,53 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-muted/30">
-      <Card className="w-[360px]">
-        <CardHeader><CardTitle className="text-center">TokenMeter</CardTitle></CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Input placeholder={t("login.username")} value={username} onChange={(e) => setUsername(e.target.value)} />
-            <PasswordInput placeholder={t("login.password")} value={password} onChange={(e) => setPassword(e.target.value)} />
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "..." : t("login.loginButton")}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="relative flex items-center justify-center min-h-screen bg-background overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_oklch(0.72_0.18_65/0.03)_0%,_transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_oklch(0.6_0.12_200/0.02)_0%,_transparent_50%)]" />
+
+      <div className="relative w-full max-w-sm mx-auto p-6 animate-fade-in-up">
+        <div className="flex flex-col items-center mb-10">
+          <div className="size-12 rounded-2xl bg-primary flex items-center justify-center shadow-glow-amber mb-4">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <h1 className="font-heading text-xl font-bold text-foreground tracking-tight">TokenMeter</h1>
+          <p className="text-sm text-muted-foreground mt-1.5">Sign in to your observatory</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("login.username")}</label>
+            <Input
+              placeholder="Enter username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="h-10"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("login.password")}</label>
+            <PasswordInput
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-10"
+            />
+          </div>
+          <Button type="submit" className="w-full h-10 mt-2" disabled={loading}>
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin size-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Signing in...
+              </span>
+            ) : t("login.loginButton")}
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }
