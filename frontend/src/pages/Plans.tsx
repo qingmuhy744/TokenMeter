@@ -158,9 +158,21 @@ export default function Plans() {
         <TableCell><Badge variant={node.is_active ? "default" : "secondary"}>{node.is_active ? t("dashboard.active") : t("dashboard.inactive")}</Badge></TableCell>
         <TableCell>
           <div className="flex gap-1">
-            <Button size="sm" variant="outline" onClick={() => handleTest(node.id)}><Play className="h-3 w-3" /></Button>
-            <Button size="sm" variant="outline" onClick={() => handleEdit(node)}><Pencil className="h-3 w-3" /></Button>
-            <Button size="sm" variant="outline" onClick={() => openDeleteConfirm(node.id)}><Trash2 className="h-3 w-3" /></Button>
+            {node.parent_id !== null && (
+              <Button size="sm" variant="outline" onClick={() => handleTest(node.id)}>
+                <Play className="h-3 w-3" />
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={() => handleEdit(node)}>
+              <Pencil className="h-3 w-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openDeleteConfirm(node.id)}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
           </div>
         </TableCell>
       </TableRow>
@@ -189,7 +201,25 @@ export default function Plans() {
               </div>
               <div><Label>{t("plans.apiBaseUrl")}</Label><Input value={form.api_base} onChange={(e) => setForm({ ...form, api_base: e.target.value })} placeholder={parentEffective?.effective_api_base || undefined} /></div>
               <div><Label>{t("plans.apiKey")}</Label><PasswordInput value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} placeholder={parentEffective?.effective_api_key || undefined} /></div>
-              <div><Label>{t("plans.model")}</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder={parentEffective?.effective_model || undefined} /></div>
+              <div>
+                <Label>{t("plans.model")}</Label>
+                <Input
+                  value={form.model}
+                  onChange={(e) => setForm({ ...form, model: e.target.value })}
+                  placeholder={
+                    !editingParentId
+                      ? "Provider Suite (No Model needed)"
+                      : parentEffective?.effective_model || undefined
+                  }
+                  disabled={!editingParentId}
+                  className={!editingParentId ? "bg-muted cursor-not-allowed" : ""}
+                />
+                {!editingParentId && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    This is a Provider. Add child models below to run tests.
+                  </p>
+                )}
+              </div>
               <div><Label>{t("plans.customPrompt")}</Label><Input value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} placeholder={parentEffective?.effective_prompt || undefined} /></div>
               <div className="grid grid-cols-3 gap-4">
                   <div>
