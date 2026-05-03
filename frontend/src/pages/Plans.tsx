@@ -184,7 +184,7 @@ export default function Plans() {
                 </Select>
               </div>
               <div><Label>{t("plans.apiBaseUrl")}</Label><Input value={form.api_base} onChange={(e) => setForm({ ...form, api_base: e.target.value })} placeholder={parentEffective?.effective_api_base || undefined} /></div>
-              <div><Label>{t("plans.apiKey")}</Label><PasswordInput value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} /></div>
+              <div><Label>{t("plans.apiKey")}</Label><PasswordInput value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} placeholder={parentEffective?.effective_api_key || undefined} /></div>
               <div><Label>{t("plans.model")}</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder={parentEffective?.effective_model || undefined} /></div>
               <div><Label>{t("plans.customPrompt")}</Label><Input value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} placeholder={parentEffective?.effective_prompt || undefined} /></div>
               <div className="grid grid-cols-3 gap-4">
