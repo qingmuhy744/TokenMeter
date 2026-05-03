@@ -116,11 +116,11 @@ export const BatchImportDialog = ({
         <Tabs
           value={mode}
           onValueChange={(v) => setMode(v as "text" | "json")}
-          className="w-full"
+          className="w-full flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="text">{t("plans.textMode")}</TabsTrigger>
-            <TabsTrigger value="json">{t("plans.jsonMode")}</TabsTrigger>
+          <TabsList className="w-full flex">
+            <TabsTrigger value="text" className="flex-1">{t("plans.textMode")}</TabsTrigger>
+            <TabsTrigger value="json" className="flex-1">{t("plans.jsonMode")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="text" className="space-y-4 py-4">
