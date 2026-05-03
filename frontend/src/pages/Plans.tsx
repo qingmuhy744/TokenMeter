@@ -93,10 +93,10 @@ export default function Plans() {
   };
 
   const fieldDisplay = (own: string | null | undefined, effective: string | null | undefined) => {
-    if (own) return <>{own}</>;
+    if (own != null && own !== "") return <>{own}</>;
     if (effective) return (
       <Tooltip>
-        <TooltipTrigger render={<span className="text-muted-foreground italic cursor-default">{effective}</span>} />
+        <TooltipTrigger render={<span className="text-muted-foreground italic cursor-default" tabIndex={0}>{effective}</span>} />
         <TooltipPortal>
           <TooltipPositioner>
             <TooltipPopup>{t("plans.inheritedFromParent")}</TooltipPopup>
