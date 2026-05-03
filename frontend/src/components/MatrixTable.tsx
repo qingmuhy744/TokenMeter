@@ -493,7 +493,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                         className={cn(
                           "px-6 py-4 align-middle transition-colors",
                           index === 0 && cn(
-                            "sticky left-0 z-30 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]",
+                            "sticky left-0 z-10 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]",
                             !isSelected && "bg-card"
                           )
                         )}
