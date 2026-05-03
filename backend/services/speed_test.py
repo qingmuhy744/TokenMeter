@@ -51,9 +51,7 @@ class OpenAIParser(BaseParser):
 
     def __init__(self):
         self._seen_done = False
-        self._finish_reason: str | None = None
         self._is_thinking = False
-        self._in_content = False
 
     def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
         if line == "data: [DONE]":
@@ -108,7 +106,6 @@ class OpenAIParser(BaseParser):
                             tracker.thinking_char_count += len(part)
                         else:
                             # Content state
-                            self._in_content = True
                             if (
                                 tracker.time_think_end is not None
                                 and tracker.time_first_token is None
@@ -126,7 +123,6 @@ class OpenAIParser(BaseParser):
                         char_delta += len(part)
 
             if choices[0].get("finish_reason"):
-                self._finish_reason = choices[0]["finish_reason"]
                 if tracker.time_finished is None:
                     tracker.time_finished = now
 
@@ -150,11 +146,9 @@ class AnthropicParser(BaseParser):
 
     def __init__(self):
         self._is_thinking = False
-        self._current_event: str = ""
 
     def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
         if line.startswith("event: "):
-            self._current_event = line[7:].strip()
             return 0
         if not line.startswith("data: "):
             return 0

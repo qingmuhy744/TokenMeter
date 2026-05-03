@@ -75,8 +75,7 @@ MIGRATIONS = [
 
 
 async def convert_to_suites(db):
-    """Convert all existing independent plans into suites with one child model."""
-    from sqlalchemy import select, update
+    from sqlalchemy import update
     from backend.models import TokenPlan, TestResult
 
     # 查找所有没有父级且有模型的计划

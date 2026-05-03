@@ -125,10 +125,6 @@ class PlanResponse(BaseModel):
         return _ensure_utc(v)
 
 
-class PlanWithLatestResult(PlanResponse):
-    latest_result: "TestResultResponse | None" = None
-
-
 class TestResultResponse(BaseModel):
     id: int
     plan_id: int
