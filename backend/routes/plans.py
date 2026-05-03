@@ -21,7 +21,16 @@ logger = logging.getLogger(__name__)
 async def list_plans(request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        result = await db.execute(select(TokenPlan).order_by(TokenPlan.id.asc()))
+        result = await db.execute(
+            select(TokenPlan)
+            .options(
+                selectinload(TokenPlan.parent).selectinload(TokenPlan.parent),
+                selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent),
+            )
+            .order_by(TokenPlan.id.asc())
+        )
         plans = result.scalars().all()
         return [PlanResponse.model_validate(p) for p in plans]
 
@@ -121,7 +130,16 @@ async def create_plan(body: PlanCreate, request: Request):
 async def get_plan(plan_id: int, request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        result = await db.execute(select(TokenPlan).where(TokenPlan.id == plan_id))
+        result = await db.execute(
+            select(TokenPlan)
+            .options(
+                selectinload(TokenPlan.parent).selectinload(TokenPlan.parent),
+                selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent),
+            )
+            .where(TokenPlan.id == plan_id)
+        )
         plan = result.scalar_one_or_none()
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
@@ -132,7 +150,16 @@ async def get_plan(plan_id: int, request: Request):
 async def update_plan(plan_id: int, body: PlanUpdate, request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        result = await db.execute(select(TokenPlan).where(TokenPlan.id == plan_id))
+        result = await db.execute(
+            select(TokenPlan)
+            .options(
+                selectinload(TokenPlan.parent).selectinload(TokenPlan.parent),
+                selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent),
+            )
+            .where(TokenPlan.id == plan_id)
+        )
         plan = result.scalar_one_or_none()
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
