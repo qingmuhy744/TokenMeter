@@ -17,6 +17,14 @@ export interface Plan {
   created_at: string;
   updated_at: string;
   latest_result?: TestResult | null;
+  parent_id?: number | null;
+  effective_api_type?: string | null;
+  effective_api_base?: string | null;
+  effective_api_key?: string | null;
+  effective_model?: string | null;
+  effective_prompt?: string | null;
+  effective_max_tokens?: number | null;
+  effective_test_count?: number | null;
 }
 
 export interface TestResult {

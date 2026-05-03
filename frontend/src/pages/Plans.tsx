@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
 import type { Plan } from "@/api/client";
@@ -19,9 +19,34 @@ const defaultForm = {
   prompt: "", max_tokens: 256, test_count: 3, interval_minutes: 60, is_active: true,
 };
 
+interface PlanWithChildren extends Plan {
+  children: PlanWithChildren[];
+}
+
+const buildPlanTree = (plans: Plan[]): PlanWithChildren[] => {
+  const map: Record<number, PlanWithChildren> = {};
+  const roots: PlanWithChildren[] = [];
+
+  plans.forEach(p => {
+    map[p.id] = { ...p, children: [] };
+  });
+
+  plans.forEach(p => {
+    if (p.parent_id && map[p.parent_id]) {
+      map[p.parent_id].children.push(map[p.id]);
+    } else {
+      roots.push(map[p.id]);
+    }
+  });
+
+  return roots;
+};
+
 export default function Plans() {
   const { t } = useTranslation();
   const [plans, setPlans] = useState<Plan[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const planTree = useMemo(() => buildPlanTree(plans), [plans]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
