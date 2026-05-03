@@ -62,7 +62,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
           <button onClick={onClose} className="md:hidden p-1 hover:bg-muted rounded-md">
             <X className="h-5 w-5" />
           </button>
-        </div>
+</div>
         <nav className="flex-1 space-y-1 px-2">
           {links.map(({ to, icon: Icon, label, external }) => (
             external ? (
