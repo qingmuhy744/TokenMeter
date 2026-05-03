@@ -56,9 +56,9 @@ class PlanCreate(BaseModel):
     @field_validator("api_base")
     @classmethod
     def validate_api_base(cls, v: str | None) -> str | None:
-        if v is not None:
+        if v is not None and v.strip() != "":
             return _validate_api_base(v)
-        return v
+        return None  # Treat empty string as None to support inheritance
 
 
 class PlanUpdate(BaseModel):
@@ -78,9 +78,9 @@ class PlanUpdate(BaseModel):
     @field_validator("api_base")
     @classmethod
     def validate_api_base(cls, v: str | None) -> str | None:
-        if v is not None:
+        if v is not None and v.strip() != "":
             return _validate_api_base(v)
-        return v
+        return None  # Treat empty string as None to support inheritance
 
 
 class PlanResponse(BaseModel):
