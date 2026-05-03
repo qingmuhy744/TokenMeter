@@ -14,6 +14,7 @@ export interface Plan {
   test_count: number;
   interval_minutes: number;
   is_active: boolean;
+  multiplier: number;
   created_at: string;
   updated_at: string;
   latest_result?: TestResult | null;
@@ -121,11 +122,11 @@ export const api = {
   logout: () => request("/auth/logout", { method: "POST" }),
   me: () => request<{ id: number; username: string }>("/auth/me"),
   changePassword: async (old_password: string, new_password: string) => {
-    const hashedOld = await hashPassword(old_password);
+    const hashedPassword = await hashPassword(old_password);
     const hashedNew = await hashPassword(new_password);
     return request("/auth/change-password", {
       method: "POST",
-      body: JSON.stringify({ old_password: hashedOld, new_password: hashedNew }),
+      body: JSON.stringify({ old_password: hashedPassword, new_password: hashedNew }),
     });
   },
 
