@@ -4,8 +4,19 @@ import { api, type Plan } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
@@ -34,7 +45,9 @@ export const BatchImportDialog = ({
     try {
       if (mode === "text") {
         if (!parentId) {
-          toast.error(t("plans.selectParent") || "Please select a provider suite");
+          toast.error(
+            t("plans.selectParent") || "Please select a provider suite"
+          );
           return;
         }
         const models = textValue
@@ -49,7 +62,9 @@ export const BatchImportDialog = ({
 
         for (let i = 0; i < models.length; i++) {
           const m = models[i];
-          toast.info(t("plans.importing", { current: i + 1, total: models.length }));
+          toast.info(
+            t("plans.importing", { current: i + 1, total: models.length })
+          );
           await api.createPlan({
             name: `${parentName} (${m})`,
             parent_id: parentId,
@@ -73,7 +88,9 @@ export const BatchImportDialog = ({
         }
 
         for (let i = 0; i < items.length; i++) {
-          toast.info(t("plans.importing", { current: i + 1, total: items.length }));
+          toast.info(
+            t("plans.importing", { current: i + 1, total: items.length })
+          );
           await api.createPlan(items[i]);
         }
         toast.success(t("plans.importSuccess", { count: items.length }));
@@ -96,7 +113,11 @@ export const BatchImportDialog = ({
           <DialogTitle>{t("plans.batchImport")}</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={mode} onValueChange={(v) => setMode(v as "text" | "json")} className="w-full">
+        <Tabs
+          value={mode}
+          onValueChange={(v) => setMode(v as "text" | "json")}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="text">{t("plans.textMode")}</TabsTrigger>
             <TabsTrigger value="json">{t("plans.jsonMode")}</TabsTrigger>
@@ -107,7 +128,7 @@ export const BatchImportDialog = ({
               <Label>{t("plans.parentPlan")}</Label>
               <Select
                 value={parentId?.toString() || ""}
-                onValueChange={(v) => setParentId(parseInt(v))}
+                onValueChange={(v) => setParentId(parseInt(v as string))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t("plans.parentPlan")} />
@@ -148,10 +169,21 @@ export const BatchImportDialog = ({
         </Tabs>
 
         <div className="flex justify-end gap-2 pt-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isImporting}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isImporting}
+          >
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleImport} disabled={isImporting || (mode === "text" && (!parentId || !textValue)) || (mode === "json" && !jsonValue)}>
+          <Button
+            onClick={handleImport}
+            disabled={
+              isImporting ||
+              (mode === "text" && (!parentId || !textValue)) ||
+              (mode === "json" && !jsonValue)
+            }
+          >
             {isImporting ? t("plans.parsing") : t("plans.create")}
           </Button>
         </div>

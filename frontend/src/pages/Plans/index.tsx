@@ -4,7 +4,7 @@ import { api } from "@/api/client";
 import type { Plan } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, ListPlus } from "lucide-react";
 
 import { buildPlanTree } from "./utils";
 import { PlanTable } from "./PlanTable";
@@ -12,7 +12,22 @@ import { PlanDialog } from "./PlanDialog";
 import { BatchImportDialog } from "./BatchImportDialog";
 import { DeleteDialog } from "./DeleteDialog";
 
-const defaultForm = {
+export interface PlanForm {
+  name: string;
+  api_type: "openai" | "anthropic";
+  api_base: string;
+  api_key: string;
+  model: string;
+  prompt: string;
+  max_tokens: number;
+  test_count: number;
+  interval_minutes: number;
+  is_active: boolean;
+  parent_id: number | null;
+  multiplier: number;
+}
+
+const defaultForm: PlanForm = {
   name: "",
   api_type: "openai",
   api_base: "",
@@ -23,7 +38,7 @@ const defaultForm = {
   test_count: 3,
   interval_minutes: 60,
   is_active: true,
-  parent_id: null as number | null,
+  parent_id: null,
   multiplier: 1.0,
 };
 
@@ -34,7 +49,7 @@ export default function Plans() {
   
   const [open, setOpen] = useState(false);
   const [batchImportOpen, setBatchImportOpen] = useState(false);
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState<PlanForm>(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [originalKey, setOriginalKey] = useState("");
 
@@ -74,11 +89,11 @@ export default function Plans() {
         // Original single creation/update logic
         if (editingId) {
           const { api_key, ...rest } = form;
-          const payload = originalKey !== api_key ? { ...rest, api_key } : rest;
+          const payload = (originalKey !== api_key ? { ...rest, api_key } : rest) as Partial<Plan>;
           await api.updatePlan(editingId, payload);
           toast.success(t("plans.planUpdated"));
         } else {
-          await api.createPlan(form);
+          await api.createPlan(form as Partial<Plan>);
           toast.success(t("plans.planCreated"));
         }
       }
@@ -155,6 +170,7 @@ export default function Plans() {
             variant="outline"
             onClick={() => setBatchImportOpen(true)}
           >
+            <ListPlus className="h-4 w-4 mr-2" />
             {t("plans.batchImport")}
           </Button>
           <Button
@@ -165,7 +181,7 @@ export default function Plans() {
               setOpen(true);
             }}
           >
-            <Plus className="h-4 w-4 mr-2" /> {t("plans.newPlan")}
+            <Plus className="h-4 w-4 mr-2" /> {t("plans.addPlan")}
           </Button>
         </div>
       </div>

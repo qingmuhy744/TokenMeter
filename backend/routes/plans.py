@@ -1,4 +1,5 @@
 import json
+import asyncio
 import logging
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -199,6 +200,18 @@ async def trigger_test(plan_id: int, request: Request):
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
 
+        # If it's a Provider (Suite), run all children sequentially
+        if plan.parent_id is None:
+            from backend.services.scheduler import run_suite_test
+
+            logger.info(
+                "Manual suite test triggered: provider=%d name=%s", plan_id, plan.name
+            )
+            # Run in background to avoid timeout
+            asyncio.create_task(run_suite_test(plan_id))
+            return {"message": "Suite test started in background"}
+
+    # Single plan test logic remains the same
     tester = SpeedTester(timeout=settings.TIMEOUT_SECONDS)
     prompt = plan.effective_prompt or settings.DEFAULT_PROMPT
 
