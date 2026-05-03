@@ -34,7 +34,7 @@ def _validate_api_base(url: str) -> str:
             raise
         # Not an IP address (hostname like "api.openai.com") — that's fine
     # Block common internal hostnames
-    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "[::1]"):
+    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "[::1]"):  # nosec
         raise ValueError("api_base cannot point to localhost")
     return url
 

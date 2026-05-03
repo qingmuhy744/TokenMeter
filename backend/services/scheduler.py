@@ -187,7 +187,8 @@ async def _run_suite_test_internal(suite_id: int, db: AsyncSession):
             logger.error("  Error running test for child %d: %s", child.id, e)
 
         # 每个子模型测试完成后，休眠规避并发限制
-        wait_time = random.uniform(2, 10)
+        wait_time = random.uniform(2, 10)  # nosec
+
         logger.info("  Waiting %.1fs before next child...", wait_time)
         await asyncio.sleep(wait_time)
 

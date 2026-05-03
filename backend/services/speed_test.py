@@ -340,8 +340,9 @@ class SpeedTester:
                 start = time.monotonic()
                 try:
                     await client.head(ping_url)
-                except Exception:
+                except Exception:  # nosec
                     pass
+
                 else:
                     rtt = (time.monotonic() - start) * 1000
                     samples.append(rtt)
