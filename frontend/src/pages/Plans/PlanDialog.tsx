@@ -92,14 +92,20 @@ export const PlanDialog = ({
                     }
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder={t("plans.none")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{t("plans.none")}</SelectItem>
+                  <SelectItem value="none" label={t("plans.none") as string}>
+                    {t("plans.none")}
+                  </SelectItem>
                   {plans
                     .filter((p) => !p.parent_id && p.id !== editingId)
                     .map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>
+                      <SelectItem
+                        key={p.id}
+                        value={p.id.toString()}
+                        label={p.name}
+                      >
                         {p.name}
                       </SelectItem>
                     ))}
