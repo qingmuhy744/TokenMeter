@@ -8,20 +8,26 @@ from backend.models import TokenPlan, TestResult
 
 async def seed_fake_data(db_session):
     """Seed test data with multiple plans and staggered test results."""
-    plan1 = TokenPlan(
-        name="Plan A",
+    suite = TokenPlan(
+        name="Suite A",
         api_type="openai",
         api_base="https://api.example.com",
         api_key="k1",
+        is_active=True,
+    )
+    db_session.add(suite)
+    await db_session.flush()
+
+    plan1 = TokenPlan(
+        name="Plan A",
         model="gpt-4",
+        parent_id=suite.id,
         is_active=True,
     )
     plan2 = TokenPlan(
         name="Plan B",
-        api_type="anthropic",
-        api_base="https://api.anthropic.com",
-        api_key="k2",
         model="claude-3",
+        parent_id=suite.id,
         is_active=True,
     )
     db_session.add_all([plan1, plan2])

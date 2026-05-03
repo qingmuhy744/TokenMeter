@@ -51,9 +51,7 @@ class OpenAIParser(BaseParser):
 
     def __init__(self):
         self._seen_done = False
-        self._finish_reason: str | None = None
         self._is_thinking = False
-        self._in_content = False
 
     def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
         if line == "data: [DONE]":
@@ -108,7 +106,6 @@ class OpenAIParser(BaseParser):
                             tracker.thinking_char_count += len(part)
                         else:
                             # Content state
-                            self._in_content = True
                             if (
                                 tracker.time_think_end is not None
                                 and tracker.time_first_token is None
@@ -126,7 +123,6 @@ class OpenAIParser(BaseParser):
                         char_delta += len(part)
 
             if choices[0].get("finish_reason"):
-                self._finish_reason = choices[0]["finish_reason"]
                 if tracker.time_finished is None:
                     tracker.time_finished = now
 
@@ -150,11 +146,9 @@ class AnthropicParser(BaseParser):
 
     def __init__(self):
         self._is_thinking = False
-        self._current_event: str = ""
 
     def parse_line(self, line: str, tracker: RequestTracker, now: float) -> int:
         if line.startswith("event: "):
-            self._current_event = line[7:].strip()
             return 0
         if not line.startswith("data: "):
             return 0
@@ -164,6 +158,12 @@ class AnthropicParser(BaseParser):
             return 0
 
         data_type = data.get("type", "")
+
+        # RESTORED DEBUG LOGS
+        if tracker.delta_count < 15:
+            logger.info(
+                f"Anthropic event: {data_type} | delta: {json.dumps(data.get('delta', {}))}"
+            )
 
         if data_type == "message_start":
             usage = data.get("message", {}).get("usage", {})
@@ -189,14 +189,25 @@ class AnthropicParser(BaseParser):
                 tracker.char_count += len(thinking)
                 tracker.delta_count += 1
 
-            elif delta_type == "text_delta" and text:
+            elif delta_type == "text_delta":
+                # Ensure thinking state is closed if we hit text
                 if self._is_thinking:
                     tracker.time_think_end = now
                     self._is_thinking = False
+
+                # TTFT: First text delta or first delta after thinking
                 if tracker.time_first_token is None:
                     tracker.time_first_token = now
-                tracker.content_char_count += len(text)
-                tracker.char_count += len(text)
+
+                if text:
+                    tracker.content_char_count += len(text)
+                    tracker.char_count += len(text)
+                    tracker.delta_count += 1
+
+            else:
+                # Handle unknown deltas (like Minimax's signature_delta)
+                # We count them as deltas to ensure total_tokens fallback works,
+                # but don't assign them to content/thinking unless known.
                 tracker.delta_count += 1
 
         elif data_type == "content_block_stop":
@@ -329,8 +340,9 @@ class SpeedTester:
                 start = time.monotonic()
                 try:
                     await client.head(ping_url)
-                except Exception:
+                except Exception:  # nosec
                     pass
+
                 else:
                     rtt = (time.monotonic() - start) * 1000
                     samples.append(rtt)
@@ -442,19 +454,25 @@ class SpeedTester:
 
         result.total_tokens = output_tokens
 
-        if tracker.time_first_token is not None:
-            result.ttft_ms = (tracker.time_first_token - tracker.time_sent) * 1000
+        # TTFT Logic: Prefer text token, fallback to reasoning token
+        effective_ttft_start = tracker.time_first_token or tracker.time_first_reasoning
+
+        if effective_ttft_start is not None:
+            result.ttft_ms = (effective_ttft_start - tracker.time_sent) * 1000
             generate_ms = (
                 tracker.time_finished or tracker.time_sent
-            ) - tracker.time_first_token
+            ) - effective_ttft_start
+
             if generate_ms > 0:
                 result.tps_overall = output_tokens / (total_ms)
                 result.tps_generate = output_tokens / (generate_ms)
+
                 if tracker.char_count > 0:
                     result.token_density = tracker.char_count / output_tokens
                     # Estimate thinking/content tokens via char ratio
                     thinking_chars = tracker.thinking_char_count or 0
                     content_chars = tracker.content_char_count or 0
+
                     if thinking_chars + content_chars > 0:
                         total_chars = thinking_chars + content_chars
                         result.thinking_tokens = round(
@@ -463,13 +481,20 @@ class SpeedTester:
                         result.content_tokens = round(
                             content_chars / total_chars * output_tokens
                         )
+
+                        # Use the same effective start for content TPS if only reasoning happened
                         content_generate_ms = (
                             tracker.time_finished or tracker.time_sent
-                        ) - tracker.time_first_token
-                        if content_generate_ms > 0 and result.content_tokens:
-                            result.tps_content = (
-                                result.content_tokens / content_generate_ms
+                        ) - effective_ttft_start
+
+                        if content_generate_ms > 0 and (
+                            result.content_tokens or result.thinking_tokens
+                        ):
+                            # Use max of tokens to ensure we get a value
+                            metric_tokens = (
+                                result.content_tokens or result.thinking_tokens
                             )
+                            result.tps_content = metric_tokens / content_generate_ms
 
         logger.info(
             "Test done: tokens=%d char_count=%d ttft=%.0fms tps=%.1f density=%.2f error=%s",

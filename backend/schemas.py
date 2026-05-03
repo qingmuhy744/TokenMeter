@@ -34,27 +34,31 @@ def _validate_api_base(url: str) -> str:
             raise
         # Not an IP address (hostname like "api.openai.com") — that's fine
     # Block common internal hostnames
-    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "[::1]"):
+    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "[::1]"):  # nosec
         raise ValueError("api_base cannot point to localhost")
     return url
 
 
 class PlanCreate(BaseModel):
     name: str
-    api_type: Literal["openai", "anthropic"]
-    api_base: str
-    api_key: str
-    model: str
+    api_type: Literal["openai", "anthropic"] | None = None
+    api_base: str | None = None
+    api_key: str | None = None
+    model: str | None = None
     prompt: str | None = None
-    max_tokens: int = 256
-    test_count: int = 3
+    max_tokens: int | None = None
+    test_count: int | None = None
     interval_minutes: int = 60
     is_active: bool = True
+    parent_id: int | None = None
+    multiplier: float = 1.0
 
     @field_validator("api_base")
     @classmethod
-    def validate_api_base(cls, v: str) -> str:
-        return _validate_api_base(v)
+    def validate_api_base(cls, v: str | None) -> str | None:
+        if v is not None:
+            return _validate_api_base(v)
+        return v
 
 
 class PlanUpdate(BaseModel):
@@ -68,6 +72,8 @@ class PlanUpdate(BaseModel):
     test_count: int | None = None
     interval_minutes: int | None = None
     is_active: bool | None = None
+    parent_id: int | None = None
+    multiplier: float | None = None
 
     @field_validator("api_base")
     @classmethod
@@ -80,23 +86,35 @@ class PlanUpdate(BaseModel):
 class PlanResponse(BaseModel):
     id: int
     name: str
-    api_type: str
-    api_base: str
-    api_key: str
-    model: str
+    api_type: str | None
+    api_base: str | None
+    api_key: str | None
+    model: str | None
     prompt: str | None
-    max_tokens: int
-    test_count: int
+    max_tokens: int | None
+    test_count: int | None
     interval_minutes: int
     is_active: bool
+    parent_id: int | None = None
+    multiplier: float = 1.0
     created_at: datetime
     updated_at: datetime
 
+    effective_api_type: str | None = None
+    effective_api_base: str | None = None
+    effective_api_key: str | None = None
+    effective_model: str | None = None
+    effective_prompt: str | None = None
+    effective_max_tokens: int | None = None
+    effective_test_count: int | None = None
+
     model_config = {"from_attributes": True}
 
-    @field_validator("api_key")
+    @field_validator("api_key", "effective_api_key")
     @classmethod
-    def mask_api_key(cls, v: str) -> str:
+    def mask_api_key(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
         if len(v) <= 8:
             return "****"
         return f"{v[:4]}...{v[-4:]}"
@@ -105,10 +123,6 @@ class PlanResponse(BaseModel):
     @classmethod
     def serialize_dt(cls, v: datetime) -> datetime:
         return _ensure_utc(v)
-
-
-class PlanWithLatestResult(PlanResponse):
-    latest_result: "TestResultResponse | None" = None
 
 
 class TestResultResponse(BaseModel):
@@ -147,6 +161,41 @@ class TestResultResponse(BaseModel):
         return _ensure_utc(v)
 
 
+class PublicTestResultResponse(BaseModel):
+    """脱敏后的测试结果，供游客查看"""
+
+    id: int
+    plan_id: int
+    plan_name: str | None = None
+    ttft_ms: float | None
+    tps_overall: float | None
+    tps_generate: float | None
+    total_tokens: int | None
+    total_time_ms: float | None
+    ttfb_ms: float | None = None
+    ttfr_ms: float | None = None
+    think_time_ms: float | None = None
+    tps_content: float | None = None
+    thinking_tokens: int | None = None
+    ping_ms: float | None = None
+    error: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+    @field_serializer("created_at")
+    @classmethod
+    def serialize_dt(cls, v: datetime) -> datetime:
+        return _ensure_utc(v)
+
+
+class PublicPaginatedResponse(BaseModel):
+    items: list[PublicTestResultResponse]
+    total: int
+    page: int
+    size: int
+
+
 class StatsResponse(BaseModel):
     plan_id: int
     count: int
@@ -156,6 +205,20 @@ class StatsResponse(BaseModel):
     median_ttft_ms: float | None
     median_tps_overall: float | None
     p95_ttft_ms: float | None
+
+
+class MatrixItem(BaseModel):
+    plan_id: int
+    full_name: str
+    latest_status: Literal["success", "error", "none"]
+    sparkline: list[float | None]
+    avg_ttft: float | None
+    avg_tps_overall: float | None
+    avg_tps_generate: float | None
+    day_avg_ttft: float | None
+    night_avg_ttft: float | None
+    degradation: float | None
+    success_rate: float | None
 
 
 class LoginRequest(BaseModel):

@@ -47,6 +47,10 @@ jobs:
         if: matrix.db-type == 'sqlite' # Only lint once
         run: uv run ruff check backend/
 
+      - name: Security Scan Python (Bandit)
+        if: matrix.db-type == 'sqlite'
+        run: uv run bandit -r backend/ -x backend/tests,backend/seed_data.py,backend/seed_heavy.py
+
       - name: Test Python
         env:
           TEST_DATABASE_URL: ${{ matrix.db-type == 'postgres' && 'postgresql://user:password@localhost:5432/testdb' || '' }}

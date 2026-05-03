@@ -1,138 +1,44 @@
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import HistoryView from "@/components/HistoryView";
 import { api } from "@/api/client";
-import type { Plan, PaginatedResults, TestResult } from "@/api/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 export default function History() {
   const { t } = useTranslation();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [results, setResults] = useState<PaginatedResults>({ items: [], total: 0, page: 1, size: 20 });
-  const [selectedPlan, setSelectedPlan] = useState<string>("all");
-  const [page, setPage] = useState(1);
-
-  useEffect(() => { api.getPlans().then(setPlans); }, []);
-  useEffect(() => {
-    const params: Record<string, string> = { page: String(page), size: "20" };
-    if (selectedPlan !== "all") params.plan_id = selectedPlan;
-    api.getResults(params).then(setResults);
-  }, [selectedPlan, page]);
-
+  const [statsRange, setStatsRange] = useState<number>(7);
+  
   const handleDelete = async (id: number) => {
     if (!confirm(t("history.deleteConfirm"))) return;
     try {
       await api.deleteResult(id);
-      setResults(prev => ({
-        ...prev,
-        items: prev.items.filter(r => r.id !== id),
-        total: prev.total - 1
-      }));
+      toast.success("Result deleted");
+      window.location.reload(); 
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      alert(message);
+      toast.error(err instanceof Error ? err.message : String(err));
     }
   };
 
-  const chartData = [...results.items]
-    .filter((r) => !r.error && r.tps_overall)
-    .reverse()
-    .map((r) => ({
-      time: new Date(r.created_at).toLocaleTimeString(),
-      tps_overall: r.tps_overall ?? 0,
-      tps_generate: r.tps_generate ?? 0,
-      ttft: r.ttft_ms ? Math.round(r.ttft_ms) : 0,
-    }));
-
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{t("history.title")}</h1>
-      <div className="flex gap-4">
-        <Select value={selectedPlan} onValueChange={(v) => { setSelectedPlan(v ?? "all"); setPage(1); }}>
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder={t("history.allPlans")}>
-              {(value: string | null) =>
-                value === "all" || !value
-                  ? t("history.allPlans")
-                  : plans.find((p) => String(p.id) === value)?.name || value
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("history.allPlans")}</SelectItem>
-            {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>))}
-          </SelectContent>
-        </Select>
-      </div>
-      {chartData.length > 1 && (
-        <Card>
-          <CardHeader><CardTitle>{t("history.trend")}</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <XAxis dataKey="time" tick={{ fontSize: 12 }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Legend />
-                <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="var(--color-chart-1)" strokeWidth={2} name={t("history.tpsOverall")} dot={false} />
-                <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="var(--color-chart-2)" strokeWidth={2} name={t("history.tpsGenerate")} dot={false} />
-                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="var(--color-chart-3)" strokeWidth={2} name={t("history.ttftMs")} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t("history.time")}</TableHead>
-            <TableHead>{t("history.plan")}</TableHead>
-            <TableHead>{t("history.ttftMs")}</TableHead>
-            <TableHead>{t("history.tpsOverall")}</TableHead>
-            <TableHead>{t("history.tpsGenerate")}</TableHead>
-            <TableHead>{t("history.tokens")}</TableHead>
-            <TableHead>{t("history.status")}</TableHead>
-            <TableHead>{t("history.note")}</TableHead>
-            <TableHead className="w-[80px] text-right"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {results.items.map((r: TestResult) => (
-            <TableRow key={r.id}>
-              <TableCell>{new Date(r.created_at).toLocaleString()}</TableCell>
-              <TableCell>{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
-              <TableCell>{r.ttft_ms?.toFixed(0)}</TableCell>
-              <TableCell>{r.tps_overall?.toFixed(1)}</TableCell>
-              <TableCell>{r.tps_generate?.toFixed(1)}</TableCell>
-              <TableCell>{r.total_tokens}</TableCell>
-              <TableCell>{r.error ? <span className="text-destructive text-sm">{t("common.error")}</span> : r.total_tokens === 0 ? <span className="text-yellow-600 text-sm">{t("common.warn")}</span> : <span className="text-green-600 text-sm">{t("common.ok")}</span>}</TableCell>
-              <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground" title={r.note || r.debug_chunks || ""}>{r.note || ""}</TableCell>
-              <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                  onClick={() => handleDelete(r.id)}
-                >
-                  {t("history.delete")}
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{t("history.total")}: {results.total}</span>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t("history.prev")}</Button>
-          <span className="text-sm py-1">{t("history.page")} {page}</span>
-          <Button variant="outline" size="sm" disabled={results.items.length < 20} onClick={() => setPage(page + 1)}>{t("history.next")}</Button>
+        <h1 className="text-2xl font-bold">{t("history.title")}</h1>
+        <div className="flex bg-muted p-1 rounded-lg">
+          {[1, 7, 30].map(d => (
+            <Button 
+              key={d}
+              variant={statsRange === d ? "default" : "ghost"} 
+              size="sm" 
+              className="h-7 text-xs px-3"
+              onClick={() => setStatsRange(d)}
+            >
+              {d}d Stats
+            </Button>
+          ))}
         </div>
       </div>
+      <HistoryView onDelete={handleDelete} statsDays={statsRange} />
     </div>
   );
 }

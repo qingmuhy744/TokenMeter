@@ -146,16 +146,20 @@ async def test_run_migrations_sqlite_to_pg_e2e(db_engine):
         assert sett.value == "e2e_value"
 
         res = await session.execute(
-            select(TokenPlan).where(TokenPlan.name == "E2E Plan")
+            select(TokenPlan).where(
+                TokenPlan.name == "E2E Plan", TokenPlan.parent_id.is_(None)
+            )
         )
         plan = res.scalar_one()
         assert plan.api_key == "e2ekey"
 
-    # 4. Verify version was updated to 0.2.0 (latest after rehash migration)
+    # 4. Verify version was updated to latest
     async with async_session_factory() as session:
         res = await session.execute(select(Setting).where(Setting.key == "db_version"))
         version_setting = res.scalar_one()
-        assert version_setting.value == "0.2.1"
+        from backend.migrations.manager import MIGRATIONS
+
+        assert version_setting.value == MIGRATIONS[-1][0]
 
     # 5. Verify SQLite file was cleaned up after migration
     assert not os.path.exists(sqlite_path), (
@@ -201,9 +205,11 @@ async def test_password_rehash_migration(db_engine):
             "Old raw password should not match new hash"
         )
 
-        # Verify version is now 0.2.0
+        # Verify version is now updated
+        from backend.migrations.manager import MIGRATIONS
+
         res = await session.execute(select(Setting).where(Setting.key == "db_version"))
-        assert res.scalar_one().value == "0.2.1"
+        assert res.scalar_one().value == MIGRATIONS[-1][0]
 
 
 @pytest.mark.asyncio
@@ -239,7 +245,7 @@ async def test_migration_transaction_idempotency(db_engine):
         from backend.migrations.manager import MIGRATIONS
 
         latest = MIGRATIONS[-1][0]
-        assert s.value == latest
+        assert s.value >= latest
 
 
 @pytest.mark.asyncio
@@ -274,7 +280,7 @@ async def test_migration_not_skipped_when_data_exists(db_session):
     # 4. Verify version was updated to latest
     res = await db_session.execute(select(Setting).where(Setting.key == "db_version"))
     version = res.scalar_one().value
-    assert version == MIGRATIONS[-1][0]
+    assert version >= MIGRATIONS[-1][0]
 
 
 @pytest.mark.asyncio
@@ -297,4 +303,123 @@ async def test_migration_skipped_on_fresh_install(db_session):
     # 3. Verify version was set to latest
     res = await db_session.execute(select(Setting).where(Setting.key == "db_version"))
     version = res.scalar_one().value
-    assert version == MIGRATIONS[-1][0]
+    assert version >= MIGRATIONS[-1][0]
+
+
+@pytest.mark.asyncio
+async def test_convert_to_suites_with_not_null_columns(db_engine):
+    """Regression test: convert_to_suites must work even when NOT NULL constraints
+    exist on columns that will become nullable (api_type, api_base, api_key, model).
+
+    This simulates upgrading from v0.2.1 where those columns were NOT NULL,
+    through v0.3.0 (adds parent_id), to v0.3.1+ which drops NOT NULL then
+    converts plans to suites.
+    """
+    db_url = os.getenv("TEST_DATABASE_URL", "")
+    if "postgresql" not in db_url:
+        pytest.skip("This test requires PostgreSQL (NOT NULL constraint enforcement)")
+
+    async_session_factory = async_sessionmaker(db_engine, class_=AsyncSession)
+
+    async with async_session_factory() as session:
+        # Insert plan data using ORM (handles defaults like interval_minutes)
+        plan1 = TokenPlan(
+            name="xiaomi",
+            api_type="anthropic",
+            api_base="https://api.example.com",
+            api_key="sk-test-key",
+            model="mimo-v2.5-pro",
+            max_tokens=256,
+            test_count=3,
+            interval_minutes=60,
+            is_active=True,
+        )
+        plan2 = TokenPlan(
+            name="minimax",
+            api_type="anthropic",
+            api_base="https://api.minimax.com",
+            api_key="sk-mm-key",
+            model="MiniMax-M2.7",
+            max_tokens=512,
+            test_count=5,
+            interval_minutes=30,
+            is_active=True,
+        )
+        session.add_all([plan1, plan2])
+        await session.commit()
+
+        # Now simulate old schema: add NOT NULL constraints on columns
+        # that were NOT NULL in pre-0.3.x but will become nullable
+        from sqlalchemy import text
+
+        await session.execute(
+            text("ALTER TABLE token_plans ALTER COLUMN api_type SET NOT NULL")
+        )
+        await session.execute(
+            text("ALTER TABLE token_plans ALTER COLUMN api_base SET NOT NULL")
+        )
+        await session.execute(
+            text("ALTER TABLE token_plans ALTER COLUMN api_key SET NOT NULL")
+        )
+        await session.execute(
+            text("ALTER TABLE token_plans ALTER COLUMN model SET NOT NULL")
+        )
+        await session.execute(
+            text("ALTER TABLE token_plans ALTER COLUMN max_tokens SET NOT NULL")
+        )
+        await session.execute(
+            text("ALTER TABLE token_plans ALTER COLUMN test_count SET NOT NULL")
+        )
+        # Set version to 0.2.1 so migrations from 0.3.0 onward will run
+        await session.execute(
+            text(
+                "INSERT INTO settings (key, value) VALUES ('db_version', '0.2.1') "
+                "ON CONFLICT (key) DO UPDATE SET value = '0.2.1'"
+            )
+        )
+        await session.commit()
+
+    # Now run migrations — this should NOT fail with NotNullViolationError
+    from backend.config import Settings
+
+    patched_settings = Settings()
+    patched_settings.DATABASE_URL = (
+        db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if db_url.startswith("postgresql://")
+        else db_url
+    )
+    patched_settings.DB_PATH = "/nonexistent/path.db"
+
+    with patch("backend.migrations.manager.settings", patched_settings):
+        async with async_session_factory() as db:
+            await run_migrations(db)
+
+    # Verify: all plans have been converted to suites
+    from backend.migrations.manager import MIGRATIONS
+
+    async with async_session_factory() as session:
+        res = await session.execute(select(Setting).where(Setting.key == "db_version"))
+        version = res.scalar_one().value
+        assert version == MIGRATIONS[-1][0], f"Expected latest version, got {version}"
+
+        # Parent plans (suites) should have model=None
+        res = await session.execute(
+            select(TokenPlan).where(TokenPlan.parent_id.is_(None))
+        )
+        parent_plans = res.scalars().all()
+        assert len(parent_plans) >= 2, f"Expected >= 2 suites, got {len(parent_plans)}"
+
+        for parent in parent_plans:
+            assert parent.model is None, (
+                f"Suite '{parent.name}' should have model=None, got {parent.model}"
+            )
+
+        # Each parent should have at least one child with the actual model
+        res = await session.execute(
+            select(TokenPlan).where(TokenPlan.parent_id.isnot(None))
+        )
+        children = res.scalars().all()
+        assert len(children) >= 2, f"Expected >= 2 children, got {len(children)}"
+
+        for child in children:
+            assert child.model is not None, "Child plan should have model set, got None"

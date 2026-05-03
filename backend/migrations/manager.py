@@ -45,7 +45,73 @@ MIGRATIONS = [
         ALTER TABLE test_results ADD COLUMN IF NOT EXISTS ping_samples TEXT;
     """).strip(),
     ),
+    (
+        "0.3.0",
+        "sql",
+        textwrap.dedent("""
+        ALTER TABLE token_plans ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES token_plans(id);
+        ALTER TABLE token_plans ADD COLUMN IF NOT EXISTS multiplier FLOAT DEFAULT 1.0;
+    """).strip(),
+    ),
+    (
+        "0.3.1",
+        "sql",
+        textwrap.dedent("""
+        ALTER TABLE token_plans ALTER COLUMN api_type TYPE VARCHAR(50);
+        ALTER TABLE token_plans ALTER COLUMN max_tokens DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN test_count DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN api_type DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN api_base DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN api_key DROP NOT NULL;
+        ALTER TABLE token_plans ALTER COLUMN model DROP NOT NULL;
+    """).strip(),
+    ),
+    (
+        "0.3.2",
+        "func",
+        "convert_to_suites",
+    ),
 ]
+
+
+async def convert_to_suites(db):
+    from sqlalchemy import update
+    from backend.models import TokenPlan, TestResult
+
+    # 查找所有没有父级且有模型的计划
+    result = await db.execute(select(TokenPlan).where(TokenPlan.parent_id.is_(None)))
+    plans = result.scalars().all()
+
+    for p in plans:
+        if p.model is None:
+            continue
+
+        old_plan_id = p.id
+        old_model = p.model
+
+        # 1. 创建子模型，只设置必要的字段，其余字段保持 None 以触发继承
+        child = TokenPlan(
+            name=p.name,
+            model=old_model,
+            parent_id=old_plan_id,
+            multiplier=1.0,
+            is_active=p.is_active,
+        )
+        db.add(child)
+        await db.flush()  # 获取子模型的 ID
+
+        # 2. 将历史结果迁移到新子模型
+        await db.execute(
+            update(TestResult)
+            .where(TestResult.plan_id == old_plan_id)
+            .values(plan_id=child.id)
+        )
+
+        # 3. 将父级转化为纯套餐
+        p.model = None
+        # p.name 保持不变，作为套餐名
+
+    await db.commit()
 
 
 async def rehash_passwords_sha256(db):
@@ -147,7 +213,7 @@ def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
                 try:
                     dst.execute(
                         text(
-                            f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE(MAX(id), 1), true) FROM {table_name}"
+                            f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE(MAX(id), 1), true) FROM {table_name}"  # nosec
                         )
                     )
                 except Exception as e:
@@ -250,7 +316,7 @@ async def run_migrations(db):
             logger.warning(f"Data check failed, proceeding with migrations: {e}")
             try:
                 await db.rollback()
-            except Exception:
+            except Exception:  # nosec
                 pass
 
     # Detect database type from the session's bind
@@ -273,6 +339,14 @@ async def run_migrations(db):
                     # SQLite doesn't support 'IF NOT EXISTS' in ALTER TABLE ADD COLUMN.
                     # We strip it for non-PostgreSQL databases.
                     if not is_pg:
+                        # SQLite doesn't support ALTER COLUMN ... TYPE.
+                        # Since SQLite doesn't enforce string length limits, we can safely skip this.
+                        if "ALTER COLUMN" in stmt.upper():
+                            logger.warning(
+                                f"Skipping ALTER COLUMN on non-PostgreSQL DB: {stmt}"
+                            )
+                            continue
+
                         # Case-insensitive removal of 'IF NOT EXISTS'
                         import re
 

@@ -50,4 +50,4 @@ async def test_trigger_manual_test_regression(db_session, auth_client: AsyncClie
 
         # If the AttributeError is present, this will be 500
         assert resp.status_code == 200
-        assert resp.json()["message"] == "Test completed"
+        assert resp.json()["message"] == "Suite test started in background"
