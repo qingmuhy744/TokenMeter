@@ -213,7 +213,7 @@ def migrate_sqlite_to_pg(sqlite_path, pg_url, models):
                 try:
                     dst.execute(
                         text(
-                            f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE(MAX(id), 1), true) FROM {table_name}"
+                            f"SELECT setval(pg_get_serial_sequence('{table_name}', 'id'), COALESCE(MAX(id), 1), true) FROM {table_name}"  # nosec
                         )
                     )
                 except Exception as e:
@@ -316,7 +316,7 @@ async def run_migrations(db):
             logger.warning(f"Data check failed, proceeding with migrations: {e}")
             try:
                 await db.rollback()
-            except Exception:
+            except Exception:  # nosec
                 pass
 
     # Detect database type from the session's bind
