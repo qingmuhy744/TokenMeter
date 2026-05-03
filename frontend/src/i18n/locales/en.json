@@ -30,10 +30,14 @@
     "active": "Active",
     "update": "Update",
     "create": "Create",
-    "deleteConfirm": "Delete this plan?",
+    "deleteConfirm": "Are you sure you want to delete \"{{name}}\"?",
     "runningTest": "Running speed test...",
     "testCompleted": "Test completed",
     "inheritedFromParent": "Inherited from parent plan",
+    "inheritHint": "Empty fields will inherit values from the parent.",
+    "deleteTitle": "Delete Plan",
+    "cascadeDeleteWarning": "Deleting \"{{name}}\" will also delete {{count}} child plans. This action is irreversible.",
+    "delete": "Delete",
     "planCreated": "Plan created",
     "planUpdated": "Plan updated",
     "planDeleted": "Plan deleted"
@@ -85,6 +89,8 @@
   "common": {
     "error": "Error",
     "warn": "Warn",
-    "ok": "OK"
+    "ok": "OK",
+    "cancel": "Cancel",
+    "delete": "Delete"
   }
 }

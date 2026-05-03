@@ -8,7 +8,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -50,10 +50,28 @@ export default function Plans() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingParentId, setEditingParentId] = useState<number | null>(null);
   const [originalKey, setOriginalKey] = useState("");
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Plan | null>(null);
 
   const loadPlans = () => api.getPlans().then(setPlans);
   useEffect(() => { loadPlans(); }, []);
+
+  const parentEffective = useMemo(() => {
+    if (!editingParentId) return null;
+    return plans.find(p => p.id === editingParentId) || null;
+  }, [editingParentId, plans]);
+
+  const findInTree = (tree: PlanWithChildren[], id: number): PlanWithChildren | null => {
+    for (const node of tree) {
+      if (node.id === id) return node;
+      const found = findInTree(node.children, id);
+      if (found) return found;
+    }
+    return null;
+  };
 
   const handleSubmit = async () => {
     try {
@@ -76,12 +94,25 @@ export default function Plans() {
       api_key: key, model: plan.model, prompt: plan.prompt || "",
       max_tokens: plan.max_tokens, test_count: plan.test_count,
       interval_minutes: plan.interval_minutes, is_active: plan.is_active });
-    setEditingId(plan.id); setOpen(true);
+    setEditingId(plan.id);
+    setEditingParentId(plan.parent_id ?? null);
+    setOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm(t("plans.deleteConfirm"))) return;
-    await api.deletePlan(id); toast.success(t("plans.planDeleted")); loadPlans();
+  const openDeleteConfirm = (id: number) => {
+    const plan = plans.find(p => p.id === id);
+    if (!plan) return;
+    setDeleteTarget(plan);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    await api.deletePlan(deleteTarget.id);
+    toast.success(t("plans.planDeleted"));
+    setDeleteDialogOpen(false);
+    setDeleteTarget(null);
+    loadPlans();
   };
 
   const handleTest = async (id: number) => {
@@ -125,7 +156,7 @@ export default function Plans() {
           <div className="flex gap-1">
             <Button size="sm" variant="outline" onClick={() => handleTest(node.id)}><Play className="h-3 w-3" /></Button>
             <Button size="sm" variant="outline" onClick={() => handleEdit(node)}><Pencil className="h-3 w-3" /></Button>
-            <Button size="sm" variant="outline" onClick={() => handleDelete(node.id)}><Trash2 className="h-3 w-3" /></Button>
+            <Button size="sm" variant="outline" onClick={() => openDeleteConfirm(node.id)}><Trash2 className="h-3 w-3" /></Button>
           </div>
         </TableCell>
       </TableRow>
@@ -138,7 +169,7 @@ export default function Plans() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("plans.title")}</h1>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button onClick={() => { setForm(defaultForm); setEditingId(null); setOriginalKey(""); }} />}>
+          <DialogTrigger render={<Button onClick={() => { setForm(defaultForm); setEditingId(null); setEditingParentId(null); setOriginalKey(""); }} />}>
             <Plus className="h-4 w-4 mr-2" /> {t("plans.newPlan")}
           </DialogTrigger>
           <DialogContent className="max-w-lg">
@@ -152,25 +183,28 @@ export default function Plans() {
                   <SelectContent><SelectItem value="openai">OpenAI Compatible</SelectItem><SelectItem value="anthropic">Anthropic</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div><Label>{t("plans.apiBaseUrl")}</Label><Input value={form.api_base} onChange={(e) => setForm({ ...form, api_base: e.target.value })} /></div>
+              <div><Label>{t("plans.apiBaseUrl")}</Label><Input value={form.api_base} onChange={(e) => setForm({ ...form, api_base: e.target.value })} placeholder={parentEffective?.effective_api_base || undefined} /></div>
               <div><Label>{t("plans.apiKey")}</Label><PasswordInput value={form.api_key} onChange={(e) => setForm({ ...form, api_key: e.target.value })} /></div>
-              <div><Label>{t("plans.model")}</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
-              <div><Label>{t("plans.customPrompt")}</Label><Input value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} /></div>
+              <div><Label>{t("plans.model")}</Label><Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} placeholder={parentEffective?.effective_model || undefined} /></div>
+              <div><Label>{t("plans.customPrompt")}</Label><Input value={form.prompt} onChange={(e) => setForm({ ...form, prompt: e.target.value })} placeholder={parentEffective?.effective_prompt || undefined} /></div>
               <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>{t("plans.maxTokens")}</Label>
-                  <Input type="number" value={form.max_tokens} onChange={(e) => setForm({ ...form, max_tokens: +e.target.value })} />
-                  <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
-                    {t("plans.maxTokensDesc")}
-                  </p>
+                  <div>
+                   <Label>{t("plans.maxTokens")}</Label>
+                   <Input type="number" value={form.max_tokens} onChange={(e) => setForm({ ...form, max_tokens: +e.target.value })} placeholder={parentEffective?.effective_max_tokens?.toString()} />
+                   <p className="text-[10px] text-muted-foreground mt-1 leading-tight">
+                     {t("plans.maxTokensDesc")}
+                   </p>
                 </div>
-                <div><Label>{t("plans.testCount")}</Label><Input type="number" value={form.test_count} onChange={(e) => setForm({ ...form, test_count: +e.target.value })} /></div>
+                <div><Label>{t("plans.testCount")}</Label><Input type="number" value={form.test_count} onChange={(e) => setForm({ ...form, test_count: +e.target.value })} placeholder={parentEffective?.effective_test_count?.toString()} /></div>
                 <div><Label>{t("plans.interval")}</Label><Input type="number" value={form.interval_minutes} onChange={(e) => setForm({ ...form, interval_minutes: +e.target.value })} /></div>
               </div>
               <div className="flex items-center gap-2">
                 <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
                 <Label>{t("plans.active")}</Label>
               </div>
+              {editingParentId && parentEffective && (
+                <p className="text-xs text-muted-foreground italic">{t("plans.inheritHint")}</p>
+              )}
               <Button onClick={handleSubmit} className="w-full">{editingId ? t("plans.update") : t("plans.create")}</Button>
             </div>
           </DialogContent>
@@ -184,6 +218,34 @@ export default function Plans() {
           {planTree.map(node => renderRow(node, 0))}
         </TableBody>
       </Table>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>{t("plans.deleteTitle")}</DialogTitle>
+            <DialogDescription>
+              {(() => {
+                if (!deleteTarget) return "";
+                const node = findInTree(planTree, deleteTarget.id);
+                const childCount = node ? node.children.length : 0;
+                if (childCount > 0) {
+                  return t("plans.cascadeDeleteWarning", { count: childCount, name: deleteTarget.name });
+                }
+                return t("plans.deleteConfirm", { name: deleteTarget.name });
+              })()}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setDeleteDialogOpen(false); setDeleteTarget(null); }}>
+              {t("common.cancel")}
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              <Trash2 className="h-4 w-4 mr-1" />
+              {t("plans.delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

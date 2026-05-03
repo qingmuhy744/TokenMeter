@@ -34,10 +34,14 @@
     "active": "启用",
     "update": "更新",
     "create": "创建",
-    "deleteConfirm": "确定删除此计划？",
+    "deleteConfirm": "确定要删除 \"{{name}}\" 吗？",
     "runningTest": "正在测速...",
     "testCompleted": "测试完成",
     "inheritedFromParent": "继承自父计划",
+    "inheritHint": "留空的字段将继承父计划的值。",
+    "deleteTitle": "删除计划",
+    "cascadeDeleteWarning": "删除 \"{{name}}\" 将同时删除 {{count}} 个子计划。此操作不可撤销。",
+    "delete": "删除",
     "planCreated": "计划已创建",
     "planUpdated": "计划已更新",
     "planDeleted": "计划已删除"
@@ -127,6 +131,8 @@
   "common": {
     "error": "错误",
     "warn": "警告",
-    "ok": "正常"
+    "ok": "正常",
+    "cancel": "取消",
+    "delete": "删除"
   }
 }
