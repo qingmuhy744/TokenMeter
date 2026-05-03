@@ -135,18 +135,22 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       ),
       cell: info => {
         const isPublicContext = window.location.pathname.startsWith('/status') || window.location.pathname.startsWith('/public');
+        const fullName = info.getValue();
+        const [provider, ...modelParts] = fullName.split(' > ');
+        const model = modelParts.join(' > ');
         return (
-          <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+          <div className="flex flex-col gap-0.5" onClick={e => e.stopPropagation()}>
+            <span className="text-[10px] text-muted-foreground/60 leading-none">{provider}</span>
             <span 
-              className="font-medium text-foreground/90 text-xs leading-snug line-clamp-2 break-words cursor-pointer hover:text-primary hover:underline"
-              title={info.getValue()}
+              className="font-medium text-foreground/90 text-[11px] leading-tight cursor-pointer hover:text-primary hover:underline"
+              title={fullName}
               onClick={(e) => {
                 e.stopPropagation();
                 const target = isPublicContext ? `/public/plan/${info.row.original.plan_id}` : `/plan/${info.row.original.plan_id}`;
                 window.open(target, '_blank');
               }}
             >
-              {info.getValue()}
+              {model}
             </span>
           </div>
         );
@@ -461,7 +465,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       key={header.id} 
                       className={cn(
                         "h-14 px-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors",
-                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0 pl-0"
+                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0"
                       )}
                       style={index === 0 ? { minWidth: header.getSize(), maxWidth: header.getSize() } : undefined}
                     >
@@ -493,7 +497,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                         className={cn(
                           "px-6 py-4 align-middle transition-colors",
                           index === 0 && cn(
-                            "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0 pl-0",
+                            "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0",
                             isSelected ? "bg-muted" : "bg-card"
                           )
                         )}
