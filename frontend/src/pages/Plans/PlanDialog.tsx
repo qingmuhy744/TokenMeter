@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Plan } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -168,7 +169,8 @@ export const PlanDialog = ({
 
           <div className="space-y-2">
             <Label>{t("plans.customPrompt")}</Label>
-            <Input
+            <Textarea
+              rows={3}
               value={form.prompt}
               onChange={(e) => setForm({ ...form, prompt: e.target.value })}
               placeholder={parentEffective?.effective_prompt || undefined}

@@ -23,6 +23,7 @@ function Sidebar() {
     { to: "/plans", icon: ListTodo, label: t("nav.plans") },
     { to: "/history", icon: HistoryIcon, label: t("nav.history") },
     { to: "/settings", icon: SettingsIcon, label: t("nav.settings") },
+    { to: "/status", icon: Globe, label: t("status.title"), external: true },
   ];
   const toggleLang = () => {
     const next = i18n.language === "zh" ? "en" : "zh";
@@ -32,13 +33,20 @@ function Sidebar() {
     <aside className="w-60 border-r bg-muted/30 flex flex-col">
       <div className="p-4 font-bold text-lg">TokenMeter</div>
       <nav className="flex-1 space-y-1 px-2">
-        {links.map(({ to, icon: Icon, label }) => (
-          <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`
-          }>
-            <Icon className="h-4 w-4" />
-            {label}
-          </NavLink>
+        {links.map(({ to, icon: Icon, label, external }) => (
+          external ? (
+            <a key={to} href={to} target="_blank" rel="noreferrer" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-muted text-muted-foreground hover:text-foreground">
+              <Icon className="h-4 w-4" />
+              {label}
+            </a>
+          ) : (
+            <NavLink key={to} to={to} end={to === "/"} className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${isActive ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`
+            }>
+              <Icon className="h-4 w-4" />
+              {label}
+            </NavLink>
+          )
         ))}
       </nav>
       <div className="p-3 border-t">
