@@ -358,7 +358,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             className={cn(
               "rounded-2xl border p-5 shadow-sm transition-all active:scale-[0.98]",
               selectedIds.includes(row.original.plan_id)
-                ? "border-amber/30 bg-amber-muted/10 shadow-glow-amber"
+                ? "border-amber/40 bg-amber/5"
                 : "border-white/5 bg-card"
             )}
             onClick={() => onToggleSelection?.(row.original.plan_id)}
@@ -480,8 +480,10 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   <TableRow 
                     key={row.id} 
                     className={cn(
-                      "group transition-colors border-b border-white/5 last:border-0 text-sm cursor-pointer",
-                      isSelected ? "bg-amber-muted/30 hover:bg-amber-muted/40" : "hover:bg-muted/20"
+                      "group transition-colors border-b border-white/5 last:border-0 text-sm cursor-pointer relative",
+                      isSelected 
+                        ? "bg-amber/5 hover:bg-amber/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-0.5 before:bg-amber" 
+                        : "hover:bg-muted/20"
                     )}
                     onClick={() => onToggleSelection?.(row.original.plan_id)}
                   >
@@ -492,7 +494,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                           "px-6 py-4 align-middle transition-colors",
                           index === 0 && cn(
                             "sticky left-0 z-20 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]",
-                            isSelected ? "bg-amber-muted/30" : "bg-card"
+                            isSelected ? "bg-amber/5" : "bg-card"
                           )
                         )}
                       >
