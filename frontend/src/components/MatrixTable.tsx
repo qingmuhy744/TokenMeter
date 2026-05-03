@@ -4,7 +4,7 @@ import { api, type MatrixItem } from "@/api/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+
 import { cn } from "@/lib/utils";
 import {
   createColumnHelper,
@@ -88,7 +88,6 @@ interface MatrixTableProps {
 
 export default function MatrixTable({ selectedIds = [], onToggleSelection }: MatrixTableProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [data, setData] = useState<MatrixItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -295,7 +294,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         );
       },
     }),
-  ], [t, selectedIds, onToggleSelection, navigate]);
+  ], [t]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({

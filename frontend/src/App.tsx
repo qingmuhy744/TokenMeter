@@ -44,7 +44,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const links = [
     { to: "/", icon: LayoutDashboard, label: t("nav.dashboard") },
-    { to: "/matrix", icon: TableIcon, label: "Matrix" },
+    { to: "/matrix", icon: TableIcon, label: t("nav.matrix") },
     { to: "/plans", icon: ListTodo, label: t("nav.plans") },
     { to: "/history", icon: HistoryIcon, label: t("nav.history") },
     { to: "/settings", icon: SettingsIcon, label: t("nav.settings") },
@@ -148,10 +148,10 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           </div>
         </div>
+        </aside>
       </>
     );
   }
-}
 
 function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -168,7 +168,7 @@ function Layout() {
             onClick={() => setIsSidebarOpen(false)}
           />
           <div className="fixed inset-y-0 left-0 w-72 bg-sidebar shadow-2xl animate-slide-in-left">
-            <Sidebar mobile onClose={() => setIsSidebarOpen(false)} />
+            <Sidebar isOpen onClose={() => setIsSidebarOpen(false)} />
           </div>
         </div>
       )}
