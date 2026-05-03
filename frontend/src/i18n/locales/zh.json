@@ -37,6 +37,7 @@
     "deleteConfirm": "确定删除此计划？",
     "runningTest": "正在测速...",
     "testCompleted": "测试完成",
+    "inheritedFromParent": "继承自父计划",
     "planCreated": "计划已创建",
     "planUpdated": "计划已更新",
     "planDeleted": "计划已删除"

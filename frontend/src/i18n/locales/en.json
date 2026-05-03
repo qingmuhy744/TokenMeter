@@ -33,6 +33,7 @@
     "deleteConfirm": "Delete this plan?",
     "runningTest": "Running speed test...",
     "testCompleted": "Test completed",
+    "inheritedFromParent": "Inherited from parent plan",
     "planCreated": "Plan created",
     "planUpdated": "Plan updated",
     "planDeleted": "Plan deleted"

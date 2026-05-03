@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Play, Pencil, Trash2 } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipPortal, TooltipPositioner, TooltipPopup } from "@/components/ui/tooltip";
 
 const defaultForm = {
   name: "", api_type: "openai", api_base: "", api_key: "", model: "",
@@ -93,7 +94,16 @@ export default function Plans() {
 
   const fieldDisplay = (own: string | null | undefined, effective: string | null | undefined) => {
     if (own) return <>{own}</>;
-    if (effective) return <span className="text-muted-foreground italic">{effective}</span>;
+    if (effective) return (
+      <Tooltip>
+        <TooltipTrigger render={<span className="text-muted-foreground italic cursor-default">{effective}</span>} />
+        <TooltipPortal>
+          <TooltipPositioner>
+            <TooltipPopup>{t("plans.inheritedFromParent")}</TooltipPopup>
+          </TooltipPositioner>
+        </TooltipPortal>
+      </Tooltip>
+    );
     return <span className="text-muted-foreground italic">-</span>;
   };
 

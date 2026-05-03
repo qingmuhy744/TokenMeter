@@ -10,6 +10,7 @@ import Settings from "@/pages/Settings";
 import Status from "@/pages/Status";
 import PublicHistory from "@/pages/PublicHistory";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { LayoutDashboard, Table as TableIcon, ListTodo, History as HistoryIcon, Settings as SettingsIcon, LogOut, Globe } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
@@ -78,6 +79,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <TooltipProvider>
         <Routes>
           <Route path="/status" element={<Status />} />
           <Route path="/public/history" element={<PublicHistory />} />
@@ -91,6 +93,7 @@ export default function App() {
           </Route>
         </Routes>
         <Toaster />
+        </TooltipProvider>
       </BrowserRouter>
     </AuthProvider>
   );
