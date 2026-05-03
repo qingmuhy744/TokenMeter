@@ -17,18 +17,18 @@ import {
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 // Lightweight Sparkline using pure SVG for high performance
-function Sparkline({ data }: { data: (number | null)[] }) {
-  if (!data || data.length === 0) return <div className="h-8 w-24 flex items-center justify-center text-[10px] text-muted-foreground">-</div>;
+function Sparkline({ data, className }: { data: (number | null)[], className?: string }) {
+  if (!data || data.length === 0) return <div className={cn("h-8 w-24 flex items-center justify-center text-[10px] text-muted-foreground", className)}>-</div>;
   
   const points = data.filter(v => v !== null && typeof v === 'number');
-  if (points.length < 2) return <div className="h-8 w-24 flex items-center justify-center text-[10px] text-muted-foreground">no data</div>;
+  if (points.length < 2) return <div className={cn("h-8 w-24 flex items-center justify-center text-[10px] text-muted-foreground", className)}>no data</div>;
 
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = max - min || 1;
   const width = 100;
   const height = 32;
-  const padding = 4;
+  const padding = 2;
   
   const pathData = points.map((v, i) => {
     const x = (i / (points.length - 1)) * width;
@@ -37,7 +37,7 @@ function Sparkline({ data }: { data: (number | null)[] }) {
   }).join(' ');
 
   return (
-    <div className="h-8 w-24">
+    <div className={cn("h-8 w-24", className)}>
       <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="overflow-visible">
         <path
           d={pathData}
@@ -46,7 +46,7 @@ function Sparkline({ data }: { data: (number | null)[] }) {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-primary/60"
+          className="text-slate-400 dark:text-slate-500"
         />
       </svg>
     </div>
@@ -56,17 +56,18 @@ function Sparkline({ data }: { data: (number | null)[] }) {
 const getHeatmapColor = (value: number | null, type: 'ttft' | 'tps' | 'degradation') => {
   if (value === null) return '';
   
-  const green = "bg-[oklch(0.7_0.15_145)]/20 text-[oklch(0.4_0.15_145)] dark:text-[oklch(0.8_0.1_145)]";
-  const yellow = "bg-[oklch(0.8_0.15_85)]/20 text-[oklch(0.5_0.15_85)] dark:text-[oklch(0.85_0.1_85)]";
-  const red = "bg-[oklch(0.6_0.15_25)]/20 text-[oklch(0.4_0.15_25)] dark:text-[oklch(0.8_0.1_25)]";
+  // Claude-style: soft, low-saturation Slate/Zinc compatible tones
+  const green = "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400";
+  const yellow = "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400";
+  const red = "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400";
 
   if (type === 'ttft') {
-    if (value < 200) return green;
+    if (value < 300) return green;
     if (value < 800) return yellow;
     return red;
   }
   if (type === 'tps') {
-    if (value > 80) return green;
+    if (value > 60) return green;
     if (value > 30) return yellow;
     return red;
   }
@@ -77,6 +78,14 @@ const getHeatmapColor = (value: number | null, type: 'ttft' | 'tps' | 'degradati
     return red;
   }
   return '';
+};
+
+const getTileBackground = (item: MatrixItem) => {
+  const tps = item.avg_tps_generate;
+  if (tps === null) return "bg-slate-50/50 border-slate-200/60";
+  if (tps > 60) return "bg-emerald-50/30 border-emerald-100/50 dark:bg-emerald-950/10 dark:border-emerald-900/20";
+  if (tps > 30) return "bg-amber-50/30 border-amber-100/50 dark:bg-amber-950/10 dark:border-amber-900/20";
+  return "bg-rose-50/30 border-rose-100/50 dark:bg-rose-950/10 dark:border-rose-900/20";
 };
 
 const columnHelper = createColumnHelper<MatrixItem>();
@@ -159,9 +168,9 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       cell: info => (
         <div className="flex justify-center">
           <div className={cn(
-            "w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)]",
-            info.getValue() === "success" ? "bg-[oklch(0.627_0.194_149.214)]" :
-            info.getValue() === "error" ? "bg-[oklch(0.627_0.265_25.466)]" : "bg-muted"
+            "w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.05)]",
+            info.getValue() === "success" ? "bg-emerald-500" :
+            info.getValue() === "error" ? "bg-rose-500" : "bg-muted"
           )} title={info.getValue() || 'unknown'} />
         </div>
       ),
@@ -186,7 +195,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-2 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
+        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
           {info.getValue()?.toFixed(0)}ms
         </div>
       ),
@@ -206,7 +215,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-2 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
           {info.getValue()?.toFixed(1)}
         </div>
       ),
@@ -226,7 +235,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-2 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
           {info.getValue()?.toFixed(1)}
         </div>
       ),
@@ -280,7 +289,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       cell: info => {
         const val = info.getValue();
         return (
-          <div className={cn("text-right font-mono px-2 py-1 rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
+          <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
             {val !== null ? `${(val * 100).toFixed(1)}%` : '-'}
           </div>
         );
@@ -326,7 +335,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
   if (loading && data.length === 0) return <div className="p-8 text-center text-muted-foreground animate-pulse">Loading performance matrix...</div>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex bg-muted p-1 rounded-lg">
           <Button 
@@ -365,25 +374,106 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       </div>
 
-      <Card className="overflow-hidden border border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
-        <CardHeader className="bg-muted/30 border-b border-border/50 py-4 flex flex-row items-center justify-between space-y-0">
+      {/* Mobile Tiles View */}
+      <div className="grid grid-cols-1 gap-4 sm:hidden">
+        {table.getRowModel().rows.map(row => (
+          <div 
+            key={row.id}
+            className={cn(
+              "rounded-2xl border p-5 shadow-sm transition-all active:scale-[0.98] cursor-pointer",
+              getTileBackground(row.original),
+              "border-slate-200/60 dark:border-slate-800/60 shadow-slate-200/50 dark:shadow-none"
+            )}
+            onClick={() => {
+              const isPublicContext = window.location.pathname.startsWith('/status') || window.location.pathname.startsWith('/public');
+              const target = isPublicContext ? `/public/history?plan_id=${row.original.plan_id}` : `/history?plan_id=${row.original.plan_id}`;
+              navigate(target);
+            }}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className="space-y-1">
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg leading-tight tracking-tight">
+                  {row.original.full_name}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "w-2 h-2 rounded-full",
+                    row.original.latest_status === "success" ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]"
+                  )} />
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                    {row.original.latest_status}
+                  </span>
+                </div>
+              </div>
+              <div 
+                className="p-2 -m-2" 
+                onClick={e => {
+                  e.stopPropagation();
+                  onToggleSelection?.(row.original.plan_id);
+                }}
+              >
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 rounded-full border-slate-300 text-primary focus:ring-primary"
+                  checked={selectedIds.includes(row.original.plan_id)}
+                  readOnly
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="space-y-1.5">
+                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-slate-500 dark:text-slate-400">Avg TTFT</p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tighter">
+                  {row.original.avg_ttft?.toFixed(0)}<span className="text-sm font-medium text-slate-400 ml-1">ms</span>
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-slate-500 dark:text-slate-400">TPS (Gen)</p>
+                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tighter">
+                  {row.original.avg_tps_generate?.toFixed(1)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-3 pt-4 border-t border-slate-200/60 dark:border-slate-800/60">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">24h Trend</p>
+                {row.original.sparkline && row.original.sparkline.length > 0 && (
+                  <span className="text-[10px] text-slate-400 tabular-nums">
+                    {Math.min(...(row.original.sparkline.filter(v => v !== null) as number[]))?.toFixed(1)} 
+                    <span className="mx-1">→</span>
+                    {Math.max(...(row.original.sparkline.filter(v => v !== null) as number[]))?.toFixed(1)} TPS
+                  </span>
+                )}
+              </div>
+              <Sparkline data={row.original.sparkline} className="w-full h-12" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <Card className="hidden sm:block overflow-hidden border border-border/50 shadow-xl bg-card/50 backdrop-blur-sm rounded-2xl">
+        <CardHeader className="bg-muted/30 border-b border-border/50 py-5 flex flex-row items-center justify-between space-y-0 px-6">
           <div>
-            <CardTitle className="text-lg font-semibold tracking-tight">
+            <CardTitle className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
               {days}-Day Performance Matrix
             </CardTitle>
-            <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-2">
+            <p className="text-[12px] text-muted-foreground mt-1.5 flex items-center gap-2">
+              <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">Instructions</span>
               <span>🖱️ Drag to scroll</span>
               <span className="opacity-50">•</span>
               <span>🔗 Click model name for details</span>
             </p>
           </div>
-          {loading && <div className="text-[10px] text-muted-foreground animate-pulse">Updating...</div>}
+          {loading && <div className="text-[10px] text-muted-foreground animate-pulse font-medium uppercase tracking-widest">Updating...</div>}
         </CardHeader>
-        <CardContent className="p-0 pb-4">
+        <CardContent className="p-0">
           <div 
-            className="w-full max-h-[600px] overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent"
+            className="w-full max-h-[700px] overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 hover:scrollbar-thumb-muted-foreground/50 scrollbar-track-transparent"
           >
-            <Table className="w-full min-w-[800px]">
+            <Table className="w-full min-w-[1000px]">
               <TableHeader className="bg-muted/50 sticky top-0 z-20">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border/50">
@@ -411,15 +501,15 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   <TableRow 
                     key={row.id} 
                     className={cn(
-                      "group hover:bg-muted/50 transition-colors border-b border-border/50 last:border-0 text-sm",
-                      isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background"
+                      "group hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0 text-sm",
+                      isSelected ? "bg-slate-50 dark:bg-slate-900" : "bg-background"
                     )}
                   >
                     {row.getVisibleCells().map((cell, index) => (
                       <TableCell 
                         key={cell.id} 
                         className={cn(
-                          "px-4 py-3 align-middle transition-colors",
+                          "px-6 py-4 align-middle transition-colors",
                           index === 0 && cn(
                             "sm:sticky sm:left-0 sm:z-20 sm:group-hover:bg-muted/90 sm:border-r sm:border-border/50 sm:shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
                             isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background sm:bg-background/95 sm:backdrop-blur-md"
