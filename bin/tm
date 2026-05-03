@@ -1,0 +1,10 @@
+#!/bin/bash
+# TokenMeter 快捷管理脚本
+
+# 检查是否在 Docker 容器内运行
+if [ -f "/app/.venv/bin/python3" ]; then
+    /app/.venv/bin/python3 -m backend.cli "$@"
+else
+    # 在宿主机或开发环境下运行
+    uv run python -m backend.cli "$@"
+fi
