@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
 import type { Plan } from "@/api/client";
@@ -45,7 +45,6 @@ const buildPlanTree = (plans: Plan[]): PlanWithChildren[] => {
 export default function Plans() {
   const { t } = useTranslation();
   const [plans, setPlans] = useState<Plan[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const planTree = useMemo(() => buildPlanTree(plans), [plans]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(defaultForm);
@@ -92,6 +91,38 @@ export default function Plans() {
     }
   };
 
+  const fieldDisplay = (own: string | null | undefined, effective: string | null | undefined) => {
+    if (own) return <>{own}</>;
+    if (effective) return <span className="text-muted-foreground italic">{effective}</span>;
+    return <span className="text-muted-foreground italic">-</span>;
+  };
+
+  const renderRow = (node: PlanWithChildren, depth: number = 0): React.ReactNode => (
+    <Fragment key={node.id}>
+      <TableRow>
+        <TableCell className="font-medium">
+          <span style={{ paddingLeft: `${depth * 2}rem` }}>
+            {depth > 0 && <span className="text-muted-foreground select-none">{"└─ "}</span>}
+            {node.name}
+          </span>
+        </TableCell>
+        <TableCell>{fieldDisplay(node.api_type, node.effective_api_type)}</TableCell>
+        <TableCell>{fieldDisplay(node.api_base, node.effective_api_base)}</TableCell>
+        <TableCell>{fieldDisplay(node.model, node.effective_model)}</TableCell>
+        <TableCell>{node.interval_minutes}m</TableCell>
+        <TableCell><Badge variant={node.is_active ? "default" : "secondary"}>{node.is_active ? t("dashboard.active") : t("dashboard.inactive")}</Badge></TableCell>
+        <TableCell>
+          <div className="flex gap-1">
+            <Button size="sm" variant="outline" onClick={() => handleTest(node.id)}><Play className="h-3 w-3" /></Button>
+            <Button size="sm" variant="outline" onClick={() => handleEdit(node)}><Pencil className="h-3 w-3" /></Button>
+            <Button size="sm" variant="outline" onClick={() => handleDelete(node.id)}><Trash2 className="h-3 w-3" /></Button>
+          </div>
+        </TableCell>
+      </TableRow>
+      {node.children.map(child => renderRow(child, depth + 1))}
+    </Fragment>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -137,25 +168,10 @@ export default function Plans() {
       </div>
       <Table>
         <TableHeader>
-          <TableRow><TableHead>{t("plans.name")}</TableHead><TableHead>{t("plans.apiType")}</TableHead><TableHead>{t("plans.model")}</TableHead><TableHead>{t("plans.interval")}</TableHead><TableHead>{t("plans.active")}</TableHead><TableHead>Actions</TableHead></TableRow>
+          <TableRow><TableHead>{t("plans.name")}</TableHead><TableHead>{t("plans.apiType")}</TableHead><TableHead>{t("plans.apiBaseUrl")}</TableHead><TableHead>{t("plans.model")}</TableHead><TableHead>{t("plans.interval")}</TableHead><TableHead>{t("plans.active")}</TableHead><TableHead>Actions</TableHead></TableRow>
         </TableHeader>
         <TableBody>
-          {plans.map((plan) => (
-            <TableRow key={plan.id}>
-              <TableCell className="font-medium">{plan.name}</TableCell>
-              <TableCell>{plan.api_type}</TableCell>
-              <TableCell>{plan.model}</TableCell>
-              <TableCell>{plan.interval_minutes}m</TableCell>
-              <TableCell><Badge variant={plan.is_active ? "default" : "secondary"}>{plan.is_active ? t("dashboard.active") : t("dashboard.inactive")}</Badge></TableCell>
-              <TableCell>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="outline" onClick={() => handleTest(plan.id)}><Play className="h-3 w-3" /></Button>
-                  <Button size="sm" variant="outline" onClick={() => handleEdit(plan)}><Pencil className="h-3 w-3" /></Button>
-                  <Button size="sm" variant="outline" onClick={() => handleDelete(plan.id)}><Trash2 className="h-3 w-3" /></Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {planTree.map(node => renderRow(node, 0))}
         </TableBody>
       </Table>
     </div>
