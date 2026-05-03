@@ -100,9 +100,17 @@ class PlanResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    effective_api_type: str | None = None
+    effective_api_base: str | None = None
+    effective_api_key: str | None = None
+    effective_model: str | None = None
+    effective_prompt: str | None = None
+    effective_max_tokens: int | None = None
+    effective_test_count: int | None = None
+
     model_config = {"from_attributes": True}
 
-    @field_validator("api_key")
+    @field_validator("api_key", "effective_api_key")
     @classmethod
     def mask_api_key(cls, v: str | None) -> str | None:
         if v is None:
@@ -115,10 +123,6 @@ class PlanResponse(BaseModel):
     @classmethod
     def serialize_dt(cls, v: datetime) -> datetime:
         return _ensure_utc(v)
-
-
-class PlanWithLatestResult(PlanResponse):
-    latest_result: "TestResultResponse | None" = None
 
 
 class TestResultResponse(BaseModel):

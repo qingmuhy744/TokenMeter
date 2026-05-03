@@ -18,7 +18,6 @@ async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit
 @event.listens_for(Engine, "checkout")
 def receive_checkout(dbapi_connection, connection_record, connection_proxy):
     connection_record.info["checkout_time"] = time.time()
-    # logger.debug("Connection checked out")
 
 
 @event.listens_for(Engine, "checkin")
@@ -27,7 +26,6 @@ def receive_checkin(dbapi_connection, connection_record):
         duration = time.time() - connection_record.info["checkout_time"]
         if duration > 1.0:  # Log connections held for more than 1 second
             logger.warning(f"Connection held for {duration:.2f}s")
-    # logger.debug("Connection checked in")
 
 
 class Base(DeclarativeBase):

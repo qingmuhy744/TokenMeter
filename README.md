@@ -86,23 +86,17 @@ docker compose up -d
 
 ### 重置管理员密码
 
-忘记密码？一行命令搞定：
+忘记密码？使用内置的 `tm` 工具一行命令搞定：
 
 ```bash
-# 重置默认 admin 用户密码
-docker exec tokenmeter uv run python -m backend.cli reset-password
+# Docker 部署模式：
+docker exec tokenmeter tm reset-password
 
-# 重置指定用户密码
-docker exec tokenmeter uv run python -m backend.cli reset-password myuser
+# 本地开发模式：
+./bin/tm reset-password
 ```
 
 执行后终端会打印新的 **Setup Key**，用该 Key 登录后请立即修改密码。
-
-本地开发同理：
-
-```bash
-uv run python -m backend.cli reset-password
-```
 
 ## 测速原理
 

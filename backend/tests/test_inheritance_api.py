@@ -130,6 +130,40 @@ async def test_inheritance_max_depth(db_session, auth_client: AsyncClient):
 
 
 @pytest.mark.asyncio
+async def test_effective_api_key_is_masked_in_response(
+    db_session,
+    auth_client: AsyncClient,
+):
+    """API response should mask effective_api_key when inherited from parent."""
+    parent_resp = await auth_client.post(
+        "/api/plans",
+        json={
+            "name": "Parent",
+            "api_type": "openai",
+            "api_base": "https://api.openai.com/v1",
+            "api_key": "sk-parent-secret-key-long",
+            "model": "gpt-4",
+        },
+    )
+    parent_id = parent_resp.json()["id"]
+
+    child_resp = await auth_client.post(
+        "/api/plans",
+        json={
+            "name": "Child",
+            "parent_id": parent_id,
+            "model": "gpt-3.5-turbo",
+        },
+    )
+    data = child_resp.json()
+
+    assert "effective_api_key" in data
+    assert data["effective_api_key"] is not None
+    assert data["effective_api_key"] != "sk-parent-secret-key-long"
+    assert data["effective_api_key"] == "sk-p...long"
+
+
+@pytest.mark.asyncio
 async def test_plan_response_effective_values_not_included_by_default(
     auth_client: AsyncClient,
 ):

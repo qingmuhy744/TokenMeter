@@ -1,4 +1,5 @@
 import json
+import asyncio
 import logging
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -21,7 +22,16 @@ logger = logging.getLogger(__name__)
 async def list_plans(request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        result = await db.execute(select(TokenPlan).order_by(TokenPlan.id.asc()))
+        result = await db.execute(
+            select(TokenPlan)
+            .options(
+                selectinload(TokenPlan.parent).selectinload(TokenPlan.parent),
+                selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent),
+            )
+            .order_by(TokenPlan.id.asc())
+        )
         plans = result.scalars().all()
         return [PlanResponse.model_validate(p) for p in plans]
 
@@ -101,6 +111,18 @@ async def create_plan(body: PlanCreate, request: Request):
         db.add(plan)
         await db.commit()
         await db.refresh(plan)
+        if plan.parent_id is not None:
+            stmt = (
+                select(TokenPlan)
+                .options(
+                    selectinload(TokenPlan.parent)
+                    .selectinload(TokenPlan.parent)
+                    .selectinload(TokenPlan.parent)
+                )
+                .where(TokenPlan.id == plan.id)
+            )
+            result = await db.execute(stmt)
+            plan = result.scalar_one()
         await sync_scheduled_jobs(db)
         return PlanResponse.model_validate(plan)
 
@@ -109,7 +131,16 @@ async def create_plan(body: PlanCreate, request: Request):
 async def get_plan(plan_id: int, request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        result = await db.execute(select(TokenPlan).where(TokenPlan.id == plan_id))
+        result = await db.execute(
+            select(TokenPlan)
+            .options(
+                selectinload(TokenPlan.parent).selectinload(TokenPlan.parent),
+                selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent),
+            )
+            .where(TokenPlan.id == plan_id)
+        )
         plan = result.scalar_one_or_none()
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
@@ -120,7 +151,16 @@ async def get_plan(plan_id: int, request: Request):
 async def update_plan(plan_id: int, body: PlanUpdate, request: Request):
     await get_current_user(request)
     async with async_session() as db:
-        result = await db.execute(select(TokenPlan).where(TokenPlan.id == plan_id))
+        result = await db.execute(
+            select(TokenPlan)
+            .options(
+                selectinload(TokenPlan.parent).selectinload(TokenPlan.parent),
+                selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent)
+                .selectinload(TokenPlan.parent),
+            )
+            .where(TokenPlan.id == plan_id)
+        )
         plan = result.scalar_one_or_none()
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
@@ -160,6 +200,18 @@ async def trigger_test(plan_id: int, request: Request):
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
 
+        # If it's a Provider (Suite), run all children sequentially
+        if plan.parent_id is None:
+            from backend.services.scheduler import run_suite_test
+
+            logger.info(
+                "Manual suite test triggered: provider=%d name=%s", plan_id, plan.name
+            )
+            # Run in background to avoid timeout
+            asyncio.create_task(run_suite_test(plan_id))
+            return {"message": "Suite test started in background"}
+
+    # Single plan test logic remains the same
     tester = SpeedTester(timeout=settings.TIMEOUT_SECONDS)
     prompt = plan.effective_prompt or settings.DEFAULT_PROMPT
 

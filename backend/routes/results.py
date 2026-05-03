@@ -9,16 +9,11 @@ from backend.schemas import (
     PaginatedResponse,
     StatsResponse,
     MatrixItem,
+    _ensure_utc,
 )
 from backend.auth import get_current_user
 
 router = APIRouter(prefix="/api/results", tags=["results"])
-
-
-def ensure_utc(dt: datetime) -> datetime:
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt
 
 
 @router.get("/matrix", response_model=list[MatrixItem])
@@ -56,7 +51,7 @@ async def get_results_matrix(
     # Group results by plan_id
     plan_results = {p.id: [] for p in plans}
     for r in all_results:
-        r.created_at = ensure_utc(r.created_at)
+        r.created_at = _ensure_utc(r.created_at)
         plan_results[r.plan_id].append(r)
 
     matrix = []

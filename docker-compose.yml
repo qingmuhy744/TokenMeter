@@ -12,6 +12,7 @@ services:
       []
     volumes:
       - app-data:/data
+      - ./bin/tm:/usr/local/bin/tm:ro
     environment:
       - DB_PATH=/data/token_speed.db
       # ========================================================================

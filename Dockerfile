@@ -19,6 +19,8 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-editable
 
 COPY backend/ ./backend/
+COPY bin/tm /usr/local/bin/tm
+RUN chmod +x /usr/local/bin/tm
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 RUN mkdir -p /data
