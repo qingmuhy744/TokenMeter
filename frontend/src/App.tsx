@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import DashboardMatrix from "@/pages/DashboardMatrix";
@@ -102,10 +102,11 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
 function Layout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 border-b flex items-center px-4 md:hidden">
           <button 
