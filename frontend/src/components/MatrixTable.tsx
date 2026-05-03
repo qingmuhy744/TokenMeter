@@ -453,7 +453,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             onScroll={saveScroll}
           >
             <Table className="w-full min-w-[1000px]">
-              <TableHeader className="bg-muted/50 sticky top-0 z-30">
+              <TableHeader className="bg-card sticky top-0 z-30">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-white/5">
                   {headerGroup.headers.map((header, index) => (
@@ -461,7 +461,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       key={header.id} 
                       className={cn(
                         "h-14 px-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors",
-                        index === 0 && "sticky left-0 z-50 bg-muted/20 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]"
+                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]"
                       )}
                       style={index === 0 ? { minWidth: header.getSize(), maxWidth: header.getSize() } : undefined}
                     >
@@ -482,7 +482,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     className={cn(
                       "group transition-colors border-b border-white/5 last:border-0 text-sm cursor-pointer",
                       isSelected 
-                        ? "bg-[oklch(0.16_0.02_260)] hover:bg-[oklch(0.18_0.02_260)] border-l-2 border-l-amber" 
+                        ? "bg-muted hover:bg-muted/80 border-l-2 border-l-amber" 
                         : "hover:bg-muted/20"
                     )}
                     onClick={() => onToggleSelection?.(row.original.plan_id)}
@@ -494,7 +494,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                           "px-6 py-4 align-middle transition-colors",
                           index === 0 && cn(
                             "sticky left-0 z-20 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]",
-                            !isSelected && "bg-card"
+                            isSelected ? "bg-muted" : "bg-card"
                           )
                         )}
                       >
