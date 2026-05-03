@@ -453,7 +453,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             onScroll={saveScroll}
           >
             <Table className="w-full min-w-[1000px]">
-              <TableHeader className="bg-muted/50 sticky top-0 z-20">
+              <TableHeader className="bg-muted/50 sticky top-0 z-30">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-white/5">
                   {headerGroup.headers.map((header, index) => (
@@ -461,7 +461,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       key={header.id} 
                       className={cn(
                         "h-14 px-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors",
-                        index === 0 && "sticky left-0 z-40 bg-muted/20 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]"
+                        index === 0 && "sticky left-0 z-50 bg-muted/20 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]"
                       )}
                       style={index === 0 ? { minWidth: header.getSize(), maxWidth: header.getSize() } : undefined}
                     >
@@ -493,7 +493,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                         className={cn(
                           "px-6 py-4 align-middle transition-colors",
                           index === 0 && cn(
-                            "sticky left-0 z-10 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]",
+                            "sticky left-0 z-20 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)]",
                             !isSelected && "bg-card"
                           )
                         )}
