@@ -461,7 +461,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       key={header.id} 
                       className={cn(
                         "h-14 px-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors",
-                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0"
+                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0 pl-0"
                       )}
                       style={index === 0 ? { minWidth: header.getSize(), maxWidth: header.getSize() } : undefined}
                     >
@@ -493,7 +493,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                         className={cn(
                           "px-6 py-4 align-middle transition-colors",
                           index === 0 && cn(
-                            "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0",
+                            "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0 pl-0",
                             isSelected ? "bg-muted" : "bg-card"
                           )
                         )}
