@@ -392,8 +392,8 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       key={header.id} 
                       className={cn(
                         "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground transition-colors",
-                        index === 0 && "sticky left-0 bg-muted/95 backdrop-blur-md z-40 border-b border-border/50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
-                        index === 1 && "sticky left-[72px] bg-muted/95 backdrop-blur-md z-30 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
+                        index === 0 && "sm:sticky sm:left-0 sm:bg-muted/95 sm:backdrop-blur-md sm:z-40 sm:border-b sm:border-border/50 sm:shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
+                        index === 1 && "sm:sticky sm:left-[72px] sm:bg-muted/95 sm:backdrop-blur-md sm:z-30 sm:border-r sm:border-border/50 sm:shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]"
                       )}
                     >
                       {header.isPlaceholder
@@ -421,12 +421,12 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                         className={cn(
                           "px-4 py-3 align-middle transition-colors",
                           index === 0 && cn(
-                            "sticky left-0 z-20 group-hover:bg-muted/90 border-r border-border/50 shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
-                            isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background/95 backdrop-blur-md"
+                            "sm:sticky sm:left-0 sm:z-20 sm:group-hover:bg-muted/90 sm:border-r sm:border-border/50 sm:shadow-[2px_0_4px_rgba(0,0,0,0.05)]",
+                            isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background sm:bg-background/95 sm:backdrop-blur-md"
                           ),
                           index === 1 && cn(
-                            "sticky left-[72px] z-10 border-r border-border/50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] group-hover:bg-muted/90",
-                            isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background/95 backdrop-blur-md"
+                            "sm:sticky sm:left-[72px] sm:z-10 sm:border-r sm:border-border/50 sm:shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)] sm:group-hover:bg-muted/90",
+                            isSelected ? "bg-[#f8fafc] dark:bg-[#0f172a]" : "bg-background sm:bg-background/95 sm:backdrop-blur-md"
                           )
                         )}
                       >

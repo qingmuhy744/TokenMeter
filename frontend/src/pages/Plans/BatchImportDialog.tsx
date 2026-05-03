@@ -137,7 +137,11 @@ export const BatchImportDialog = ({
                   {plans
                     .filter((p) => !p.parent_id)
                     .map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>
+                      <SelectItem
+                        key={p.id}
+                        value={p.id.toString()}
+                        label={p.name}
+                      >
                         {p.name}
                       </SelectItem>
                     ))}

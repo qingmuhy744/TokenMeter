@@ -106,6 +106,7 @@
   },
   "settings": {
     "title": "系统设置",
+    "testConfig": "测速配置",
     "general": "通用设置",
     "defaultPrompt": "默认提示词",
     "timeout": "测速超时（秒）",

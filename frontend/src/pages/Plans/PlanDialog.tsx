@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { Plan } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -92,14 +93,20 @@ export const PlanDialog = ({
                     }
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder={t("plans.none")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{t("plans.none")}</SelectItem>
+                  <SelectItem value="none" label={t("plans.none") as string}>
+                    {t("plans.none")}
+                  </SelectItem>
                   {plans
                     .filter((p) => !p.parent_id && p.id !== editingId)
                     .map((p) => (
-                      <SelectItem key={p.id} value={p.id.toString()}>
+                      <SelectItem
+                        key={p.id}
+                        value={p.id.toString()}
+                        label={p.name}
+                      >
                         {p.name}
                       </SelectItem>
                     ))}
@@ -162,7 +169,8 @@ export const PlanDialog = ({
 
           <div className="space-y-2">
             <Label>{t("plans.customPrompt")}</Label>
-            <Input
+            <Textarea
+              rows={3}
               value={form.prompt}
               onChange={(e) => setForm({ ...form, prompt: e.target.value })}
               placeholder={parentEffective?.effective_prompt || undefined}

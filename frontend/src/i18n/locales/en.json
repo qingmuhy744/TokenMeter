@@ -106,6 +106,7 @@
   },
   "settings": {
     "title": "Settings",
+    "testConfig": "Test Configuration",
     "general": "General",
     "defaultPrompt": "Default Prompt",
     "timeout": "Timeout (seconds)",
