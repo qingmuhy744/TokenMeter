@@ -9,6 +9,7 @@ import { Plus } from "lucide-react";
 import { buildPlanTree } from "./utils";
 import { PlanTable } from "./PlanTable";
 import { PlanDialog } from "./PlanDialog";
+import { BatchImportDialog } from "./BatchImportDialog";
 import { DeleteDialog } from "./DeleteDialog";
 
 const defaultForm = {
@@ -32,6 +33,7 @@ export default function Plans() {
   const planTree = useMemo(() => buildPlanTree(plans), [plans]);
   
   const [open, setOpen] = useState(false);
+  const [batchImportOpen, setBatchImportOpen] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [originalKey, setOriginalKey] = useState("");
@@ -148,16 +150,24 @@ export default function Plans() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{t("plans.title")}</h1>
-        <Button
-          onClick={() => {
-            setForm(defaultForm);
-            setEditingId(null);
-            setOriginalKey("");
-            setOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" /> {t("plans.newPlan")}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setBatchImportOpen(true)}
+          >
+            {t("plans.batchImport")}
+          </Button>
+          <Button
+            onClick={() => {
+              setForm(defaultForm);
+              setEditingId(null);
+              setOriginalKey("");
+              setOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" /> {t("plans.newPlan")}
+          </Button>
+        </div>
       </div>
 
       <PlanTable
@@ -175,6 +185,13 @@ export default function Plans() {
         setForm={setForm}
         onSubmit={handleSubmit}
         plans={plans}
+      />
+
+      <BatchImportDialog
+        open={batchImportOpen}
+        onOpenChange={setBatchImportOpen}
+        plans={plans}
+        onSuccess={loadPlans}
       />
 
       <DeleteDialog
