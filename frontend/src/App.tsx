@@ -161,18 +161,6 @@ function Layout() {
     <div className="flex h-screen bg-background">
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
 
-      {isSidebarOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-            onClick={() => setIsSidebarOpen(false)}
-          />
-          <div className="fixed inset-y-0 left-0 w-72 bg-sidebar shadow-2xl animate-slide-in-left">
-            <Sidebar isOpen onClose={() => setIsSidebarOpen(false)} />
-          </div>
-        </div>
-      )}
-
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <header className="md:hidden h-14 flex items-center px-4 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-40">
           <button
