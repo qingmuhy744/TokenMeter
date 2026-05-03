@@ -21,16 +21,22 @@ export default function History() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("history.title")}</h1>
-        <div className="flex bg-muted p-1 rounded-lg">
+    <div className="space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{t("history.title")}</h1>
+          <p className="text-slate-500 text-sm">Review historical test results and performance trends.</p>
+        </div>
+        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-sm">
           {[1, 7, 30].map(d => (
             <Button 
               key={d}
               variant={statsRange === d ? "default" : "ghost"} 
               size="sm" 
-              className="h-7 text-xs px-3"
+              className={cn(
+                "h-8 text-xs px-4 rounded-lg font-medium transition-all",
+                statsRange === d ? "bg-white text-slate-900 shadow-sm hover:bg-white" : "text-slate-500 hover:text-slate-700"
+              )}
               onClick={() => setStatsRange(d)}
             >
               {d}d Stats
@@ -38,7 +44,10 @@ export default function History() {
           ))}
         </div>
       </div>
-      <HistoryView onDelete={handleDelete} statsDays={statsRange} />
+      
+      <div className="bg-white/50 rounded-3xl p-1">
+        <HistoryView onDelete={handleDelete} statsDays={statsRange} />
+      </div>
     </div>
   );
 }
