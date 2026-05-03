@@ -10,19 +10,19 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 
 ~~本项目完全由 小米 mimo-v2.5-pro 构建~~ -> ~~后来 MiniMax-M2.7 续了命~~ -> **现在我是三姓家奴，终归还是宇宙大厂 Google Gemini 的免费额度最香 🎯**
 
-👉 在线看速度：[https://code.yangyangx.top/status](https://code.yangyangx.top/status)（作者的 coding plan 测速展示 ╮(╯▽╰)╭）
+👉 在线看速度：<a href="https://code.yangyangx.top/status" target="_blank">https://code.yangyangx.top/status</a>（作者的 coding plan 测速展示 ╮(╯▽╰)╭）
 
 ~~😭 来点 token 吧，再来点，我啥都愿意干 (≧◡≦)~~
 
 ### 小米 MiMo V2.5 体验
 
-使用[我的邀请码](https://platform.xiaomimimo.com/console/balance?ref=283GAL)注册为新用户，即得 ¥10 API 体验金（40天有效）。
+使用<a href="https://platform.xiaomimimo.com/console/balance?ref=283GAL" target="_blank">我的邀请码</a>注册为新用户，即得 ¥10 API 体验金（40天有效）。
 
 邀请码：**283GAL**
 
 ### MiniMax Token Plan
 
-[立即参与 MiniMax 优惠活动 →](https://platform.minimaxi.com/subscribe/token-plan?code=BLzVdBvhGE&source=link)
+<a href="https://platform.minimaxi.com/subscribe/token-plan?code=BLzVdBvhGE&source=link" target="_blank">立即参与 MiniMax 优惠活动 →</a>
 
 ## 功能
 
@@ -41,7 +41,7 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 | **后端** | Python 3.12, FastAPI, SQLAlchemy (Async), APScheduler |
 | **数据库** | SQLite (默认), PostgreSQL (可选, 基于 asyncpg & psycopg3) |
 | **前端** | React 19, TypeScript, TailwindCSS v4, Recharts, shadcn/ui |
-| **包管理** | [uv](https://docs.astral.sh/uv/) (Python), npm (Node) |
+| **包管理** | <a href="https://docs.astral.sh/uv/" target="_blank">uv</a> (Python), npm (Node) |
 | **部署** | Docker, docker-compose, Multi-platform (AMD64/ARM64) |
 | **CI/CD** | GitHub Actions (Matrix Testing, GHA Cache) |
 
@@ -51,7 +51,7 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 
 - Python 3.12+
 - Node.js 20+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- <a href="https://docs.astral.sh/uv/getting-started/installation/" target="_blank">uv</a>
 
 ### 安装与运行
 
