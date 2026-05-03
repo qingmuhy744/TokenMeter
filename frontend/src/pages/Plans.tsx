@@ -108,11 +108,15 @@ export default function Plans() {
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    await api.deletePlan(deleteTarget.id);
-    toast.success(t("plans.planDeleted"));
-    setDeleteDialogOpen(false);
-    setDeleteTarget(null);
-    loadPlans();
+    try {
+      await api.deletePlan(deleteTarget.id);
+      toast.success(t("plans.planDeleted"));
+      setDeleteDialogOpen(false);
+      setDeleteTarget(null);
+      loadPlans();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
   };
 
   const handleTest = async (id: number) => {
@@ -219,7 +223,7 @@ export default function Plans() {
         </TableBody>
       </Table>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setDeleteTarget(null); }}>
         <DialogContent className="max-w-md" showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>{t("plans.deleteTitle")}</DialogTitle>
