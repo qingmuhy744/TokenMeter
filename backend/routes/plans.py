@@ -101,6 +101,18 @@ async def create_plan(body: PlanCreate, request: Request):
         db.add(plan)
         await db.commit()
         await db.refresh(plan)
+        if plan.parent_id is not None:
+            stmt = (
+                select(TokenPlan)
+                .options(
+                    selectinload(TokenPlan.parent)
+                    .selectinload(TokenPlan.parent)
+                    .selectinload(TokenPlan.parent)
+                )
+                .where(TokenPlan.id == plan.id)
+            )
+            result = await db.execute(stmt)
+            plan = result.scalar_one()
         await sync_scheduled_jobs(db)
         return PlanResponse.model_validate(plan)
 

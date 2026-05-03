@@ -110,18 +110,9 @@ class PlanResponse(BaseModel):
 
     model_config = {"from_attributes": True}
 
-    @field_validator("api_key")
+    @field_validator("api_key", "effective_api_key")
     @classmethod
     def mask_api_key(cls, v: str | None) -> str | None:
-        if v is None:
-            return None
-        if len(v) <= 8:
-            return "****"
-        return f"{v[:4]}...{v[-4:]}"
-
-    @field_validator("effective_api_key")
-    @classmethod
-    def mask_effective_api_key(cls, v: str | None) -> str | None:
         if v is None:
             return None
         if len(v) <= 8:
