@@ -10,6 +10,7 @@ import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import Status from "@/pages/Status";
 import PublicHistory from "@/pages/PublicHistory";
+import PlanDetail from "@/pages/PlanDetail";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LayoutDashboard, Table as TableIcon, ListTodo, History as HistoryIcon, Settings as SettingsIcon, LogOut, Globe, Menu, X } from "lucide-react";
@@ -26,7 +27,6 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t, i18n } = useTranslation();
   const location = useLocation();
 
-  // Close sidebar on navigation on mobile
   useEffect(() => {
     onClose();
   }, [location.pathname, onClose]);
@@ -45,7 +45,6 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
   };
   return (
     <>
-      {/* Backdrop for mobile */}
       <div 
         className={cn(
           "fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300",
@@ -87,17 +86,15 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Globe className="h-3.5 w-3.5" />
               {i18n.language === "zh" ? "EN" : "中文"}
             </button>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{user?.username}</span>
-              <button onClick={logout} className="text-muted-foreground hover:text-foreground transition-colors">
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
-            </div>
+            <button onClick={logout} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <LogOut className="h-3.5 w-3.5" />
+              {t("nav.logout")}
+            </button>
           </div>
         </div>
-      </aside>
-    </>
-  );
+      </>
+    );
+  }
 }
 
 function Layout() {
@@ -140,6 +137,8 @@ export default function App() {
         <Routes>
           <Route path="/status" element={<Status />} />
           <Route path="/public/history" element={<PublicHistory />} />
+          <Route path="/public/plan/:id" element={<PlanDetail />} />
+          <Route path="/plan/:id" element={<PlanDetail />} />
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/" element={<Dashboard />} />
