@@ -480,9 +480,9 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   <TableRow 
                     key={row.id} 
                     className={cn(
-                      "group transition-colors border-b border-white/5 last:border-0 text-sm cursor-pointer relative",
+                      "group transition-colors border-b border-white/5 last:border-0 text-sm cursor-pointer",
                       isSelected 
-                        ? "bg-amber/5 hover:bg-amber/10 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-0.5 before:bg-amber" 
+                        ? "bg-amber/5 hover:bg-amber/10 border-l-2 border-l-amber" 
                         : "hover:bg-muted/20"
                     )}
                     onClick={() => onToggleSelection?.(row.original.plan_id)}
