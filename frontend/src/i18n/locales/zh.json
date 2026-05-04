@@ -34,7 +34,11 @@
     "scrollHint": "拖拽滚动",
     "keyboardHint": "← → 切换",
     "nameHint": "点击名称查看详情",
-    "noData": "暂无数据"
+    "noData": "暂无数据",
+    "description": "监控所有计划和时间段内的性能指标。",
+    "nightTTFT": "夜间TTFT",
+    "mobileTpsGen": "生成TPS",
+    "mobileTrend24h": "24小时趋势"
   },
   "plans": {
     "title": "测速计划",
@@ -122,7 +126,8 @@
     "day": "白天",
     "night": "夜间",
     "delete": "删除",
-    "deleteConfirm": "确定要删除这条测试记录吗？"
+    "deleteConfirm": "确定要删除这条测试记录吗？",
+    "noResults": "没有找到结果"
   },
   "settings": {
     "title": "系统设置",

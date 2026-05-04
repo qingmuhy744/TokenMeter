@@ -243,7 +243,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.ttftDef")}
         >
-          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.night")}</span>
+          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.nightTTFT")}</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -340,17 +340,17 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             variant={mode === 'all' ? "default" : "ghost"} 
             size="sm" className="h-8 text-xs px-3"
             onClick={() => setMode('all')}
-          >All</Button>
+          >{t("matrix.allLabel")}</Button>
           <Button 
             variant={mode === 'day' ? "default" : "ghost"} 
             size="sm" className="h-8 text-xs px-3"
             onClick={() => setMode('day')}
-          >Day</Button>
+          >{t("matrix.day")}</Button>
           <Button 
             variant={mode === 'night' ? "default" : "ghost"} 
             size="sm" className="h-8 text-xs px-3"
             onClick={() => setMode('night')}
-          >Night</Button>
+          >{t("matrix.night")}</Button>
         </div>
       </div>
 
@@ -402,13 +402,13 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             
             <div className="grid grid-cols-2 gap-6 mb-6">
               <div className="space-y-1.5">
-                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-muted-foreground/60 font-mono">Avg TTFT</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-muted-foreground/60 font-mono">{t("matrix.avgTTFT")}</p>
                 <p className="text-3xl font-bold text-foreground tracking-tighter font-heading">
                   {row.original.avg_ttft?.toFixed(0)}<span className="text-sm font-medium text-muted-foreground ml-1">ms</span>
                 </p>
               </div>
               <div className="space-y-1.5">
-                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-muted-foreground/60 font-mono">TPS (Gen)</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-muted-foreground/60 font-mono">{t("matrix.mobileTpsGen")}</p>
                 <p className="text-3xl font-bold text-foreground tracking-tighter font-heading">
                   {row.original.avg_tps_generate?.toFixed(1)}
                 </p>
@@ -417,7 +417,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             
             <div className="space-y-3 pt-4 border-t border-white/5">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider font-mono">24h Trend</p>
+                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider font-mono">{t("matrix.mobileTrend24h")}</p>
                 {row.original.sparkline && row.original.sparkline.length > 0 && (
                   <span className="text-[10px] text-muted-foreground/60 tabular-nums font-mono">
                     {Math.min(...(row.original.sparkline.filter(v => v !== null) as number[]))?.toFixed(1)} 

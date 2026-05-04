@@ -251,7 +251,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
           ))
         ) : (
           <Card className="p-8">
-            <p className="text-center text-muted-foreground/50 text-sm font-medium">No results found</p>
+            <p className="text-center text-muted-foreground/50 text-sm font-medium">{t("history.noResults")}</p>
           </Card>
         )}
       </div>
@@ -330,7 +330,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
               ) : (
                 <TableRow>
                   <TableCell colSpan={isPublic ? 9 : 10} className="text-center py-16 text-muted-foreground/50 text-sm font-medium">
-                    No results found
+                    {t("history.noResults")}
                   </TableCell>
                 </TableRow>
               )}
