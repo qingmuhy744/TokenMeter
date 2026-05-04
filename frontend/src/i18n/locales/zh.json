@@ -45,7 +45,8 @@
     "keyboardHint": "← → 切换",
     "nameHint": "点击名称查看详情",
     "noData": "暂无数据",
-    "performanceMatrix": "性能矩阵 (最近 {{days}} 天)"
+    "performanceMatrix": "性能矩阵 (最近 {{days}} 天)",
+    "successTooltip": "成功率：成功响应次数占总测试次数的比例。计算公式：成功次数 / 总测试次数 × 100%。反映 API 的稳定性和可靠性。"
   },
   "plans": {
     "title": "测速计划",

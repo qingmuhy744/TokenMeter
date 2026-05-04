@@ -46,7 +46,8 @@
     "description": "Monitor performance metrics across all plans and time periods.",
     "mobileTpsGen": "TPS (Gen)",
     "mobileTrend24h": "24h Trend",
-    "performanceMatrix": "{{days}}-Day Performance Matrix"
+    "performanceMatrix": "{{days}}-Day Performance Matrix",
+    "successTooltip": "Success rate: ratio of successful responses to total tests. Formula: Success Count / Total Tests × 100%. Indicates API stability and reliability."
   },
   "plans": {
     "title": "Test Plans",

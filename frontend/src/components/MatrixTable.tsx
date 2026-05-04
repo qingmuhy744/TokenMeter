@@ -315,7 +315,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         <div 
           className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          title={t("matrix.success")}
+          title={t("matrix.successTooltip")}
         >
           <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.success")}</span>
           {{
