@@ -102,7 +102,18 @@ uv run alembic history --verbose
 
 如果你正在使用旧版本（使用 `backend/migrations/manager.py` 手动管理迁移），按以下步骤迁移到 Alembic：
 
+**Docker 部署自动迁移：**
+
+使用 PR #43 之后的镜像，首次启动会自动检测并完成迁移：
+
+1. 拉取新镜像，配置 `DATABASE_URL` 指向旧 PostgreSQL
+2. 首次启动日志显示 `Running stamp_revision -> head` — 迁移完成
+3. **后续启动直接跳过，不再有迁移日志**
+
+**本地部署手动迁移：**
+
 **1. 备份现有数据**
+
 
 ```bash
 # 方式一：PostgreSQL 导出
