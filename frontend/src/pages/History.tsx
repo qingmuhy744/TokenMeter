@@ -28,7 +28,7 @@ export default function History() {
           <h1 className="text-2xl font-heading font-bold text-foreground tracking-tight">{t("history.title")}</h1>
           <p className="text-muted-foreground text-sm">{t("history.description")}</p>
         </div>
-        <div className="flex bg-muted p-1 rounded-xl border border-white/10">
+        <div className="flex bg-muted p-1 rounded-xl border border-border/50">
           {[1, 7, 30].map(d => (
             <Button 
               key={d}
@@ -46,7 +46,7 @@ export default function History() {
         </div>
       </div>
       
-      <div className="bg-card/50 border border-white/5 rounded-3xl p-1">
+      <div className="bg-card/50 border border-border/50 rounded-3xl p-1">
         <HistoryView onDelete={handleDelete} statsDays={statsRange} />
       </div>
     </div>

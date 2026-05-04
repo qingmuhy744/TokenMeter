@@ -102,8 +102,8 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
     return areas;
   }, [chartData]);
 
-  const textMuted = "oklch(0.55 0.01 75)";
-  const cardBg = "oklch(0.14 0.012 260)";
+  const textMuted = "var(--color-muted-foreground)";
+  const cardBg = "var(--color-card)";
 
   return (
     <div className="space-y-8">
@@ -111,7 +111,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
         <div className="flex items-center justify-between">
           <div className="flex gap-4">
             <Select value={selectedPlan} onValueChange={(v) => { setSelectedPlan(v ?? "all"); setPage(1); }}>
-              <SelectTrigger className="w-[280px] rounded-xl border-white/10 bg-card font-medium text-foreground/80">
+              <SelectTrigger className="w-[280px] rounded-xl border-border bg-card font-medium text-foreground/80 shadow-sm">
                 <SelectValue placeholder={t("history.allPlans")}>
                   {(value: string | null) =>
                     value === "all" || !value
@@ -120,9 +120,9 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                   }
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-white/10">
+              <SelectContent className="rounded-xl border-border shadow-md">
                 <SelectItem value="all" className="font-medium">{t("history.allPlans")}</SelectItem>
-                {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)} className="font-medium">{p.name}</SelectItem>))}
+                {plans.filter(p => p.parent_id !== null).map((p) => (<SelectItem key={p.id} value={String(p.id)} className="font-medium">{p.name}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -137,7 +137,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
             { label: `${statsDays}d P95 TTFT`, value: stats.p95_ttft_ms?.toFixed(0) || '-', suffix: 'ms' },
             { label: 'Total Tests', value: stats.count, suffix: '' },
           ].map((item, i) => (
-            <Card key={i}>
+            <Card key={i} className="border border-border shadow-sm">
               <CardContent className="pt-6">
                 <p className="text-[10px] text-muted-foreground/70 uppercase font-bold tracking-widest mb-1">{item.label}</p>
                 <p className="text-3xl font-bold text-foreground font-heading tracking-tight">
@@ -151,16 +151,16 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       )}
 
       {chartData.length > 1 && (
-        <Card>
-          <CardHeader className="border-b border-white/5 pb-4 flex flex-row items-center justify-between space-y-0 bg-muted/20">
+          <Card className="border border-border shadow-sm">
+          <CardHeader className="border-b border-border/50 pb-3 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base font-heading font-semibold text-foreground/90">
               {t("history.trend")} <span className="text-xs font-medium text-muted-foreground/60 ml-2">(Last 24 Hours)</span>
             </CardTitle>
-            <Badge variant="outline" className="text-[10px] uppercase font-bold text-muted-foreground/50 bg-card border-white/10">Real-time Data</Badge>
+            <Badge variant="outline" className="text-[10px] uppercase font-bold text-muted-foreground/50 bg-card border-border/50">{t("history.realTimeData")}</Badge>
           </CardHeader>
-          <CardContent className="pt-8">
+          <CardContent className="pt-5">
             <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={chartData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <XAxis 
                   dataKey="time" 
                   tick={{ fontSize: 10, fill: textMuted, fontWeight: 500 }} 
@@ -176,9 +176,9 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     backgroundColor: cardBg, 
                     borderRadius: '12px', 
                     fontSize: '12px',
-                    border: '1px solid oklch(0.22 0.015 260 / 0.5)',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.4)',
-                    color: 'oklch(0.93 0.005 80)',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: 'var(--shadow-md)',
+                    color: 'var(--color-foreground)',
                   }} 
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 500, paddingTop: '20px', color: textMuted }} />
@@ -188,14 +188,14 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     x1={area.x1}
                     x2={area.x2}
                     yAxisId="left"
-                    fill={area.isDay ? "oklch(0.72 0.18 65 / 0.06)" : "oklch(0.6 0.12 200 / 0.06)"}
+                    fill={area.isDay ? "color-mix(in oklch, var(--color-primary) 6%, transparent)" : "color-mix(in oklch, var(--color-cyan) 6%, transparent)"}
                     fillOpacity={1}
                   />
                 ))}
-                <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="oklch(0.72 0.18 65)" strokeWidth={3} name={t("history.tpsOverall")} dot={false} connectNulls />
-                <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="oklch(0.65 0.15 145)" strokeWidth={2} strokeDasharray="5 5" name={t("history.tpsGenerate")} dot={false} connectNulls />
-                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="oklch(0.6 0.12 200)" strokeWidth={3} name={t("history.ttftMs")} dot={false} connectNulls />
-                <Line yAxisId="right" type="monotone" dataKey="think" stroke="oklch(0.5 0.1 85)" strokeWidth={1.5} strokeDasharray="3 3" name={t("history.thinkTimeMs")} dot={false} connectNulls />
+                <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="var(--color-primary)" strokeWidth={3} name={t("history.tpsOverall")} dot={false} connectNulls />
+                <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="var(--color-green)" strokeWidth={2} strokeDasharray="5 5" name={t("history.tpsGenerate")} dot={false} connectNulls />
+                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="var(--color-cyan)" strokeWidth={3} name={t("history.ttftMs")} dot={false} connectNulls />
+                <Line yAxisId="right" type="monotone" dataKey="think" stroke="var(--color-muted-foreground)" strokeWidth={1.5} strokeDasharray="3 3" name={t("history.thinkTimeMs")} dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -206,7 +206,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       <div className="md:hidden space-y-4">
         {results.items.length > 0 ? (
           results.items.map((r: TestResult) => (
-            <Card key={r.id} className="p-4">
+            <Card key={r.id} className="p-4 border border-border shadow-sm">
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground/90">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</h3>
@@ -214,9 +214,9 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                 </div>
                 <div className="flex items-center gap-2">
                   {r.error ? (
-                    <span className="h-2 w-2 rounded-full bg-red shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
+                    <span className="h-2 w-2 rounded-full bg-red shadow-[0_0_8px_color-mix(in_oklch,var(--color-red)_40%,transparent)]" />
                   ) : (
-                    <span className="h-2 w-2 rounded-full bg-green shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                    <span className="h-2 w-2 rounded-full bg-green shadow-[0_0_8px_color-mix(in_oklch,var(--color-green)_40%,transparent)]" />
                   )}
                   {!isPublic && (
                     <Button
@@ -233,7 +233,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-0.5">
                   <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">{t("history.ttftMs")}</p>
-                  <p className={cn("text-lg font-bold text-foreground", r.ttft_ms && r.ttft_ms > 1000 ? "text-amber" : "")}>
+                  <p className={cn("text-lg font-bold text-foreground", r.ttft_ms && r.ttft_ms > 1000 ? "text-red" : "")}>
                     {r.ttft_ms?.toFixed(0)}<span className="text-xs font-medium text-muted-foreground ml-1">ms</span>
                   </p>
                 </div>
@@ -250,61 +250,61 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
             </Card>
           ))
         ) : (
-          <Card className="p-8">
-            <p className="text-center text-muted-foreground/50 text-sm font-medium">No results found</p>
+          <Card className="p-8 border border-border shadow-sm">
+            <p className="text-center text-muted-foreground/50 text-sm font-medium">{t("history.noResults")}</p>
           </Card>
         )}
       </div>
 
       {/* Desktop Table View */}
-      <Card className="hidden md:block overflow-hidden">
+      <div className="hidden md:block border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="w-full max-h-[700px] overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
           <Table className="w-full min-w-[1000px] border-separate border-spacing-0">
-            <TableHeader className="bg-muted/30 sticky top-0 z-10">
-              <TableRow className="hover:bg-transparent border-b border-white/5">
-                <TableHead className="py-4 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.time")}</TableHead>
-                <TableHead className="py-4 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.plan")}</TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
-                  <span title={t("history.ttftDef")} className="border-b border-dashed border-white/20 cursor-help">
+            <TableHeader className="bg-muted sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent border-b border-border/50">
+                <TableHead className="py-2.5 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.time")}</TableHead>
+                <TableHead className="py-2.5 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.plan")}</TableHead>
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
+                  <span title={t("history.ttftDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.ttftMs")}
                   </span>
                 </TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
-                  <span title={t("history.thinkTimeDef")} className="border-b border-dashed border-white/20 cursor-help">
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
+                  <span title={t("history.thinkTimeDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.thinkTimeMs")}
                   </span>
                 </TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-foreground/90 tracking-tight uppercase tracking-widest bg-muted/20">
-                  <span title={t("history.tpsOverallDef")} className="border-b border-dashed border-white/20 cursor-help">
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-foreground/90 tracking-tight uppercase tracking-widest">
+                  <span title={t("history.tpsOverallDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.tpsOverall")}
                   </span>
                 </TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
-                  <span title={t("history.tpsGenerateDef")} className="border-b border-dashed border-white/20 cursor-help">
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
+                  <span title={t("history.tpsGenerateDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.tpsGenerate")}
                   </span>
                 </TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.tokens")}</TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.thinkingTokens")}</TableHead>
-                <TableHead className="py-4 px-4 text-center text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.status")}</TableHead>
-                {!isPublic && <TableHead className="py-4 px-4 text-right w-[60px]"></TableHead>}
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.tokens")}</TableHead>
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.thinkingTokens")}</TableHead>
+                <TableHead className="py-2.5 px-4 text-center text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.status")}</TableHead>
+                {!isPublic && <TableHead className="py-2.5 px-4 text-right w-[60px]"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {results.items.length > 0 ? (
                 results.items.map((r: TestResult) => (
-                  <TableRow key={r.id} className="hover:bg-muted/20 transition-colors group border-b border-white/5 last:border-0">
-                    <TableCell className="py-4 px-6 text-[11px] font-medium text-muted-foreground/70 font-mono">{new Date(r.created_at).toLocaleString()}</TableCell>
-                    <TableCell className="py-4 px-6 font-semibold text-foreground/90 whitespace-nowrap">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
-                    <TableCell className={cn("py-4 px-4 text-right font-bold text-foreground/90", r.ttft_ms && r.ttft_ms > 1000 ? "text-amber" : "")}>
+                  <TableRow key={r.id} className="hover:bg-muted/50 transition-colors group border-b border-border/30 last:border-0">
+                    <TableCell className="py-2.5 px-6 text-[11px] font-medium text-muted-foreground/70 font-mono">{new Date(r.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="py-2.5 px-6 font-semibold text-foreground/90 whitespace-nowrap">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
+                    <TableCell className={cn("py-2.5 px-4 text-right font-bold text-foreground/90", r.ttft_ms && r.ttft_ms > 1000 ? "text-red" : "")}>
                       {r.ttft_ms?.toFixed(0)}<span className="text-[10px] font-medium text-muted-foreground ml-1 font-mono">ms</span>
                     </TableCell>
-                    <TableCell className="py-4 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.think_time_ms?.toFixed(0)}<span className="text-[9px] ml-0.5 opacity-50">ms</span></TableCell>
-                    <TableCell className="py-4 px-4 text-right font-bold text-foreground/90 bg-muted/10">{r.tps_overall?.toFixed(1)}</TableCell>
-                    <TableCell className="py-4 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.tps_generate?.toFixed(1)}</TableCell>
-                    <TableCell className="py-4 px-4 text-right font-semibold text-foreground/80 font-mono text-sm">{r.total_tokens}</TableCell>
-                    <TableCell className="py-4 px-4 text-right font-medium text-muted-foreground/60 font-mono text-xs">{r.thinking_tokens || '-'}</TableCell>
-                    <TableCell className="py-4 px-4 text-center">
+                    <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.think_time_ms?.toFixed(0)}<span className="text-[9px] ml-0.5 opacity-50">ms</span></TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-bold text-foreground/90">{r.tps_overall?.toFixed(1)}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.tps_generate?.toFixed(1)}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-semibold text-foreground/80 font-mono text-sm">{r.total_tokens}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 font-mono text-xs">{r.thinking_tokens || '-'}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-center">
                       <div className="flex justify-center">
                         {r.error ? (
                           <span className="h-2 w-2 rounded-full bg-red shadow-[0_0_8px_rgba(239,68,68,0.4)]" title={r.error} />
@@ -314,7 +314,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                       </div>
                     </TableCell>
                     {!isPublic && (
-                      <TableCell className="py-4 px-4 text-right">
+                      <TableCell className="py-2.5 px-4 text-right">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -329,35 +329,35 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={isPublic ? 9 : 10} className="text-center py-16 text-muted-foreground/50 text-sm font-medium">
-                    No results found
+                  <TableCell colSpan={isPublic ? 9 : 10} className="text-center py-12 text-muted-foreground/50 text-sm font-medium">
+                    {t("history.noResults")}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         </div>
-      </Card>
+      </div>
 
       <div className="flex items-center justify-between px-2 pt-2">
         <span className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-widest font-mono">{t("history.total")}: {results.total}</span>
         <div className="flex items-center gap-4">
-          <div className="flex gap-1 bg-muted p-1 rounded-xl border border-white/10">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 px-4 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-white/5" 
-              disabled={page <= 1} 
+          <div className="flex gap-1 bg-muted p-1 rounded-xl border border-border/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-4 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              disabled={page <= 1}
               onClick={() => setPage(page - 1)}
             >
               {t("history.prev")}
             </Button>
-            <div className="flex items-center px-4 bg-card rounded-lg text-xs font-bold text-foreground border border-white/10">{t("history.page")} {page}</div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 px-4 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-white/5" 
-              disabled={results.items.length < 20} 
+            <div className="flex items-center px-4 bg-card rounded-lg text-xs font-bold text-foreground border border-border/50">{t("history.page")} {page}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-4 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              disabled={results.items.length < 20}
               onClick={() => setPage(page + 1)}
             >
               {t("history.next")}

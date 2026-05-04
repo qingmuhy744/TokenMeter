@@ -93,7 +93,11 @@ export const PlanDialog = ({
                     }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t("plans.none")} />
+                  <SelectValue placeholder={t("plans.none")}>
+                    {form.parent_id
+                      ? plans.find((p) => p.id === form.parent_id)?.name ?? form.parent_id
+                      : t("plans.none")}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none" label={t("plans.none") as string}>
