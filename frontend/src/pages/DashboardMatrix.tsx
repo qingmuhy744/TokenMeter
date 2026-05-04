@@ -8,7 +8,7 @@ export default function DashboardMatrix() {
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-heading font-bold text-foreground">{t("nav.dashboard")} - Matrix</h1>
-        <p className="text-sm text-muted-foreground">Monitor performance metrics across all plans and time periods.</p>
+        <p className="text-sm text-muted-foreground">{t("matrix.description")}</p>
       </div>
       <MatrixTable />
     </div>

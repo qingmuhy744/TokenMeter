@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider, useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "react-i18next";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -24,6 +25,8 @@ import {
   Menu,
   X,
   ChevronRight,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,7 @@ interface SidebarProps {
 function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
   useEffect(() => {
@@ -70,7 +74,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}>
         <div className="p-5 flex items-center justify-between border-b border-sidebar-border/50">
           <div className="flex items-center gap-2.5">
-            <div className="size-7 rounded-lg bg-primary flex items-center justify-center shadow-glow-amber">
+            <div className="size-7 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_12px_color-mix(in_oklch,var(--color-primary)_30%,transparent)]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
@@ -105,21 +109,24 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 end={to === "/"}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
+                  `group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 relative ${
                     isActive
-                      ? "bg-amber-muted text-amber shadow-sm"
+                      ? "bg-primary/10 text-primary font-semibold shadow-sm"
                       : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <span className={`flex items-center justify-center size-4 transition-colors ${isActive ? "text-amber" : ""}`}>
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-primary" />
+                    )}
+                    <span className={`flex items-center justify-center size-4 transition-colors ${isActive ? "text-primary" : ""}`}>
                       <Icon className="size-4" />
                     </span>
                     <span className="flex-1">{label}</span>
                     {isActive && (
-                      <span className="size-1.5 rounded-full bg-amber shadow-[0_0_6px_oklch(0.72_0.18_65/0.5)]" />
+                      <span className="size-2 rounded-full bg-primary shadow-[0_0_8px_var(--color-primary)]" />
                     )}
                   </>
                 )}
@@ -130,13 +137,22 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <div className="p-3 border-t border-sidebar-border/50 mx-3">
           <div className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors">
-            <button
-              onClick={toggleLang}
-              className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-            >
-              <Globe className="size-3" />
-              {i18n.language === "zh" ? "EN" : "中文"}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleLang}
+                className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+              >
+                <Globe className="size-3" />
+                {i18n.language === "zh" ? "EN" : "中文"}
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+              >
+                {theme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />}
+                {theme === 'dark' ? t('theme.light') : t('theme.dark')}
+              </button>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-sidebar-foreground/60">{user?.username}</span>
               <button
@@ -202,26 +218,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <TooltipProvider>
-          <Routes>
-            <Route path="/status" element={<Status />} />
-            <Route path="/public/history" element={<PublicHistory />} />
-            <Route path="/public/plan/:id" element={<PlanDetail />} />
-            <Route path="/plan/:id" element={<PlanDetail />} />
-            <Route path="/login" element={<Login />} />
-            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/matrix" element={<DashboardMatrix />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-          </Routes>
-          <Toaster />
-        </TooltipProvider>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <TooltipProvider>
+            <Routes>
+              <Route path="/status" element={<Status />} />
+              <Route path="/public/history" element={<PublicHistory />} />
+              <Route path="/public/plan/:id" element={<PlanDetail />} />
+              <Route path="/plan/:id" element={<PlanDetail />} />
+              <Route path="/login" element={<Login />} />
+              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/matrix" element={<DashboardMatrix />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+            </Routes>
+            <Toaster />
+          </TooltipProvider>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

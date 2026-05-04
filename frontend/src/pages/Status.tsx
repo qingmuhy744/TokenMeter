@@ -1,11 +1,14 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import MatrixTable from "@/components/MatrixTable";
+import { Sun, Moon } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +70,7 @@ function formatTime(iso: string): string {
 
 export default function Status() {
   const { t } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
   const [data, setData] = useState<StatusData | null>(null);
   const [range, setRange] = useState("24h");
   const [loading, setLoading] = useState(true);
@@ -185,12 +189,25 @@ export default function Status() {
       {/* Header */}
       <div className="border-b">
         <div className="max-w-5xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold tracking-tight">{t("status.title")}</h1>
-          <div className="flex items-center gap-2 mt-2">
-            <div className={`h-2.5 w-2.5 rounded-full ${allOperational ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"}`} />
-            <span className="text-sm text-muted-foreground font-medium">
-              {allOperational ? t("status.allSystemsOperational") : t("status.someSystemsIssues")}
-            </span>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{t("status.title")}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <div className={`h-2.5 w-2.5 rounded-full ${allOperational ? "bg-green shadow-[0_0_8px_color-mix(in_oklch,var(--color-green)_50%,transparent)]" : "bg-red shadow-[0_0_8px_color-mix(in_oklch,var(--color-red)_50%,transparent)]"}`} />
+                <span className="text-sm text-muted-foreground font-medium">
+                  {allOperational ? t("status.allSystemsOperational") : t("status.someSystemsIssues")}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2 items-center">
+              <Link to="/matrix"><Button variant="outline" size="sm">{t("nav.matrix")}</Button></Link>
+              <Link to="/"><Button variant="outline" size="sm">{t("nav.dashboard")}</Button></Link>
+              <Link to="/history"><Button variant="outline" size="sm">{t("nav.history")}</Button></Link>
+              <div className="w-px h-5 bg-border mx-1" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme}>
+                {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -303,7 +320,7 @@ export default function Status() {
 
         {/* Trend chart */}
         <Card className="overflow-hidden border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
-          <CardHeader className="bg-muted/30 border-b border-border/50 py-5">
+          <CardHeader className="border-b border-border/50 py-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl font-bold tracking-tight">{t("status.comparisonTrend")}</CardTitle>
@@ -363,7 +380,7 @@ export default function Status() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted/20 animate-in fade-in duration-700">
+                <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted animate-in fade-in duration-700">
                    <p className="text-muted-foreground font-bold text-lg">{t("status.noDataInRange")}</p>
                    <p className="text-sm text-muted-foreground mt-2 max-w-[300px] text-center">
                     {t("status.trySwitchRange")}
@@ -371,7 +388,7 @@ export default function Status() {
                 </div>
               )
             ) : (
-              <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted/20 animate-in fade-in duration-700">
+              <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted animate-in fade-in duration-700">
                 <div className="bg-muted p-4 rounded-full mb-4">
                   <Switch checked={false} className="scale-125" disabled />
                 </div>
