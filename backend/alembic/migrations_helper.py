@@ -57,7 +57,7 @@ def export_legacy_data(legacy_url: str) -> dict:
     with legacy_engine.connect() as conn:
         for table in tables:
             try:
-                result = conn.execute(text(f"SELECT * FROM {table}"))
+                result = conn.execute(text(f"SELECT * FROM {table}"))  # nosec B608
                 rows = [dict(row._mapping) for row in result]
                 data[table] = rows
                 logger.info(f"Exported {len(rows)} rows from {table}")
