@@ -161,7 +161,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {theme === 'system' ? t('theme.auto') : theme === 'dark' ? t('theme.light') : t('theme.dark')}
               </button>
               {themeMenuOpen && (
-                <div className="absolute bottom-full left-0 mb-1 w-28 bg-sidebar border border-sidebar-border rounded-lg shadow-lg overflow-hidden z-50">
+                <div className="absolute top-full left-0 mt-1 w-28 bg-sidebar border border-sidebar-border rounded-lg shadow-lg overflow-hidden z-50">
                   <button
                     onClick={() => { setTheme('system'); setThemeMenuOpen(false); }}
                     className={cn(
