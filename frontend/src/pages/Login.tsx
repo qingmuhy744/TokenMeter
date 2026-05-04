@@ -30,12 +30,12 @@ export default function Login() {
 
   return (
     <div className="relative flex items-center justify-center min-h-screen bg-background overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_oklch(0.72_0.18_65/0.03)_0%,_transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_oklch(0.6_0.12_200/0.02)_0%,_transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_color-mix(in_oklch,var(--color-primary)_3%,transparent)_0%,_transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_color-mix(in_oklch,var(--color-cyan)_2%,transparent)_0%,_transparent_50%)]" />
 
       <div className="relative w-full max-w-sm mx-auto p-6 animate-fade-in-up">
         <div className="flex flex-col items-center mb-10">
-          <div className="size-12 rounded-2xl bg-primary flex items-center justify-center shadow-glow-amber mb-4">
+          <div className="size-12 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_20px_color-mix(in_oklch,var(--color-primary)_40%,transparent)] mb-4">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>

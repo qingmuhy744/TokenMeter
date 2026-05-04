@@ -27,7 +27,7 @@ function Sparkline({ data, className }: { data: (number | null)[], className?: s
   const max = Math.max(...points);
   const range = max - min || 1;
   const width = 100;
-  const height = 32;
+  const height = 24;
   const padding = 2;
   
   const pathData = points.map((v, i) => {
@@ -37,7 +37,7 @@ function Sparkline({ data, className }: { data: (number | null)[], className?: s
   }).join(' ');
 
   return (
-    <div className={cn("h-8 w-24", className)}>
+    <div className={cn("h-6 w-20", className)}>
       <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="overflow-visible">
         <path
           d={pathData}
@@ -57,7 +57,7 @@ const getHeatmapColor = (value: number | null, type: 'ttft' | 'tps' | 'degradati
   if (value === null) return '';
   
   const green = "bg-green/10 text-green font-medium";
-  const yellow = "bg-amber/10 text-amber font-medium";
+  const yellow = "bg-primary/10 text-primary font-medium";
   const red = "bg-red/10 text-red font-medium";
 
   if (type === 'ttft') {
@@ -95,6 +95,16 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
   const [mode, setMode] = useState<'all' | 'day' | 'night'>('all');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollKey = 'matrix-scroll-position';
+  const columnSizingKey = 'matrix-column-sizing';
+
+  const [columnSizing, setColumnSizing] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem(columnSizingKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
     const saved = sessionStorage.getItem(lastScrollKey);
@@ -123,7 +133,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columnHelper.accessor("full_name", {
       header: ({ column }) => (
         <div 
-          className="flex items-center cursor-pointer select-none gap-1"
+          className="flex items-center justify-start cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           {t("matrix.modelPlan")}
@@ -139,9 +149,9 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         const [provider, ...modelParts] = fullName.split(' > ');
         const model = modelParts.join(' > ');
         return (
-          <div className="flex flex-col gap-0.5" onClick={e => e.stopPropagation()}>
+          <div className="flex flex-col items-start gap-0.5 text-left" onClick={e => e.stopPropagation()}>
             <span className="text-[10px] text-muted-foreground/60 leading-none">{provider}</span>
-            <span 
+            <span
               className="font-medium text-foreground/90 text-[11px] leading-tight cursor-pointer hover:text-primary hover:underline"
               title={fullName}
               onClick={(e) => {
@@ -155,16 +165,19 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           </div>
         );
       },
-      size: 140,
+      size: 150,
       minSize: 100,
       maxSize: 200,
     }),
     columnHelper.accessor("latest_status", {
       header: t("matrix.status"),
+      size: 32,
+      minSize: 28,
+      maxSize: 40,
       cell: info => (
         <div className="flex justify-center">
           <div className={cn(
-            "w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.05)]",
+            "w-3 h-3 rounded-full shadow-[0_0_8px_color-mix(in_oklch,var(--color-foreground)_5%,transparent)]",
             info.getValue() === "success" ? "bg-emerald-500" :
             info.getValue() === "error" ? "bg-rose-500" : "bg-muted"
           )} title={info.getValue() || 'unknown'} />
@@ -175,15 +188,18 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       header: t("matrix.trend24h"),
       cell: info => <Sparkline data={info.getValue()} />,
       enableSorting: false,
+      size: 100,
+      minSize: 80,
+      maxSize: 140,
     }),
-    columnHelper.accessor("avg_ttft", {
+    columnHelper.accessor("day_avg_ttft", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.ttftDef")}
         >
-          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.avgTTFT")}</span>
+          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.dayTTFT")}</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -191,15 +207,37 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
+        <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
           {info.getValue()?.toFixed(0)}ms
         </div>
       ),
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
+    }),
+    columnHelper.accessor("night_avg_ttft", {
+      header: ({ column }) => (
+        <div 
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.ttftDef")}
+        >
+          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.nightTTFT")}</span>
+          {{
+            asc: <ArrowUp className="w-4 h-4 text-primary" />,
+            desc: <ArrowDown className="w-4 h-4 text-primary" />,
+          }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
+        </div>
+      ),
+      cell: info => <div className="text-center font-mono text-muted-foreground">{info.getValue()?.toFixed(0)}ms</div>,
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
     }),
     columnHelper.accessor("avg_tps_overall", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.tpsOverallDef")}
         >
@@ -211,15 +249,18 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+        <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
           {info.getValue()?.toFixed(1)}
         </div>
       ),
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
     }),
     columnHelper.accessor("avg_tps_generate", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.tpsGenerateDef")}
         >
@@ -231,31 +272,18 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+        <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
           {info.getValue()?.toFixed(1)}
         </div>
       ),
-    }),
-    columnHelper.accessor("night_avg_ttft", {
-      header: ({ column }) => (
-        <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          title={t("history.ttftDef")}
-        >
-          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.night")}</span>
-          {{
-            asc: <ArrowUp className="w-4 h-4 text-primary" />,
-            desc: <ArrowDown className="w-4 h-4 text-primary" />,
-          }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
-        </div>
-      ),
-      cell: info => <div className="text-right font-mono text-muted-foreground">{info.getValue()?.toFixed(0)}ms</div>,
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
     }),
     columnHelper.accessor("degradation", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("matrix.degradation")}
         >
@@ -269,16 +297,19 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       cell: info => {
         const val = info.getValue();
         return (
-          <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
+          <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
             {val !== null ? `${(val * 100).toFixed(1)}%` : '-'}
           </div>
         );
       },
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
     }),
     columnHelper.accessor("success_rate", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("matrix.success")}
         >
@@ -292,11 +323,14 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       cell: info => {
         const val = info.getValue();
         return (
-          <div className="text-right font-mono font-medium">
+          <div className="text-center font-mono font-medium">
             {val !== null ? `${(val * 100).toFixed(0)}%` : '-'}
           </div>
         );
       },
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
     }),
   ], [t]);
 
@@ -306,8 +340,18 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columns,
     state: {
       sorting,
+      columnSizing,
     },
     onSortingChange: setSorting,
+    onColumnSizingChange: (updater) => {
+      setColumnSizing(prev => {
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        localStorage.setItem(columnSizingKey, JSON.stringify(next));
+        return next;
+      });
+    },
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -340,17 +384,17 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             variant={mode === 'all' ? "default" : "ghost"} 
             size="sm" className="h-8 text-xs px-3"
             onClick={() => setMode('all')}
-          >All</Button>
+          >{t("matrix.allLabel")}</Button>
           <Button 
             variant={mode === 'day' ? "default" : "ghost"} 
             size="sm" className="h-8 text-xs px-3"
             onClick={() => setMode('day')}
-          >Day</Button>
+          >{t("matrix.day")}</Button>
           <Button 
             variant={mode === 'night' ? "default" : "ghost"} 
             size="sm" className="h-8 text-xs px-3"
             onClick={() => setMode('night')}
-          >Night</Button>
+          >{t("matrix.night")}</Button>
         </div>
       </div>
 
@@ -362,8 +406,8 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             className={cn(
               "rounded-2xl border p-5 shadow-sm transition-all active:scale-[0.98]",
               selectedIds.includes(row.original.plan_id)
-                ? "border-amber/40 bg-amber/5"
-                : "border-white/5 bg-card"
+                ? "border-primary/40 bg-primary/5"
+                : "border-border/50 bg-card"
             )}
             onClick={() => onToggleSelection?.(row.original.plan_id)}
           >
@@ -392,7 +436,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                 </div>
               </div>
               {selectedIds.includes(row.original.plan_id) && (
-                <div className="size-6 rounded-full bg-primary flex items-center justify-center shadow-glow-amber">
+                <div className="size-6 rounded-full bg-primary flex items-center justify-center shadow-[0_0_12px_color-mix(in_oklch,var(--color-primary)_30%,transparent)]">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-primary-foreground">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
@@ -402,22 +446,22 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             
             <div className="grid grid-cols-2 gap-6 mb-6">
               <div className="space-y-1.5">
-                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-muted-foreground/60 font-mono">Avg TTFT</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-muted-foreground/60 font-mono">{t("matrix.avgTTFT")}</p>
                 <p className="text-3xl font-bold text-foreground tracking-tighter font-heading">
                   {row.original.avg_ttft?.toFixed(0)}<span className="text-sm font-medium text-muted-foreground ml-1">ms</span>
                 </p>
               </div>
               <div className="space-y-1.5">
-                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-muted-foreground/60 font-mono">TPS (Gen)</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] font-semibold text-muted-foreground/60 font-mono">{t("matrix.mobileTpsGen")}</p>
                 <p className="text-3xl font-bold text-foreground tracking-tighter font-heading">
                   {row.original.avg_tps_generate?.toFixed(1)}
                 </p>
               </div>
             </div>
             
-            <div className="space-y-3 pt-4 border-t border-white/5">
+            <div className="space-y-3 pt-4 border-t border-border/50">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider font-mono">24h Trend</p>
+                <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider font-mono">{t("matrix.mobileTrend24h")}</p>
                 {row.original.sparkline && row.original.sparkline.length > 0 && (
                   <span className="text-[10px] text-muted-foreground/60 tabular-nums font-mono">
                     {Math.min(...(row.original.sparkline.filter(v => v !== null) as number[]))?.toFixed(1)} 
@@ -426,18 +470,18 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   </span>
                 )}
               </div>
-              <Sparkline data={row.original.sparkline} className="w-full h-12 text-amber" />
+              <Sparkline data={row.original.sparkline} className="w-full h-12 text-primary" />
             </div>
           </div>
         ))}
       </div>
 
       {/* Desktop Table View */}
-      <Card className="hidden sm:block overflow-hidden border border-white/5 bg-card shadow-md rounded-2xl">
-        <CardHeader className="bg-muted/20 border-b border-white/5 py-5 flex flex-row items-center justify-between space-y-0 px-6">
+      <Card className="hidden sm:block overflow-hidden border border-border/50 bg-card shadow-md rounded-2xl">
+        <CardHeader className="border-b border-border/50 py-4 flex flex-row items-center justify-between space-y-0 px-6">
           <div>
             <CardTitle className="text-lg font-heading font-bold tracking-tight text-foreground">
-              {days}-Day Performance Matrix
+              {t("matrix.performanceMatrix", { days })}
             </CardTitle>
             <p className="text-[12px] text-muted-foreground mt-1.5 flex items-center gap-2">
               <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">{t("matrix.instructions")}</span>
@@ -456,22 +500,35 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             ref={scrollContainerRef}
             onScroll={saveScroll}
           >
-            <Table className="w-full min-w-[1000px]">
+            <Table className="w-full" style={{ tableLayout: 'fixed' }}>
               <TableHeader className="bg-card sticky top-0 z-30">
               {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-white/5">
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border/50">
                   {headerGroup.headers.map((header, index) => (
                     <TableHead 
                       key={header.id} 
                       className={cn(
-                        "h-14 px-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors",
-                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0"
+                        "h-9 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors relative",
+                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_color-mix(in_oklch,var(--color-foreground)_10%,transparent)] border-l-0"
                       )}
-                      style={index === 0 ? { minWidth: header.getSize(), maxWidth: header.getSize() } : undefined}
+                      style={{ width: header.getSize() }}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      <div className="flex items-center gap-1">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </div>
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={cn(
+                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                            "hover:bg-primary/50 active:bg-primary transition-colors",
+                            header.column.getIsResizing() && "bg-primary"
+                          )}
+                        />
+                      )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -484,10 +541,10 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   <TableRow 
                     key={row.id} 
                     className={cn(
-                      "group transition-colors border-b border-white/5 last:border-0 text-sm cursor-pointer",
+                      "group transition-colors border-b border-border/50 last:border-0 text-sm cursor-pointer",
                       isSelected 
-                        ? "bg-muted hover:bg-muted/80 border-l-2 border-l-amber" 
-                        : "hover:bg-muted/20"
+                        ? "bg-muted hover:bg-muted/80 border-l-2 border-l-primary" 
+                        : "hover:bg-muted/50"
                     )}
                     onClick={() => onToggleSelection?.(row.original.plan_id)}
                   >
@@ -495,12 +552,13 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       <TableCell 
                         key={cell.id} 
                         className={cn(
-                          "px-6 py-4 align-middle transition-colors",
+                          "px-2 py-1.5 align-middle transition-colors",
                           index === 0 && cn(
-                            "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0",
+                            "sticky left-0 z-20 shadow-[4px_0_12px_-6px_color-mix(in_oklch,var(--color-foreground)_15%,transparent)] border-l-0",
                             isSelected ? "bg-muted" : "bg-card"
                           )
                         )}
+                        style={{ width: cell.column.getSize() }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>

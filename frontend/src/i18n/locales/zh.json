@@ -15,7 +15,56 @@
     "avgTTFT": "平均首字延迟",
     "avgTPS": "平均 TPS",
     "noPlans": "尚未配置测速计划",
-    "createFirst": "立即创建第一个计划"
+    "noResults": "暂无结果",
+    "createFirst": "立即创建第一个计划",
+    "description": "实时监控 LLM 性能和响应指标。",
+    "activePlans": "启用计划",
+    "totalPlans": "总计划数",
+    "withErrors": "错误数"
+  },
+  "matrix": {
+    "title": "性能矩阵",
+    "modelPlan": "模型 / 计划",
+    "status": "状态",
+    "trend24h": "24小时趋势",
+    "avgTTFT": "TTFT",
+    "dayTTFT": "日间TTFT",
+    "nightTTFT": "夜间 TTFT",
+    "tpsAll": "总TPS",
+    "tpsGen": "生成TPS",
+    "day": "日间",
+    "night": "夜间",
+    "degradation": "衰减",
+    "success": "成功率",
+    "allLabel": "全部",
+    "instructions": "使用说明",
+    "scrollHint": "拖拽滚动",
+    "keyboardHint": "← → 切换",
+    "nameHint": "点击名称查看详情",
+    "noData": "暂无数据",
+    "description": "监控所有计划和时间段内的性能指标。",
+    "mobileTpsGen": "生成TPS",
+    "mobileTrend24h": "24小时趋势",
+    "performanceMatrix": "{{days}}天性能矩阵"
+  },
+  "matrix": {
+    "title": "性能矩阵",
+    "modelPlan": "模型 / 计划",
+    "status": "状态",
+    "trend24h": "24小时趋势",
+    "avgTTFT": "首字延迟",
+    "tpsAll": "总TPS",
+    "tpsGen": "生成TPS",
+    "day": "日间",
+    "night": "夜间",
+    "degradation": "衰减",
+    "success": "成功率",
+    "allLabel": "全部",
+    "instructions": "使用说明",
+    "scrollHint": "拖拽滚动",
+    "keyboardHint": "← → 切换",
+    "nameHint": "点击名称查看详情",
+    "noData": "暂无数据"
   },
   "matrix": {
     "title": "性能矩阵",
@@ -122,7 +171,9 @@
     "day": "白天",
     "night": "夜间",
     "delete": "删除",
-    "deleteConfirm": "确定要删除这条测试记录吗？"
+    "deleteConfirm": "确定要删除这条测试记录吗？",
+    "noResults": "没有找到结果",
+    "realTimeData": "实时数据"
   },
   "settings": {
     "title": "系统设置",
@@ -191,5 +242,9 @@
     "ok": "正常",
     "cancel": "取消",
     "delete": "删除"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色"
   }
 }
