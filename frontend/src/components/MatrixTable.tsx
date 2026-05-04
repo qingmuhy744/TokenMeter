@@ -409,7 +409,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             ref={scrollContainerRef}
             onScroll={saveScroll}
           >
-            <Table className="w-auto mx-auto" style={{ tableLayout: 'fixed' }}>
+            <Table className="w-full" style={{ tableLayout: 'fixed' }}>
               <TableHeader className="bg-card sticky top-0 z-30">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-white/5">
