@@ -47,6 +47,25 @@
     "mobileTrend24h": "24小时趋势",
     "performanceMatrix": "{{days}}天性能矩阵"
   },
+  "matrix": {
+    "title": "性能矩阵",
+    "modelPlan": "模型 / 计划",
+    "status": "状态",
+    "trend24h": "24小时趋势",
+    "avgTTFT": "首字延迟",
+    "tpsAll": "总TPS",
+    "tpsGen": "生成TPS",
+    "day": "日间",
+    "night": "夜间",
+    "degradation": "衰减",
+    "success": "成功率",
+    "allLabel": "全部",
+    "instructions": "使用说明",
+    "scrollHint": "拖拽滚动",
+    "keyboardHint": "← → 切换",
+    "nameHint": "点击名称查看详情",
+    "noData": "暂无数据"
+  },
   "plans": {
     "title": "测速计划",
     "addPlan": "新增计划",

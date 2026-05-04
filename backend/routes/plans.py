@@ -1,6 +1,6 @@
 import json
 import asyncio
-import logging
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
@@ -15,7 +15,6 @@ from backend.config import settings
 from backend.auth import get_current_user
 
 router = APIRouter(prefix="/api/plans", tags=["plans"])
-logger = logging.getLogger(__name__)
 
 
 @router.get("", response_model=list[PlanResponse])

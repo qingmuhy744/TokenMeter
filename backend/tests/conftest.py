@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from httpx import AsyncClient, ASGITransport
 
-from backend.database import Base
+from backend.models.base import Base
 import backend.database as database_mod
 from backend.models import User
 from backend.auth import hash_password

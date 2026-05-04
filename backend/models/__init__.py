@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Integer, String, Float, Boolean, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.database import Base
+from backend.models.base import Base
 
 
 class TokenPlan(Base):
