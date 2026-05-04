@@ -107,12 +107,15 @@ uv run alembic history --verbose
 由于旧数据库已有表但无 `alembic_version` 记录，需要用一次性的 stamp 镜像标记当前状态：
 
 ```bash
-# Step 1: 拉取 stamp 镜像（仅此一次）
-docker compose pull
+# Step 1: 拉取 stamp 镜像（仅此一次，镜像 tag 格式为 日期-commit短SHA）
+docker pull qingmuhy744/tokenmeter:20260504-c251977
+# 修改 compose.yaml 中的 image 为上述 tag，启动
+docker compose up -d
 # 首次启动日志会显示：
 #   Running stamp_revision -> 2f9c1045e7d7 (head)
 
-# Step 2: 确认迁移完成后，拉取后续正常镜像即可
+# Step 2: stamp 完成后，改回正常镜像即可
+# compose.yaml 中 image 改为最新版
 docker compose pull && docker compose up -d
 ```
 
