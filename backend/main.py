@@ -76,6 +76,18 @@ async def lifespan(app: FastAPI):
     # Configure logging after uvicorn initializes (uvicorn's dictConfig disables existing loggers)
     setup_logging()
 
+    root = logging.getLogger()
+    logger.info(
+        "DEBUG: root handlers=%s level=%s",
+        [(type(h).__name__, getattr(h.stream, "name", "?")) for h in root.handlers],
+        root.level,
+    )
+    logger.info(
+        "DEBUG: backend.main disabled=%s propagate=%s",
+        logger.disabled,
+        logger.propagate,
+    )
+
     alembic_cfg = alembic.config.Config("alembic.ini")
     alembic.command.upgrade(alembic_cfg, "head")
 
