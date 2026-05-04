@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
+import { ThemeProvider, useTheme } from "@/hooks/useTheme";
 import { useTranslation } from "react-i18next";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -24,6 +25,8 @@ import {
   Menu,
   X,
   ChevronRight,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -36,6 +39,7 @@ interface SidebarProps {
 function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
   useEffect(() => {
@@ -130,13 +134,22 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <div className="p-3 border-t border-sidebar-border/50 mx-3">
           <div className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors">
-            <button
-              onClick={toggleLang}
-              className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-            >
-              <Globe className="size-3" />
-              {i18n.language === "zh" ? "EN" : "中文"}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleLang}
+                className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+              >
+                <Globe className="size-3" />
+                {i18n.language === "zh" ? "EN" : "中文"}
+              </button>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+              >
+                {theme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />}
+                {theme === 'dark' ? '浅色' : '深色'}
+              </button>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-sidebar-foreground/60">{user?.username}</span>
               <button
@@ -202,26 +215,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <TooltipProvider>
-          <Routes>
-            <Route path="/status" element={<Status />} />
-            <Route path="/public/history" element={<PublicHistory />} />
-            <Route path="/public/plan/:id" element={<PlanDetail />} />
-            <Route path="/plan/:id" element={<PlanDetail />} />
-            <Route path="/login" element={<Login />} />
-            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/matrix" element={<DashboardMatrix />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/settings" element={<Settings />} />
-            </Route>
-          </Routes>
-          <Toaster />
-        </TooltipProvider>
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <TooltipProvider>
+            <Routes>
+              <Route path="/status" element={<Status />} />
+              <Route path="/public/history" element={<PublicHistory />} />
+              <Route path="/public/plan/:id" element={<PlanDetail />} />
+              <Route path="/plan/:id" element={<PlanDetail />} />
+              <Route path="/login" element={<Login />} />
+              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/matrix" element={<DashboardMatrix />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/settings" element={<Settings />} />
+              </Route>
+            </Routes>
+            <Toaster />
+          </TooltipProvider>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
