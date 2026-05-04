@@ -26,15 +26,15 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-3 gap-4 animate-fade-in-up animate-delay-100">
-        <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
+        <div className="rounded-2xl bg-card border border-border/50 p-4 ring-1 ring-border/50">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.activePlans")}</p>
           <p className="text-2xl font-bold text-foreground mt-1 font-heading">{activeCount}</p>
         </div>
-        <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
+        <div className="rounded-2xl bg-card border border-border/50 p-4 ring-1 ring-border/50">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.totalPlans")}</p>
           <p className="text-2xl font-bold text-foreground mt-1 font-heading">{plans.length}</p>
         </div>
-        <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
+        <div className="rounded-2xl bg-card border border-border/50 p-4 ring-1 ring-border/50">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.withErrors")}</p>
           <p className="text-2xl font-bold text-red mt-1 font-heading">{errorCount}</p>
         </div>
@@ -47,7 +47,7 @@ export default function Dashboard() {
             className="hover:ring-amber/20 hover:shadow-glow-amber transition-all duration-300"
             style={{ animationDelay: `${0.15 + i * 0.05}s` }}
           >
-            <CardHeader className="pb-3 border-b border-white/5">
+            <CardHeader className="pb-3 border-b border-border/50">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-heading font-semibold text-foreground/90">{plan.name}</CardTitle>
                 <Badge
@@ -81,7 +81,7 @@ export default function Dashboard() {
                   </div>
                 )
               ) : (
-                <div className="flex items-center justify-center py-4 rounded-xl bg-muted/50 border border-dashed border-white/5">
+                <div className="flex items-center justify-center py-4 rounded-xl bg-muted border border-dashed border-border/50">
                   <p className="text-muted-foreground text-sm font-medium italic">{t("dashboard.noResults")}</p>
                 </div>
               )}
@@ -92,7 +92,7 @@ export default function Dashboard() {
 
       {chartData.length > 0 && (
         <Card>
-          <CardHeader className="border-b border-white/5 pb-4">
+          <CardHeader className="border-b border-border/50 pb-4">
             <CardTitle className="text-base font-heading font-semibold text-foreground/90">{t("dashboard.tpsComparison")}</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">

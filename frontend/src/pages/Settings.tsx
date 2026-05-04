@@ -80,7 +80,7 @@ export default function Settings() {
 
       <div className="grid gap-8">
         <Card>
-          <CardHeader className="bg-muted/30 border-b border-white/5 pb-4">
+          <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-lg font-heading font-semibold text-foreground/90">{t("settings.testConfig")}</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
@@ -126,7 +126,7 @@ export default function Settings() {
         </Card>
 
         <Card>
-          <CardHeader className="bg-muted/30 border-b border-white/5 pb-4">
+          <CardHeader className="border-b border-border pb-4">
             <CardTitle className="text-lg font-heading font-semibold text-foreground/90">{t("settings.changePassword")}</CardTitle>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
@@ -163,11 +163,11 @@ export default function Settings() {
         </Card>
 
         <Card>
-          <CardHeader className="bg-muted/30 border-b border-white/5 pb-4">
+          <CardHeader className="border-b border-border pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-heading font-semibold text-foreground/90">{t("settings.serverLogs")}</CardTitle>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-card border border-white/10 rounded-xl">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-card border border-border/50 rounded-xl">
                   <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} className="scale-75" />
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{t("settings.autoRefresh")}</span>
                 </div>
@@ -185,19 +185,19 @@ export default function Settings() {
           </CardHeader>
           <CardContent className="pt-6">
             {logs.length === 0 ? (
-              <div className="flex items-center justify-center py-12 bg-muted/30 rounded-2xl border border-dashed border-white/10">
+              <div className="flex items-center justify-center py-12 bg-muted rounded-2xl border border-dashed border-border/50">
                 <p className="text-muted-foreground/50 text-sm font-medium italic">{t("settings.clickRefresh")}</p>
               </div>
             ) : (
               <div className="relative group">
                 <pre
                   ref={logRef}
-                  className="text-[11px] bg-slate-950 text-slate-300 p-6 rounded-2xl overflow-auto max-h-[500px] font-mono whitespace-pre-wrap leading-relaxed shadow-inner border border-white/5"
+                  className="text-[11px] bg-slate-950 text-slate-300 p-6 rounded-2xl overflow-auto max-h-[500px] font-mono whitespace-pre-wrap leading-relaxed shadow-inner border border-border/50"
                 >
                   {logs.join("\n")}
                 </pre>
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Badge className="bg-muted text-muted-foreground/60 border-white/5 font-mono text-[9px] uppercase">{t("settings.logsConsole")}</Badge>
+                  <Badge className="bg-muted text-muted-foreground/60 border-border/50 font-mono text-[9px] uppercase">{t("settings.logsConsole")}</Badge>
                 </div>
               </div>
             )}

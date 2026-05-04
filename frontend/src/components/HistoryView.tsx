@@ -122,7 +122,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
               </SelectTrigger>
               <SelectContent className="rounded-xl border-border shadow-md">
                 <SelectItem value="all" className="font-medium">{t("history.allPlans")}</SelectItem>
-                {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)} className="font-medium">{p.name}</SelectItem>))}
+                {plans.filter(p => p.parent_id !== null).map((p) => (<SelectItem key={p.id} value={String(p.id)} className="font-medium">{p.name}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -156,7 +156,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
             <CardTitle className="text-base font-heading font-semibold text-foreground/90">
               {t("history.trend")} <span className="text-xs font-medium text-muted-foreground/60 ml-2">(Last 24 Hours)</span>
             </CardTitle>
-            <Badge variant="outline" className="text-[10px] uppercase font-bold text-muted-foreground/50 bg-card border-white/10">Real-time Data</Badge>
+            <Badge variant="outline" className="text-[10px] uppercase font-bold text-muted-foreground/50 bg-card border-border/50">Real-time Data</Badge>
           </CardHeader>
           <CardContent className="pt-5">
             <ResponsiveContainer width="100%" height={350}>
@@ -260,7 +260,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       <div className="hidden md:block border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="w-full max-h-[700px] overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
           <Table className="w-full min-w-[1000px] border-separate border-spacing-0">
-            <TableHeader className="bg-muted/40 sticky top-0 z-10">
+            <TableHeader className="bg-muted sticky top-0 z-10">
               <TableRow className="hover:bg-transparent border-b border-border/50">
                 <TableHead className="py-2.5 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.time")}</TableHead>
                 <TableHead className="py-2.5 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.plan")}</TableHead>
@@ -274,7 +274,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     {t("history.thinkTimeMs")}
                   </span>
                 </TableHead>
-                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-foreground/90 tracking-tight uppercase tracking-widest bg-muted/20">
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-foreground/90 tracking-tight uppercase tracking-widest">
                   <span title={t("history.tpsOverallDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.tpsOverall")}
                   </span>
@@ -293,14 +293,14 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
             <TableBody>
               {results.items.length > 0 ? (
                 results.items.map((r: TestResult) => (
-                  <TableRow key={r.id} className="hover:bg-muted/20 transition-colors group border-b border-border/30 last:border-0">
+                  <TableRow key={r.id} className="hover:bg-muted/50 transition-colors group border-b border-border/30 last:border-0">
                     <TableCell className="py-2.5 px-6 text-[11px] font-medium text-muted-foreground/70 font-mono">{new Date(r.created_at).toLocaleString()}</TableCell>
                     <TableCell className="py-2.5 px-6 font-semibold text-foreground/90 whitespace-nowrap">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
                     <TableCell className={cn("py-2.5 px-4 text-right font-bold text-foreground/90", r.ttft_ms && r.ttft_ms > 1000 ? "text-amber" : "")}>
                       {r.ttft_ms?.toFixed(0)}<span className="text-[10px] font-medium text-muted-foreground ml-1 font-mono">ms</span>
                     </TableCell>
                     <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.think_time_ms?.toFixed(0)}<span className="text-[9px] ml-0.5 opacity-50">ms</span></TableCell>
-                    <TableCell className="py-2.5 px-4 text-right font-bold text-foreground/90 bg-muted/10">{r.tps_overall?.toFixed(1)}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-bold text-foreground/90">{r.tps_overall?.toFixed(1)}</TableCell>
                     <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.tps_generate?.toFixed(1)}</TableCell>
                     <TableCell className="py-2.5 px-4 text-right font-semibold text-foreground/80 font-mono text-sm">{r.total_tokens}</TableCell>
                     <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 font-mono text-xs">{r.thinking_tokens || '-'}</TableCell>
@@ -342,22 +342,22 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       <div className="flex items-center justify-between px-2 pt-2">
         <span className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-widest font-mono">{t("history.total")}: {results.total}</span>
         <div className="flex items-center gap-4">
-          <div className="flex gap-1 bg-muted p-1 rounded-xl border border-white/10">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 px-4 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-white/5" 
-              disabled={page <= 1} 
+          <div className="flex gap-1 bg-muted p-1 rounded-xl border border-border/50">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-4 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              disabled={page <= 1}
               onClick={() => setPage(page - 1)}
             >
               {t("history.prev")}
             </Button>
-            <div className="flex items-center px-4 bg-card rounded-lg text-xs font-bold text-foreground border border-white/10">{t("history.page")} {page}</div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 px-4 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-white/5" 
-              disabled={results.items.length < 20} 
+            <div className="flex items-center px-4 bg-card rounded-lg text-xs font-bold text-foreground border border-border/50">{t("history.page")} {page}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-4 rounded-lg font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+              disabled={results.items.length < 20}
               onClick={() => setPage(page + 1)}
             >
               {t("history.next")}

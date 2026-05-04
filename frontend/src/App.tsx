@@ -109,21 +109,24 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 end={to === "/"}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 ${
+                  `group flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 relative ${
                     isActive
-                      ? "bg-amber-muted text-amber shadow-sm"
+                      ? "bg-primary/10 text-primary font-semibold shadow-sm"
                       : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
-                    <span className={`flex items-center justify-center size-4 transition-colors ${isActive ? "text-amber" : ""}`}>
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-primary" />
+                    )}
+                    <span className={`flex items-center justify-center size-4 transition-colors ${isActive ? "text-primary" : ""}`}>
                       <Icon className="size-4" />
                     </span>
                     <span className="flex-1">{label}</span>
                     {isActive && (
-                      <span className="size-1.5 rounded-full bg-amber shadow-[0_0_6px_var(--color-primary)]" />
+                      <span className="size-2 rounded-full bg-primary shadow-[0_0_8px_var(--color-primary)]" />
                     )}
                   </>
                 )}

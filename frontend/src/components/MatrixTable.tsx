@@ -133,7 +133,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columnHelper.accessor("full_name", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-center cursor-pointer select-none gap-1"
+          className="flex items-center justify-start cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           {t("matrix.modelPlan")}
@@ -149,9 +149,9 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         const [provider, ...modelParts] = fullName.split(' > ');
         const model = modelParts.join(' > ');
         return (
-          <div className="flex flex-col items-center gap-0.5 text-center" onClick={e => e.stopPropagation()}>
+          <div className="flex flex-col items-start gap-0.5 text-left" onClick={e => e.stopPropagation()}>
             <span className="text-[10px] text-muted-foreground/60 leading-none">{provider}</span>
-            <span 
+            <span
               className="font-medium text-foreground/90 text-[11px] leading-tight cursor-pointer hover:text-primary hover:underline"
               title={fullName}
               onClick={(e) => {
@@ -407,7 +407,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
               "rounded-2xl border p-5 shadow-sm transition-all active:scale-[0.98]",
               selectedIds.includes(row.original.plan_id)
                 ? "border-amber/40 bg-amber/5"
-                : "border-white/5 bg-card"
+                : "border-border/50 bg-card"
             )}
             onClick={() => onToggleSelection?.(row.original.plan_id)}
           >
@@ -459,7 +459,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
               </div>
             </div>
             
-            <div className="space-y-3 pt-4 border-t border-white/5">
+            <div className="space-y-3 pt-4 border-t border-border/50">
               <div className="flex items-center justify-between">
                 <p className="text-[11px] font-semibold text-muted-foreground/50 uppercase tracking-wider font-mono">{t("matrix.mobileTrend24h")}</p>
                 {row.original.sparkline && row.original.sparkline.length > 0 && (
@@ -477,7 +477,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       </div>
 
       {/* Desktop Table View */}
-      <Card className="hidden sm:block overflow-hidden border border-white/5 bg-card shadow-md rounded-2xl">
+      <Card className="hidden sm:block overflow-hidden border border-border/50 bg-card shadow-md rounded-2xl">
         <CardHeader className="border-b border-border/50 py-4 flex flex-row items-center justify-between space-y-0 px-6">
           <div>
             <CardTitle className="text-lg font-heading font-bold tracking-tight text-foreground">
@@ -503,7 +503,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             <Table className="w-full" style={{ tableLayout: 'fixed' }}>
               <TableHeader className="bg-card sticky top-0 z-30">
               {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-white/5">
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-border/50">
                   {headerGroup.headers.map((header, index) => (
                     <TableHead 
                       key={header.id} 
@@ -541,10 +541,10 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   <TableRow 
                     key={row.id} 
                     className={cn(
-                      "group transition-colors border-b border-white/5 last:border-0 text-sm cursor-pointer",
+                      "group transition-colors border-b border-border/50 last:border-0 text-sm cursor-pointer",
                       isSelected 
                         ? "bg-muted hover:bg-muted/80 border-l-2 border-l-amber" 
-                        : "hover:bg-muted/20"
+                        : "hover:bg-muted/50"
                     )}
                     onClick={() => onToggleSelection?.(row.original.plan_id)}
                   >

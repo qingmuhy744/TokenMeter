@@ -320,7 +320,7 @@ export default function Status() {
 
         {/* Trend chart */}
         <Card className="overflow-hidden border-border/50 shadow-xl bg-card/50 backdrop-blur-sm">
-          <CardHeader className="bg-muted/30 border-b border-border/50 py-5">
+          <CardHeader className="border-b border-border/50 py-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl font-bold tracking-tight">{t("status.comparisonTrend")}</CardTitle>
@@ -380,7 +380,7 @@ export default function Status() {
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted/20 animate-in fade-in duration-700">
+                <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted animate-in fade-in duration-700">
                    <p className="text-muted-foreground font-bold text-lg">{t("status.noDataInRange")}</p>
                    <p className="text-sm text-muted-foreground mt-2 max-w-[300px] text-center">
                     {t("status.trySwitchRange")}
@@ -388,7 +388,7 @@ export default function Status() {
                 </div>
               )
             ) : (
-              <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted/20 animate-in fade-in duration-700">
+              <div className="h-[350px] flex flex-col items-center justify-center border-2 border-dashed rounded-2xl bg-muted animate-in fade-in duration-700">
                 <div className="bg-muted p-4 rounded-full mb-4">
                   <Switch checked={false} className="scale-125" disabled />
                 </div>
