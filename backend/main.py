@@ -62,12 +62,14 @@ def setup_logging():
     root.addHandler(buf)
 
 
-setup_logging()
 logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Configure logging after uvicorn initializes (uvicorn's dictConfig disables existing loggers)
+    setup_logging()
+
     alembic_cfg = alembic.config.Config("alembic.ini")
     from backend.alembic.migrations_helper import run_alembic_migration
 
