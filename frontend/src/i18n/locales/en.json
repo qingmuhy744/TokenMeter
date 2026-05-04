@@ -245,6 +245,7 @@
     "delete": "Delete"
   },
   "theme": {
+    "auto": "Auto",
     "light": "Light",
     "dark": "Dark"
   }
