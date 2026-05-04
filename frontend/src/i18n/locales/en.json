@@ -15,7 +15,11 @@
     "avgTTFT": "Avg TTFT",
     "avgTPS": "Avg TPS",
     "noPlans": "No test plans configured yet",
-    "createFirst": "Create your first plan"
+    "createFirst": "Create your first plan",
+    "description": "Monitor LLM performance and response metrics in real-time.",
+    "activePlans": "Active Plans",
+    "totalPlans": "Total Plans",
+    "withErrors": "With Errors"
   },
   "matrix": {
     "title": "Performance Matrix",

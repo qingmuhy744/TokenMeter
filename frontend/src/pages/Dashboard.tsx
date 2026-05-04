@@ -22,20 +22,20 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div className="flex flex-col gap-1 animate-fade-in-up">
         <h1 className="text-2xl font-heading font-bold text-foreground tracking-tight">{t("dashboard.title")}</h1>
-        <p className="text-muted-foreground text-sm">Monitor LLM performance and response metrics in real-time.</p>
+        <p className="text-muted-foreground text-sm">{t("dashboard.description")}</p>
       </div>
 
       <div className="grid grid-cols-3 gap-4 animate-fade-in-up animate-delay-100">
         <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Active Plans</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.activePlans")}</p>
           <p className="text-2xl font-bold text-foreground mt-1 font-heading">{activeCount}</p>
         </div>
         <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Plans</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.totalPlans")}</p>
           <p className="text-2xl font-bold text-foreground mt-1 font-heading">{plans.length}</p>
         </div>
         <div className="rounded-2xl bg-card border border-white/5 p-4 ring-1 ring-white/5">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">With Errors</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.withErrors")}</p>
           <p className="text-2xl font-bold text-red mt-1 font-heading">{errorCount}</p>
         </div>
       </div>
