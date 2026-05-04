@@ -15,9 +15,10 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None
+from backend.models.base import Base  # noqa: E402
+from backend.models import User, TokenPlan, TestResult, Setting  # noqa: E402, F401
+
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -28,7 +29,13 @@ target_metadata = None
 def get_url():
     from backend.config import settings
 
-    return settings.database_url
+    url = settings.database_url
+    # Convert async URLs to sync for Alembic
+    if url.startswith("postgresql+asyncpg://"):
+        url = url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    elif url.startswith("sqlite+aiosqlite://"):
+        url = url.replace("sqlite+aiosqlite://", "sqlite:///", 1)
+    return url
 
 
 def run_migrations_offline() -> None:
@@ -62,11 +69,10 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    from backend.config import settings
     from sqlalchemy import create_engine
 
     connectable = create_engine(
-        settings.database_url,
+        get_url(),
         poolclass=pool.NullPool,
     )
 

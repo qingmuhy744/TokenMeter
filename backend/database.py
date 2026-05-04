@@ -1,11 +1,11 @@
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import DeclarativeBase
 import logging
 import time
 
 from backend.config import settings
+from backend.models.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +24,8 @@ def receive_checkout(dbapi_connection, connection_record, connection_proxy):
 def receive_checkin(dbapi_connection, connection_record):
     if "checkout_time" in connection_record.info:
         duration = time.time() - connection_record.info["checkout_time"]
-        if duration > 1.0:  # Log connections held for more than 1 second
+        if duration > 1.0:
             logger.warning(f"Connection held for {duration:.2f}s")
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 async def get_db():
