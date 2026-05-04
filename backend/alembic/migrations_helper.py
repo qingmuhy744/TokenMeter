@@ -15,39 +15,6 @@ def get_legacy_db_url() -> str | None:
     return None
 
 
-def detect_needs_migration(engine) -> bool:
-    """Check if database needs legacy data migration.
-
-    Returns True if:
-    - alembic_version table exists (new system)
-    - but token_plans table is empty
-    - and legacy SQLite file exists
-    """
-    with engine.connect() as conn:
-        # Check if alembic_version exists
-        result = conn.execute(
-            text("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_name = 'alembic_version'
-            )
-        """)
-        )
-        has_alembic = result.scalar()
-
-        if not has_alembic:
-            return False
-
-        # Check if there's data to migrate
-        result = conn.execute(text("SELECT COUNT(*) FROM token_plans"))
-        has_data = result.scalar() > 0
-
-        # Check if legacy SQLite exists
-        has_legacy = os.path.exists("token_speed.db")
-
-        return has_alembic and not has_data and has_legacy
-
-
 def export_legacy_data(legacy_url: str) -> dict:
     """Export all data from legacy SQLite database."""
     data = {}
@@ -127,37 +94,42 @@ def import_data_to_new_db(target_engine, data: dict):
 async def check_and_migrate_legacy():
     """Check for legacy SQLite data and migrate if needed."""
     import shutil
-    from backend.config import settings
-    from sqlalchemy import create_engine
+    from backend.database import async_session
 
     legacy_url = get_legacy_db_url()
     if not legacy_url:
-        logger.info("No legacy SQLite database found, skipping migration")
         return
 
-    target_engine = create_engine(
-        settings.database_url.replace("+asyncpg", "+psycopg2")
-    )
-
     try:
-        if not detect_needs_migration(target_engine):
-            logger.info(
-                "Database already has data or no legacy data, skipping migration"
-            )
-            return
+        async with async_session() as db:
+            from sqlalchemy import text
+
+            result = await db.execute(text("SELECT COUNT(*) FROM token_plans"))
+            has_data = result.scalar() > 0
+            if has_data:
+                return
 
         logger.info("Found legacy SQLite data, starting migration...")
-        data = export_legacy_data(legacy_url)
+        from backend.config import settings
+        from sqlalchemy import create_engine
 
-        if any(data.values()):
-            import_data_to_new_db(target_engine, data)
+        target_engine = create_engine(
+            settings.DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+        )
+        try:
+            data = export_legacy_data(legacy_url)
 
-            total = sum(len(rows) for rows in data.values())
-            logger.info(f"Legacy data migration completed: {total} rows migrated")
+            if any(data.values()):
+                import_data_to_new_db(target_engine, data)
 
-            shutil.move("token_speed.db", "token_speed.db.migrated")
-            logger.info("Legacy SQLite moved to token_speed.db.migrated")
-        else:
-            logger.info("No data found in legacy database")
-    finally:
-        target_engine.dispose()
+                total = sum(len(rows) for rows in data.values())
+                logger.info(f"Legacy data migration completed: {total} rows migrated")
+
+                shutil.move("token_speed.db", "token_speed.db.migrated")
+                logger.info("Legacy SQLite moved to token_speed.db.migrated")
+            else:
+                logger.info("No data found in legacy database")
+        finally:
+            target_engine.dispose()
+    except Exception:
+        logger.exception("Legacy migration check failed, continuing startup")
