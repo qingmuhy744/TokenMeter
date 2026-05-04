@@ -61,6 +61,12 @@ def setup_logging():
     buf.setFormatter(LocalTimeFormatter(fmt, datefmt=datefmt))
     root.addHandler(buf)
 
+    # Re-enable loggers disabled by uvicorn's dictConfig(disable_existing_loggers=True)
+    for name in list(logging.root.manager.loggerDict):
+        logger_obj = logging.getLogger(name)
+        if hasattr(logger_obj, "disabled"):
+            logger_obj.disabled = False
+
 
 logger = logging.getLogger(__name__)
 
