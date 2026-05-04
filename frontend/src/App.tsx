@@ -123,7 +123,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </span>
                     <span className="flex-1">{label}</span>
                     {isActive && (
-                      <span className="size-1.5 rounded-full bg-amber shadow-[0_0_6px_oklch(0.72_0.18_65/0.5)]" />
+                      <span className="size-1.5 rounded-full bg-amber shadow-[0_0_6px_var(--color-primary)]" />
                     )}
                   </>
                 )}

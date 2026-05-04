@@ -30,8 +30,8 @@ export default function Login() {
 
   return (
     <div className="relative flex items-center justify-center min-h-screen bg-background overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_oklch(0.72_0.18_65/0.03)_0%,_transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_oklch(0.6_0.12_200/0.02)_0%,_transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--color-primary)_0.03,_transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--color-cyan)_0.02,_transparent_50%)]" />
 
       <div className="relative w-full max-w-sm mx-auto p-6 animate-fade-in-up">
         <div className="flex flex-col items-center mb-10">
