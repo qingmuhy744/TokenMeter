@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import MatrixTable from "@/components/MatrixTable";
 import { Sun, Moon } from "lucide-react";
-import { useTheme } from "@/hooks/useTheme";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -70,7 +70,7 @@ function formatTime(iso: string): string {
 
 export default function Status() {
   const { t } = useTranslation();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const [data, setData] = useState<StatusData | null>(null);
   const [range, setRange] = useState("24h");
   const [loading, setLoading] = useState(true);
@@ -204,7 +204,7 @@ export default function Status() {
               <Link to="/"><Button variant="outline" size="sm">{t("nav.dashboard")}</Button></Link>
               <Link to="/history"><Button variant="outline" size="sm">{t("nav.history")}</Button></Link>
               <div className="w-px h-5 bg-border mx-1" />
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
                 {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
               </Button>
             </div>

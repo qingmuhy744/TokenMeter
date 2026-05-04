@@ -1,5 +1,16 @@
 import os
 import secrets
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file - try multiple locations
+for path in [
+    Path(__file__).parent.parent / ".env",  # backend/ -> project root
+    Path.cwd() / ".env",  # current working directory
+]:
+    if path.exists():
+        load_dotenv(path)
+        break
 
 
 class Settings:
