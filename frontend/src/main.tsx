@@ -6,8 +6,10 @@ import App from './App.tsx'
 
 const initTheme = () => {
   if (typeof window === 'undefined') return
-  const stored = localStorage.getItem('theme') || 'dark'
-  document.documentElement.classList.add(stored)
+  const stored = localStorage.getItem('theme')
+  if (stored === 'dark') {
+    document.documentElement.classList.add('dark')
+  }
 }
 initTheme()
 
