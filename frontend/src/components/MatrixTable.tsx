@@ -133,7 +133,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columnHelper.accessor("full_name", {
       header: ({ column }) => (
         <div 
-          className="flex items-center cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           {t("matrix.modelPlan")}
@@ -149,7 +149,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         const [provider, ...modelParts] = fullName.split(' > ');
         const model = modelParts.join(' > ');
         return (
-          <div className="flex flex-col gap-0.5" onClick={e => e.stopPropagation()}>
+          <div className="flex flex-col items-center gap-0.5 text-center" onClick={e => e.stopPropagation()}>
             <span className="text-[10px] text-muted-foreground/60 leading-none">{provider}</span>
             <span 
               className="font-medium text-foreground/90 text-[11px] leading-tight cursor-pointer hover:text-primary hover:underline"
