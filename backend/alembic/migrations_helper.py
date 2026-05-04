@@ -72,50 +72,61 @@ def export_legacy_data(legacy_url: str) -> dict:
 def import_data_to_new_db(target_engine, data: dict):
     """Import data to new Alembic-managed database."""
     with target_engine.connect() as conn:
-        # Import users
-        for row in data.get("users", []):
-            conn.execute(
-                text(
-                    "INSERT INTO users (id, username, password_hash) VALUES (:id, :username, :password_hash)"
-                ),
-                row,
-            )
+        trans = conn.begin()
+        try:
+            # Import users
+            for row in data.get("users", []):
+                conn.execute(
+                    text(
+                        "INSERT INTO users (id, username, password_hash) VALUES (:id, :username, :password_hash) ON CONFLICT (id) DO NOTHING"
+                    ),
+                    row,
+                )
 
-        # Import settings
-        for row in data.get("settings", []):
-            conn.execute(
-                text("INSERT INTO settings (key, value) VALUES (:key, :value)"), row
-            )
+            # Import settings
+            for row in data.get("settings", []):
+                conn.execute(
+                    text(
+                        "INSERT INTO settings (key, value) VALUES (:key, :value) ON CONFLICT (key) DO NOTHING"
+                    ),
+                    row,
+                )
 
-        # Import token_plans
-        for row in data.get("token_plans", []):
-            row = dict(row)
-            row["is_active"] = bool(row.get("is_active", 1))
-            conn.execute(
-                text("""INSERT INTO token_plans 
-                    (id, name, api_type, api_base, api_key, model, prompt, max_tokens, test_count, interval_minutes, is_active, parent_id, multiplier, created_at, updated_at)
-                    VALUES (:id, :name, :api_type, :api_base, :api_key, :model, :prompt, :max_tokens, :test_count, :interval_minutes, :is_active, :parent_id, :multiplier, :created_at, :updated_at)
-                    ON CONFLICT (id) DO NOTHING"""),
-                row,
-            )
+            # Import token_plans
+            for row in data.get("token_plans", []):
+                row = dict(row)
+                # SQLite stores booleans as 0/1, convert explicitly
+                row["is_active"] = int(row.get("is_active", 1)) == 1
+                conn.execute(
+                    text("""INSERT INTO token_plans 
+                        (id, name, api_type, api_base, api_key, model, prompt, max_tokens, test_count, interval_minutes, is_active, parent_id, multiplier, created_at, updated_at)
+                        VALUES (:id, :name, :api_type, :api_base, :api_key, :model, :prompt, :max_tokens, :test_count, :interval_minutes, :is_active, :parent_id, :multiplier, :created_at, :updated_at)
+                        ON CONFLICT (id) DO NOTHING"""),
+                    row,
+                )
 
-        # Import test_results
-        for row in data.get("test_results", []):
-            conn.execute(
-                text("""INSERT INTO test_results 
-                    (id, plan_id, ttft_ms, tps_overall, tps_generate, total_tokens, total_time_ms, input_tokens, cache_read, char_count, token_density, ttfb_ms, ttfr_ms, think_time_ms, content_tokens, thinking_tokens, tps_content, content_char_count, thinking_char_count, ping_ms, ping_samples, error, note, debug_chunks, created_at)
-                    VALUES (:id, :plan_id, :ttft_ms, :tps_overall, :tps_generate, :total_tokens, :total_time_ms, :input_tokens, :cache_read, :char_count, :token_density, :ttfb_ms, :ttfr_ms, :think_time_ms, :content_tokens, :thinking_tokens, :tps_content, :content_char_count, :thinking_char_count, :ping_ms, :ping_samples, :error, :note, :debug_chunks, :created_at)
-                    ON CONFLICT (id) DO NOTHING"""),
-                row,
-            )
+            # Import test_results
+            for row in data.get("test_results", []):
+                conn.execute(
+                    text("""INSERT INTO test_results 
+                        (id, plan_id, ttft_ms, tps_overall, tps_generate, total_tokens, total_time_ms, input_tokens, cache_read, char_count, token_density, ttfb_ms, ttfr_ms, think_time_ms, content_tokens, thinking_tokens, tps_content, content_char_count, thinking_char_count, ping_ms, ping_samples, error, note, debug_chunks, created_at)
+                        VALUES (:id, :plan_id, :ttft_ms, :tps_overall, :tps_generate, :total_tokens, :total_time_ms, :input_tokens, :cache_read, :char_count, :token_density, :ttfb_ms, :ttfr_ms, :think_time_ms, :content_tokens, :thinking_tokens, :tps_content, :content_char_count, :thinking_char_count, :ping_ms, :ping_samples, :error, :note, :debug_chunks, :created_at)
+                        ON CONFLICT (id) DO NOTHING"""),
+                    row,
+                )
 
-        conn.commit()
-        logger.info("Data import completed")
+            trans.commit()
+            logger.info("Data import completed")
+        except Exception:
+            trans.rollback()
+            logger.exception("Data import failed, rolled back")
+            raise
 
 
 async def check_and_migrate_legacy():
     """Check for legacy SQLite data and migrate if needed."""
-    import os
+    import shutil
+    from backend.config import settings
     from sqlalchemy import create_engine
 
     legacy_url = get_legacy_db_url()
@@ -123,13 +134,9 @@ async def check_and_migrate_legacy():
         logger.info("No legacy SQLite database found, skipping migration")
         return
 
-    db_url = os.getenv(
-        "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres"
+    target_engine = create_engine(
+        settings.database_url.replace("+asyncpg", "+psycopg2")
     )
-    if db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
-
-    target_engine = create_engine(db_url)
 
     try:
         if not detect_needs_migration(target_engine):
@@ -147,10 +154,8 @@ async def check_and_migrate_legacy():
             total = sum(len(rows) for rows in data.values())
             logger.info(f"Legacy data migration completed: {total} rows migrated")
 
-            import shutil
-
-            shutil.copy("token_speed.db", "token_speed.db.migrated")
-            logger.info("Legacy SQLite backed up to token_speed.db.migrated")
+            shutil.move("token_speed.db", "token_speed.db.migrated")
+            logger.info("Legacy SQLite moved to token_speed.db.migrated")
         else:
             logger.info("No data found in legacy database")
     finally:
