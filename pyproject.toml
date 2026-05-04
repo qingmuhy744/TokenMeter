@@ -38,7 +38,6 @@ concurrency = ["greenlet", "thread"]
 omit = [
     "backend/cli.py",
     "backend/seed_data.py",
-    "backend/migrations/*",
     "backend/tests/*",
 ]
 
