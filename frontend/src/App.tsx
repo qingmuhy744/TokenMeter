@@ -137,7 +137,77 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border/50 mx-3">
-          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors">
+          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors md:hidden">
+            <button
+              onClick={toggleLang}
+              className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+            >
+              <Globe className="size-3" />
+              {i18n.language === "zh" ? "EN" : "中文"}
+            </button>
+            <div className="relative group">
+              <button
+                className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+              >
+                {theme === 'system' ? (
+                  resolvedTheme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />
+                ) : theme === 'dark' ? (
+                  <Sun className="size-3" />
+                ) : (
+                  <Moon className="size-3" />
+                )}
+                {theme === 'system' ? t('theme.auto') : theme === 'dark' ? t('theme.light') : t('theme.dark')}
+              </button>
+              <div className="absolute bottom-full left-0 mb-1 w-28 bg-sidebar border border-sidebar-border rounded-lg shadow-lg overflow-hidden hidden group-hover:block">
+                <button
+                  onClick={() => setTheme('system')}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                    theme === 'system'
+                      ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                      : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                  )}
+                >
+                  <Monitor className="size-3" />
+                  {t('theme.auto')}
+                </button>
+                <button
+                  onClick={() => setTheme('light')}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                    theme === 'light'
+                      ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                      : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                  )}
+                >
+                  <Moon className="size-3" />
+                  {t('theme.light')}
+                </button>
+                <button
+                  onClick={() => setTheme('dark')}
+                  className={cn(
+                    "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                    theme === 'dark'
+                      ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                      : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                  )}
+                >
+                  <Sun className="size-3" />
+                  {t('theme.dark')}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between px-2 py-2 mt-1 border-t border-sidebar-border/30 pt-2 md:hidden">
+            <span className="text-xs font-medium text-sidebar-foreground/60">{user?.username}</span>
+            <button
+              onClick={logout}
+              className="size-6 flex items-center justify-center rounded-lg text-sidebar-foreground/40 hover:text-red hover:bg-red/10 transition-colors"
+            >
+              <LogOut className="size-3.5" />
+            </button>
+          </div>
+          <div className="hidden md:flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleLang}
