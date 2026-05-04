@@ -152,13 +152,13 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
 
       {chartData.length > 1 && (
           <Card className="border border-border shadow-sm">
-          <CardHeader className="border-b border-border/50 pb-4 flex flex-row items-center justify-between space-y-0 bg-muted/20">
+          <CardHeader className="border-b border-border/50 pb-3 flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base font-heading font-semibold text-foreground/90">
               {t("history.trend")} <span className="text-xs font-medium text-muted-foreground/60 ml-2">(Last 24 Hours)</span>
             </CardTitle>
             <Badge variant="outline" className="text-[10px] uppercase font-bold text-muted-foreground/50 bg-card border-white/10">Real-time Data</Badge>
           </CardHeader>
-          <CardContent className="pt-8">
+          <CardContent className="pt-5">
             <ResponsiveContainer width="100%" height={350}>
               <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <XAxis 

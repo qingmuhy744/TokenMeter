@@ -478,7 +478,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
 
       {/* Desktop Table View */}
       <Card className="hidden sm:block overflow-hidden border border-white/5 bg-card shadow-md rounded-2xl">
-        <CardHeader className="bg-muted/20 border-b border-white/5 py-5 flex flex-row items-center justify-between space-y-0 px-6">
+        <CardHeader className="border-b border-border/50 py-4 flex flex-row items-center justify-between space-y-0 px-6">
           <div>
             <CardTitle className="text-lg font-heading font-bold tracking-tight text-foreground">
               {t("matrix.performanceMatrix", { days })}
