@@ -111,7 +111,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
         <div className="flex items-center justify-between">
           <div className="flex gap-4">
             <Select value={selectedPlan} onValueChange={(v) => { setSelectedPlan(v ?? "all"); setPage(1); }}>
-              <SelectTrigger className="w-[280px] rounded-xl border-white/10 bg-card font-medium text-foreground/80">
+              <SelectTrigger className="w-[280px] rounded-xl border-border bg-card font-medium text-foreground/80 shadow-sm">
                 <SelectValue placeholder={t("history.allPlans")}>
                   {(value: string | null) =>
                     value === "all" || !value
@@ -120,7 +120,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                   }
                 </SelectValue>
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-white/10">
+              <SelectContent className="rounded-xl border-border shadow-md">
                 <SelectItem value="all" className="font-medium">{t("history.allPlans")}</SelectItem>
                 {plans.map((p) => (<SelectItem key={p.id} value={String(p.id)} className="font-medium">{p.name}</SelectItem>))}
               </SelectContent>
@@ -137,7 +137,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
             { label: `${statsDays}d P95 TTFT`, value: stats.p95_ttft_ms?.toFixed(0) || '-', suffix: 'ms' },
             { label: 'Total Tests', value: stats.count, suffix: '' },
           ].map((item, i) => (
-            <Card key={i}>
+            <Card key={i} className="border border-border shadow-sm">
               <CardContent className="pt-6">
                 <p className="text-[10px] text-muted-foreground/70 uppercase font-bold tracking-widest mb-1">{item.label}</p>
                 <p className="text-3xl font-bold text-foreground font-heading tracking-tight">
@@ -151,8 +151,8 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       )}
 
       {chartData.length > 1 && (
-        <Card>
-          <CardHeader className="border-b border-white/5 pb-4 flex flex-row items-center justify-between space-y-0 bg-muted/20">
+          <Card className="border border-border shadow-sm">
+          <CardHeader className="border-b border-border/50 pb-4 flex flex-row items-center justify-between space-y-0 bg-muted/20">
             <CardTitle className="text-base font-heading font-semibold text-foreground/90">
               {t("history.trend")} <span className="text-xs font-medium text-muted-foreground/60 ml-2">(Last 24 Hours)</span>
             </CardTitle>
@@ -206,7 +206,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       <div className="md:hidden space-y-4">
         {results.items.length > 0 ? (
           results.items.map((r: TestResult) => (
-            <Card key={r.id} className="p-4">
+            <Card key={r.id} className="p-4 border border-border shadow-sm">
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground/90">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</h3>
@@ -250,61 +250,61 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
             </Card>
           ))
         ) : (
-          <Card className="p-8">
+          <Card className="p-8 border border-border shadow-sm">
             <p className="text-center text-muted-foreground/50 text-sm font-medium">{t("history.noResults")}</p>
           </Card>
         )}
       </div>
 
       {/* Desktop Table View */}
-      <Card className="hidden md:block overflow-hidden">
+      <Card className="hidden md:block border border-border shadow-sm overflow-hidden">
         <div className="w-full max-h-[700px] overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
           <Table className="w-full min-w-[1000px] border-separate border-spacing-0">
-            <TableHeader className="bg-muted/30 sticky top-0 z-10">
-              <TableRow className="hover:bg-transparent border-b border-white/5">
-                <TableHead className="py-4 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.time")}</TableHead>
-                <TableHead className="py-4 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.plan")}</TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
-                  <span title={t("history.ttftDef")} className="border-b border-dashed border-white/20 cursor-help">
+            <TableHeader className="bg-muted/40 sticky top-0 z-10">
+              <TableRow className="hover:bg-transparent border-b border-border/50">
+                <TableHead className="py-2.5 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.time")}</TableHead>
+                <TableHead className="py-2.5 px-6 text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.plan")}</TableHead>
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
+                  <span title={t("history.ttftDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.ttftMs")}
                   </span>
                 </TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
-                  <span title={t("history.thinkTimeDef")} className="border-b border-dashed border-white/20 cursor-help">
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
+                  <span title={t("history.thinkTimeDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.thinkTimeMs")}
                   </span>
                 </TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-foreground/90 tracking-tight uppercase tracking-widest bg-muted/20">
-                  <span title={t("history.tpsOverallDef")} className="border-b border-dashed border-white/20 cursor-help">
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-foreground/90 tracking-tight uppercase tracking-widest bg-muted/20">
+                  <span title={t("history.tpsOverallDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.tpsOverall")}
                   </span>
                 </TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
-                  <span title={t("history.tpsGenerateDef")} className="border-b border-dashed border-white/20 cursor-help">
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">
+                  <span title={t("history.tpsGenerateDef")} className="border-b border-dashed border-border/50 cursor-help">
                     {t("history.tpsGenerate")}
                   </span>
                 </TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.tokens")}</TableHead>
-                <TableHead className="py-4 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.thinkingTokens")}</TableHead>
-                <TableHead className="py-4 px-4 text-center text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.status")}</TableHead>
-                {!isPublic && <TableHead className="py-4 px-4 text-right w-[60px]"></TableHead>}
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.tokens")}</TableHead>
+                <TableHead className="py-2.5 px-4 text-right text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.thinkingTokens")}</TableHead>
+                <TableHead className="py-2.5 px-4 text-center text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest">{t("history.status")}</TableHead>
+                {!isPublic && <TableHead className="py-2.5 px-4 text-right w-[60px]"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {results.items.length > 0 ? (
                 results.items.map((r: TestResult) => (
-                  <TableRow key={r.id} className="hover:bg-muted/20 transition-colors group border-b border-white/5 last:border-0">
-                    <TableCell className="py-4 px-6 text-[11px] font-medium text-muted-foreground/70 font-mono">{new Date(r.created_at).toLocaleString()}</TableCell>
-                    <TableCell className="py-4 px-6 font-semibold text-foreground/90 whitespace-nowrap">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
-                    <TableCell className={cn("py-4 px-4 text-right font-bold text-foreground/90", r.ttft_ms && r.ttft_ms > 1000 ? "text-amber" : "")}>
+                  <TableRow key={r.id} className="hover:bg-muted/20 transition-colors group border-b border-border/30 last:border-0">
+                    <TableCell className="py-2.5 px-6 text-[11px] font-medium text-muted-foreground/70 font-mono">{new Date(r.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="py-2.5 px-6 font-semibold text-foreground/90 whitespace-nowrap">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
+                    <TableCell className={cn("py-2.5 px-4 text-right font-bold text-foreground/90", r.ttft_ms && r.ttft_ms > 1000 ? "text-amber" : "")}>
                       {r.ttft_ms?.toFixed(0)}<span className="text-[10px] font-medium text-muted-foreground ml-1 font-mono">ms</span>
                     </TableCell>
-                    <TableCell className="py-4 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.think_time_ms?.toFixed(0)}<span className="text-[9px] ml-0.5 opacity-50">ms</span></TableCell>
-                    <TableCell className="py-4 px-4 text-right font-bold text-foreground/90 bg-muted/10">{r.tps_overall?.toFixed(1)}</TableCell>
-                    <TableCell className="py-4 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.tps_generate?.toFixed(1)}</TableCell>
-                    <TableCell className="py-4 px-4 text-right font-semibold text-foreground/80 font-mono text-sm">{r.total_tokens}</TableCell>
-                    <TableCell className="py-4 px-4 text-right font-medium text-muted-foreground/60 font-mono text-xs">{r.thinking_tokens || '-'}</TableCell>
-                    <TableCell className="py-4 px-4 text-center">
+                    <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.think_time_ms?.toFixed(0)}<span className="text-[9px] ml-0.5 opacity-50">ms</span></TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-bold text-foreground/90 bg-muted/10">{r.tps_overall?.toFixed(1)}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.tps_generate?.toFixed(1)}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-semibold text-foreground/80 font-mono text-sm">{r.total_tokens}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 font-mono text-xs">{r.thinking_tokens || '-'}</TableCell>
+                    <TableCell className="py-2.5 px-4 text-center">
                       <div className="flex justify-center">
                         {r.error ? (
                           <span className="h-2 w-2 rounded-full bg-red shadow-[0_0_8px_rgba(239,68,68,0.4)]" title={r.error} />
@@ -314,7 +314,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                       </div>
                     </TableCell>
                     {!isPublic && (
-                      <TableCell className="py-4 px-4 text-right">
+                      <TableCell className="py-2.5 px-4 text-right">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -329,7 +329,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={isPublic ? 9 : 10} className="text-center py-16 text-muted-foreground/50 text-sm font-medium">
+                  <TableCell colSpan={isPublic ? 9 : 10} className="text-center py-12 text-muted-foreground/50 text-sm font-medium">
                     {t("history.noResults")}
                   </TableCell>
                 </TableRow>
