@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import MatrixTable from "@/components/MatrixTable";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, Monitor } from "lucide-react";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -70,7 +70,7 @@ function formatTime(iso: string): string {
 
 export default function Status() {
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [data, setData] = useState<StatusData | null>(null);
   const [range, setRange] = useState("24h");
   const [loading, setLoading] = useState(true);
@@ -204,9 +204,55 @@ export default function Status() {
               <Link to="/"><Button variant="outline" size="sm">{t("nav.dashboard")}</Button></Link>
               <Link to="/history"><Button variant="outline" size="sm">{t("nav.history")}</Button></Link>
               <div className="w-px h-5 bg-border mx-1" />
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
-                {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
-              </Button>
+              <div className="relative group">
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  {theme === 'system' ? (
+                    resolvedTheme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />
+                  ) : theme === 'dark' ? (
+                    <Sun className="size-3.5" />
+                  ) : (
+                    <Moon className="size-3.5" />
+                  )}
+                </Button>
+                <div className="absolute top-full right-0 mt-1 w-28 bg-popover border border-border rounded-lg shadow-lg overflow-hidden hidden group-hover:block z-50">
+                  <button
+                    onClick={() => setTheme('system')}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'system'
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    )}
+                  >
+                    <Monitor className="size-3" />
+                    {t('theme.auto')}
+                  </button>
+                  <button
+                    onClick={() => setTheme('light')}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'light'
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    )}
+                  >
+                    <Moon className="size-3" />
+                    {t('theme.light')}
+                  </button>
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'dark'
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                    )}
+                  >
+                    <Sun className="size-3" />
+                    {t('theme.dark')}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -276,15 +322,15 @@ export default function Status() {
                   {plan.latest_result ? (
                     <>
                       <div className="grid grid-cols-3 gap-2 text-sm">
-                        <div>
+                        <div title={t("history.ttftDef")}>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t("history.ttftMs")}</p>
                           <p className="text-lg font-semibold font-mono">{plan.latest_result.ttft_ms ?? "—"}ms</p>
                         </div>
-                        <div>
+                        <div title={t("history.tpsOverallDef")}>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t("history.tpsOverall")}</p>
                           <p className="text-lg font-semibold font-mono">{plan.latest_result.tps_overall ?? "—"}</p>
                         </div>
-                        <div>
+                        <div title={t("history.tpsGenerateDef")}>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">{t("history.tpsGenerate")}</p>
                           <p className="text-lg font-semibold font-mono">{plan.latest_result.tps_generate ?? "—"}</p>
                         </div>
@@ -332,16 +378,19 @@ export default function Status() {
                     variant={metric === 'tps_overall' ? "default" : "ghost"} 
                     size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
                     onClick={() => setMetric('tps_overall')}
+                    title={t("history.tpsOverallDef")}
                   >{t("history.tpsOverall")}</Button>
                   <Button 
                     variant={metric === 'tps_generate' ? "default" : "ghost"} 
                     size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
                     onClick={() => setMetric('tps_generate')}
+                    title={t("history.tpsGenerateDef")}
                   >{t("history.tpsGenerate")}</Button>
                   <Button 
                     variant={metric === 'ttft_ms' ? "default" : "ghost"} 
                     size="sm" className="h-7 text-[10px] px-3 uppercase font-bold"
                     onClick={() => setMetric('ttft_ms')}
+                    title={t("history.ttftDef")}
                   >{t("history.ttftMs")}</Button>
                 </div>
                 {selectedIds.length > 0 && (
