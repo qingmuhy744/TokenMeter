@@ -1,13 +1,11 @@
 import time
 import json
 import asyncio
-import logging
 import httpx
+from loguru import logger
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from urllib.parse import urlparse
-
-logger = logging.getLogger(__name__)
 
 
 @dataclass

@@ -1,8 +1,8 @@
 import json
-import logging
 import asyncio
 import random
 
+from loguru import logger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from sqlalchemy import select
@@ -14,7 +14,6 @@ from backend.models import TokenPlan, TestResult
 from backend.services.speed_test import SpeedTester
 from backend.config import settings
 
-logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()
 
 # 全局计数器，用于倍率判定

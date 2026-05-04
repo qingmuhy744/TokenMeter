@@ -1,12 +1,11 @@
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-import logging
 import time
 
-from backend.config import settings
+from loguru import logger
 
-logger = logging.getLogger(__name__)
+from backend.config import settings
 
 engine = create_async_engine(
     settings.database_url, echo=False, pool_size=10, max_overflow=20, pool_timeout=60

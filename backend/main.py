@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
+from loguru import logger
 from pathlib import Path
 
 import alembic.command
@@ -23,70 +24,50 @@ from backend.services.scheduler import (
     sync_scheduled_jobs,
 )
 
-# In-memory log buffer (last 500 lines)
 log_buffer: deque[str] = deque(maxlen=500)
 
-
-class BufferHandler(logging.Handler):
-    def emit(self, record):
-        log_buffer.append(self.format(record))
+LOG_FORMAT = "{time:YYYY-MM-DD HH:mm:ss} {level} [{name}] {message}"
 
 
-class LocalTimeFormatter(logging.Formatter):
-    def formatTime(self, record, datefmt=None):
-        import time
+class InterceptHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+        frame, depth = logging.currentframe(), 2
+        while frame and frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
-        ct = time.localtime(record.created)
-        if datefmt:
-            s = time.strftime(datefmt, ct)
-        else:
-            s = time.strftime("%Y-%m-%d %H:%M:%S", ct)
-        return s
+
+def sink_buffer(message):
+    log_buffer.append(message)
 
 
 def setup_logging():
-    fmt = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
-    datefmt = "%Y-%m-%d %H:%M:%S"
+    logger.remove()
 
-    root = logging.getLogger()
-    root.setLevel(logging.INFO)
+    logger.add(
+        sink_buffer,
+        format=LOG_FORMAT,
+        level="INFO",
+    )
+    logger.add(
+        lambda m: print(m, end=""),
+        format=LOG_FORMAT,
+        level="INFO",
+    )
 
-    # Console handler
-    console = logging.StreamHandler()
-    console.setFormatter(LocalTimeFormatter(fmt, datefmt=datefmt))
-    root.addHandler(console)
-
-    # Buffer handler for API access
-    buf = BufferHandler()
-    buf.setFormatter(LocalTimeFormatter(fmt, datefmt=datefmt))
-    root.addHandler(buf)
-
-    # Re-enable loggers disabled by uvicorn's dictConfig(disable_existing_loggers=True)
-    for name in list(logging.root.manager.loggerDict):
-        logger_obj = logging.getLogger(name)
-        if hasattr(logger_obj, "disabled"):
-            logger_obj.disabled = False
-
-
-logger = logging.getLogger(__name__)
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Configure logging after uvicorn initializes (uvicorn's dictConfig disables existing loggers)
     setup_logging()
-
-    root = logging.getLogger()
-    logger.info(
-        "DEBUG: root handlers=%s level=%s",
-        [(type(h).__name__, getattr(h.stream, "name", "?")) for h in root.handlers],
-        root.level,
-    )
-    logger.info(
-        "DEBUG: backend.main disabled=%s propagate=%s",
-        logger.disabled,
-        logger.propagate,
-    )
 
     alembic_cfg = alembic.config.Config("alembic.ini")
     alembic.command.upgrade(alembic_cfg, "head")
@@ -100,9 +81,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="TokenMeter", lifespan=lifespan)
-app.add_middleware(
-    SessionMiddleware, secret_key=settings.SECRET_KEY, max_age=86400 * 7
-)  # 7 days
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, max_age=86400 * 7)
 app.include_router(auth_router)
 app.include_router(plans_router)
 app.include_router(results_router)
@@ -117,11 +96,10 @@ async def get_logs(request: Request, limit: int = 100):
     return {"lines": lines}
 
 
-# Serve frontend static files with SPA fallback
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 if frontend_dist.exists():
     index_file = frontend_dist / "index.html"
-    # Mount static assets (JS, CSS, images) under /assets
+
     app.mount(
         "/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets"
     )
@@ -132,20 +110,14 @@ if frontend_dist.exists():
             return FileResponse(str(index_file))
 
         try:
-            # Safely resolve paths using pathlib to prevent directory traversal.
             base_path = frontend_dist.resolve()
 
-            # Strip leading slashes to prevent pathlib from treating full_path as an absolute path,
-            # which would cause it to override base_path.
             safe_path = full_path.lstrip("/")
             target_path = (base_path / safe_path).resolve()
 
-            # The critical check: is_relative_to ensures it hasn't escaped base_path
             if target_path.is_relative_to(base_path) and target_path.is_file():
                 return FileResponse(str(target_path))
         except (ValueError, RuntimeError):
-            # Ignore resolution errors (e.g., malformed paths)
             pass
 
-        # Fallback to index.html for all SPA routes
         return FileResponse(str(index_file))

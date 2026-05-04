@@ -1,10 +1,8 @@
 """Migration helper functions for legacy SQLite data migration."""
 
-import logging
 import os
+from loguru import logger
 from sqlalchemy import create_engine, text, select, table as sa_table, column
-
-logger = logging.getLogger(__name__)
 
 
 def get_legacy_db_url() -> str | None:
