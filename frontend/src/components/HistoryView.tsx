@@ -257,7 +257,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
       </div>
 
       {/* Desktop Table View */}
-      <Card className="hidden md:block border border-border shadow-sm overflow-hidden">
+      <div className="hidden md:block border border-border rounded-xl shadow-sm overflow-hidden">
         <div className="w-full max-h-[700px] overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
           <Table className="w-full min-w-[1000px] border-separate border-spacing-0">
             <TableHeader className="bg-muted/40 sticky top-0 z-10">
@@ -337,7 +337,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
             </TableBody>
           </Table>
         </div>
-      </Card>
+      </div>
 
       <div className="flex items-center justify-between px-2 pt-2">
         <span className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-widest font-mono">{t("history.total")}: {results.total}</span>

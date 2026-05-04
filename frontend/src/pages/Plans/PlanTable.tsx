@@ -167,8 +167,8 @@ export const PlanTable = ({ planTree, onTest, onEdit, onDelete }: PlanTableProps
             {node.is_active ? t("dashboard.active") : t("dashboard.inactive")}
           </Badge>
         </TableCell>
-        <TableCell className="py-3 text-right">
-          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <TableCell className="py-3 text-center">
+          <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <Tooltip>
               <TooltipTrigger
                 render={
@@ -227,7 +227,7 @@ export const PlanTable = ({ planTree, onTest, onEdit, onDelete }: PlanTableProps
               <TableHead className="text-muted-foreground font-semibold text-xs uppercase tracking-wider h-11">{t("plans.model")}</TableHead>
               <TableHead className="text-muted-foreground font-semibold text-xs uppercase tracking-wider h-11">{t("plans.interval")}</TableHead>
               <TableHead className="text-muted-foreground font-semibold text-xs uppercase tracking-wider h-11">{t("plans.active")}</TableHead>
-              <TableHead className="text-right text-muted-foreground font-semibold text-xs uppercase tracking-wider h-11">{t("plans.actions")}</TableHead>
+              <TableHead className="text-center text-muted-foreground font-semibold text-xs uppercase tracking-wider h-11">{t("plans.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
