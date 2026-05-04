@@ -57,7 +57,7 @@ const getHeatmapColor = (value: number | null, type: 'ttft' | 'tps' | 'degradati
   if (value === null) return '';
   
   const green = "bg-green/10 text-green font-medium";
-  const yellow = "bg-amber/10 text-amber font-medium";
+  const yellow = "bg-primary/10 text-primary font-medium";
   const red = "bg-red/10 text-red font-medium";
 
   if (type === 'ttft') {
@@ -177,7 +177,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       cell: info => (
         <div className="flex justify-center">
           <div className={cn(
-            "w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.05)]",
+            "w-3 h-3 rounded-full shadow-[0_0_8px_color-mix(in_oklch,var(--color-foreground)_5%,transparent)]",
             info.getValue() === "success" ? "bg-emerald-500" :
             info.getValue() === "error" ? "bg-rose-500" : "bg-muted"
           )} title={info.getValue() || 'unknown'} />
@@ -406,7 +406,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             className={cn(
               "rounded-2xl border p-5 shadow-sm transition-all active:scale-[0.98]",
               selectedIds.includes(row.original.plan_id)
-                ? "border-amber/40 bg-amber/5"
+                ? "border-primary/40 bg-primary/5"
                 : "border-border/50 bg-card"
             )}
             onClick={() => onToggleSelection?.(row.original.plan_id)}
@@ -436,7 +436,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                 </div>
               </div>
               {selectedIds.includes(row.original.plan_id) && (
-                <div className="size-6 rounded-full bg-primary flex items-center justify-center shadow-glow-amber">
+                <div className="size-6 rounded-full bg-primary flex items-center justify-center shadow-[0_0_12px_color-mix(in_oklch,var(--color-primary)_30%,transparent)]">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-primary-foreground">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
@@ -470,7 +470,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                   </span>
                 )}
               </div>
-              <Sparkline data={row.original.sparkline} className="w-full h-12 text-amber" />
+              <Sparkline data={row.original.sparkline} className="w-full h-12 text-primary" />
             </div>
           </div>
         ))}
@@ -509,7 +509,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       key={header.id} 
                       className={cn(
                         "h-9 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors relative",
-                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0"
+                        index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_color-mix(in_oklch,var(--color-foreground)_10%,transparent)] border-l-0"
                       )}
                       style={{ width: header.getSize() }}
                     >
@@ -543,7 +543,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     className={cn(
                       "group transition-colors border-b border-border/50 last:border-0 text-sm cursor-pointer",
                       isSelected 
-                        ? "bg-muted hover:bg-muted/80 border-l-2 border-l-amber" 
+                        ? "bg-muted hover:bg-muted/80 border-l-2 border-l-primary" 
                         : "hover:bg-muted/50"
                     )}
                     onClick={() => onToggleSelection?.(row.original.plan_id)}
@@ -554,7 +554,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                         className={cn(
                           "px-2 py-1.5 align-middle transition-colors",
                           index === 0 && cn(
-                            "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0",
+                            "sticky left-0 z-20 shadow-[4px_0_12px_-6px_color-mix(in_oklch,var(--color-foreground)_15%,transparent)] border-l-0",
                             isSelected ? "bg-muted" : "bg-card"
                           )
                         )}

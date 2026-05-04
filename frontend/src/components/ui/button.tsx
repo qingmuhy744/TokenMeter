@@ -11,7 +11,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-sm hover:shadow-glow-amber hover:brightness-110 [a]:hover:bg-primary/80",
+          "bg-primary text-primary-foreground shadow-sm hover:shadow-[0_0_20px_color-mix(in_oklch,var(--color-primary)_15%,transparent)] hover:brightness-110 [a]:hover:bg-primary/80",
         outline:
           "border-border/50 bg-transparent text-foreground/80 hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
         secondary:
@@ -20,7 +20,7 @@ export const buttonVariants = cva(
           "text-foreground/70 hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
         destructive:
           "bg-red/10 text-red hover:bg-red/20 focus-visible:border-red/40 focus-visible:ring-red/20",
-        link: "text-amber underline-offset-4 hover:underline",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default:

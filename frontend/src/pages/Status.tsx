@@ -193,7 +193,7 @@ export default function Status() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight">{t("status.title")}</h1>
               <div className="flex items-center gap-2 mt-2">
-                <div className={`h-2.5 w-2.5 rounded-full ${allOperational ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"}`} />
+                <div className={`h-2.5 w-2.5 rounded-full ${allOperational ? "bg-green shadow-[0_0_8px_color-mix(in_oklch,var(--color-green)_50%,transparent)]" : "bg-red shadow-[0_0_8px_color-mix(in_oklch,var(--color-red)_50%,transparent)]"}`} />
                 <span className="text-sm text-muted-foreground font-medium">
                   {allOperational ? t("status.allSystemsOperational") : t("status.someSystemsIssues")}
                 </span>

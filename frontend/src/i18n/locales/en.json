@@ -135,7 +135,8 @@
     "night": "Night",
     "delete": "Delete",
     "deleteConfirm": "Are you sure you want to delete this test record?",
-    "noResults": "No results found"
+    "noResults": "No results found",
+    "realTimeData": "Real-time Data"
   },
   "settings": {
     "title": "Settings",

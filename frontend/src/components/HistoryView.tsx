@@ -156,7 +156,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
             <CardTitle className="text-base font-heading font-semibold text-foreground/90">
               {t("history.trend")} <span className="text-xs font-medium text-muted-foreground/60 ml-2">(Last 24 Hours)</span>
             </CardTitle>
-            <Badge variant="outline" className="text-[10px] uppercase font-bold text-muted-foreground/50 bg-card border-border/50">Real-time Data</Badge>
+            <Badge variant="outline" className="text-[10px] uppercase font-bold text-muted-foreground/50 bg-card border-border/50">{t("history.realTimeData")}</Badge>
           </CardHeader>
           <CardContent className="pt-5">
             <ResponsiveContainer width="100%" height={350}>
@@ -188,14 +188,14 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     x1={area.x1}
                     x2={area.x2}
                     yAxisId="left"
-                    fill={area.isDay ? "oklch(0.6399 0.093 224.37 / 0.06)" : "oklch(0.5 0.1 240 / 0.06)"}
+                    fill={area.isDay ? "color-mix(in oklch, var(--color-primary) 6%, transparent)" : "color-mix(in oklch, var(--color-cyan) 6%, transparent)"}
                     fillOpacity={1}
                   />
                 ))}
                 <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="var(--color-primary)" strokeWidth={3} name={t("history.tpsOverall")} dot={false} connectNulls />
                 <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="var(--color-green)" strokeWidth={2} strokeDasharray="5 5" name={t("history.tpsGenerate")} dot={false} connectNulls />
                 <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="var(--color-cyan)" strokeWidth={3} name={t("history.ttftMs")} dot={false} connectNulls />
-                <Line yAxisId="right" type="monotone" dataKey="think" stroke="oklch(0.55 0.1 85)" strokeWidth={1.5} strokeDasharray="3 3" name={t("history.thinkTimeMs")} dot={false} connectNulls />
+                <Line yAxisId="right" type="monotone" dataKey="think" stroke="var(--color-muted-foreground)" strokeWidth={1.5} strokeDasharray="3 3" name={t("history.thinkTimeMs")} dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -214,9 +214,9 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                 </div>
                 <div className="flex items-center gap-2">
                   {r.error ? (
-                    <span className="h-2 w-2 rounded-full bg-red shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
+                    <span className="h-2 w-2 rounded-full bg-red shadow-[0_0_8px_color-mix(in_oklch,var(--color-red)_40%,transparent)]" />
                   ) : (
-                    <span className="h-2 w-2 rounded-full bg-green shadow-[0_0_8px_rgba(34,197,94,0.4)]" />
+                    <span className="h-2 w-2 rounded-full bg-green shadow-[0_0_8px_color-mix(in_oklch,var(--color-green)_40%,transparent)]" />
                   )}
                   {!isPublic && (
                     <Button
@@ -233,7 +233,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-0.5">
                   <p className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-widest">{t("history.ttftMs")}</p>
-                  <p className={cn("text-lg font-bold text-foreground", r.ttft_ms && r.ttft_ms > 1000 ? "text-amber" : "")}>
+                  <p className={cn("text-lg font-bold text-foreground", r.ttft_ms && r.ttft_ms > 1000 ? "text-red" : "")}>
                     {r.ttft_ms?.toFixed(0)}<span className="text-xs font-medium text-muted-foreground ml-1">ms</span>
                   </p>
                 </div>
@@ -296,7 +296,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                   <TableRow key={r.id} className="hover:bg-muted/50 transition-colors group border-b border-border/30 last:border-0">
                     <TableCell className="py-2.5 px-6 text-[11px] font-medium text-muted-foreground/70 font-mono">{new Date(r.created_at).toLocaleString()}</TableCell>
                     <TableCell className="py-2.5 px-6 font-semibold text-foreground/90 whitespace-nowrap">{r.plan_name || plans.find((p) => p.id === r.plan_id)?.name || `Plan ${r.plan_id}`}</TableCell>
-                    <TableCell className={cn("py-2.5 px-4 text-right font-bold text-foreground/90", r.ttft_ms && r.ttft_ms > 1000 ? "text-amber" : "")}>
+                    <TableCell className={cn("py-2.5 px-4 text-right font-bold text-foreground/90", r.ttft_ms && r.ttft_ms > 1000 ? "text-red" : "")}>
                       {r.ttft_ms?.toFixed(0)}<span className="text-[10px] font-medium text-muted-foreground ml-1 font-mono">ms</span>
                     </TableCell>
                     <TableCell className="py-2.5 px-4 text-right font-medium text-muted-foreground/60 text-xs">{r.think_time_ms?.toFixed(0)}<span className="text-[9px] ml-0.5 opacity-50">ms</span></TableCell>

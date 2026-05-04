@@ -176,7 +176,7 @@ export const PlanTable = ({ planTree, onTest, onEdit, onDelete }: PlanTableProps
                     {node.parent_id ? (
                       <Play className="h-3.5 w-3.5 text-muted-foreground" />
                     ) : (
-                      <PlayCircle className="h-3.5 w-3.5 text-amber" />
+                      <PlayCircle className="h-3.5 w-3.5 text-primary" />
                     )}
                   </Button>
                 }

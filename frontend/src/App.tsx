@@ -74,7 +74,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       )}>
         <div className="p-5 flex items-center justify-between border-b border-sidebar-border/50">
           <div className="flex items-center gap-2.5">
-            <div className="size-7 rounded-lg bg-primary flex items-center justify-center shadow-glow-amber">
+            <div className="size-7 rounded-lg bg-primary flex items-center justify-center shadow-[0_0_12px_color-mix(in_oklch,var(--color-primary)_30%,transparent)]">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>

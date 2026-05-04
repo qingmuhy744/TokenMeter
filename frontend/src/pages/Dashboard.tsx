@@ -44,7 +44,7 @@ export default function Dashboard() {
         {plans.map((plan, i) => (
           <Card
             key={plan.id}
-            className="hover:ring-amber/20 hover:shadow-glow-amber transition-all duration-300"
+            className="hover:ring-primary/20 hover:shadow-[0_0_20px_color-mix(in_oklch,var(--color-primary)_15%,transparent)] transition-all duration-300"
             style={{ animationDelay: `${0.15 + i * 0.05}s` }}
           >
             <CardHeader className="pb-3 border-b border-border/50">

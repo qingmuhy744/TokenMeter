@@ -134,7 +134,8 @@
     "night": "夜间",
     "delete": "删除",
     "deleteConfirm": "确定要删除这条测试记录吗？",
-    "noResults": "没有找到结果"
+    "noResults": "没有找到结果",
+    "realTimeData": "实时数据"
   },
   "settings": {
     "title": "系统设置",
