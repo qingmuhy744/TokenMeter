@@ -69,7 +69,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     alembic_cfg = alembic.config.Config("alembic.ini")
-    alembic.command.upgrade(alembic_cfg, "head")
+    from backend.alembic.migrations_helper import run_alembic_migration
+
+    run_alembic_migration(alembic_cfg)
 
     from backend.alembic.migrations_helper import check_and_migrate_legacy
 

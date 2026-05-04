@@ -7,6 +7,23 @@ from sqlalchemy import create_engine, text, select, table as sa_table, column
 logger = logging.getLogger(__name__)
 
 
+def run_alembic_migration(alembic_cfg) -> None:
+    """Run Alembic migration, handling legacy databases."""
+    from alembic import command
+
+    try:
+        command.upgrade(alembic_cfg, "head")
+        return
+    except Exception as e:
+        err = str(e)
+        # If tables already exist from old migration system, stamp instead
+        if "already exists" in err.lower() or "duplicatetable" in err.lower():
+            logger.info("Detected existing database from old system, stamping as head")
+            command.stamp(alembic_cfg, "head")
+            return
+        raise
+
+
 def get_legacy_db_url() -> str | None:
     """Get legacy SQLite database URL if file exists."""
     db_path = "token_speed.db"
