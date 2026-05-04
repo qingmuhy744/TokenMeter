@@ -89,6 +89,8 @@ def import_data_to_new_db(target_engine, data: dict):
 
         # Import token_plans
         for row in data.get("token_plans", []):
+            row = dict(row)
+            row["is_active"] = bool(row.get("is_active", 1))
             conn.execute(
                 text("""INSERT INTO token_plans 
                     (id, name, api_type, api_base, api_key, model, prompt, max_tokens, test_count, interval_minutes, is_active, parent_id, multiplier, created_at, updated_at)
@@ -113,7 +115,7 @@ def import_data_to_new_db(target_engine, data: dict):
 
 async def check_and_migrate_legacy():
     """Check for legacy SQLite data and migrate if needed."""
-    from backend.config import settings
+    import os
     from sqlalchemy import create_engine
 
     legacy_url = get_legacy_db_url()
@@ -121,7 +123,13 @@ async def check_and_migrate_legacy():
         logger.info("No legacy SQLite database found, skipping migration")
         return
 
-    target_engine = create_engine(settings.database_url)
+    db_url = os.getenv(
+        "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/postgres"
+    )
+    if db_url.startswith("postgresql://"):
+        db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+    target_engine = create_engine(db_url)
 
     try:
         if not detect_needs_migration(target_engine):
