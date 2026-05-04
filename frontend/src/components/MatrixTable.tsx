@@ -189,7 +189,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columnHelper.accessor("avg_ttft", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.ttftDef")}
         >
@@ -201,7 +201,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
+        <div className={cn("text-center font-mono px-1.5 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
           {info.getValue()?.toFixed(0)}ms
         </div>
       ),
@@ -209,7 +209,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columnHelper.accessor("avg_tps_overall", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.tpsOverallDef")}
         >
@@ -221,7 +221,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+        <div className={cn("text-center font-mono px-1.5 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
           {info.getValue()?.toFixed(1)}
         </div>
       ),
@@ -229,7 +229,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columnHelper.accessor("avg_tps_generate", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.tpsGenerateDef")}
         >
@@ -241,7 +241,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+        <div className={cn("text-center font-mono px-1.5 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
           {info.getValue()?.toFixed(1)}
         </div>
       ),
@@ -249,7 +249,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columnHelper.accessor("night_avg_ttft", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.ttftDef")}
         >
@@ -260,12 +260,12 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
         </div>
       ),
-      cell: info => <div className="text-right font-mono text-muted-foreground">{info.getValue()?.toFixed(0)}ms</div>,
+      cell: info => <div className="text-center font-mono text-muted-foreground">{info.getValue()?.toFixed(0)}ms</div>,
     }),
     columnHelper.accessor("degradation", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("matrix.degradation")}
         >
@@ -279,7 +279,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       cell: info => {
         const val = info.getValue();
         return (
-          <div className={cn("text-right font-mono px-3 py-1.5 rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
+          <div className={cn("text-center font-mono px-1.5 py-1 rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
             {val !== null ? `${(val * 100).toFixed(1)}%` : '-'}
           </div>
         );
@@ -288,7 +288,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columnHelper.accessor("success_rate", {
       header: ({ column }) => (
         <div 
-          className="flex items-center justify-end cursor-pointer select-none gap-1"
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("matrix.success")}
         >
@@ -302,7 +302,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       cell: info => {
         const val = info.getValue();
         return (
-          <div className="text-right font-mono font-medium">
+          <div className="text-center font-mono font-medium">
             {val !== null ? `${(val * 100).toFixed(0)}%` : '-'}
           </div>
         );
@@ -484,7 +484,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     <TableHead 
                       key={header.id} 
                       className={cn(
-                        "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors relative",
+                        "h-12 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors relative",
                         index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0"
                       )}
                       style={{ width: header.getSize() }}
@@ -528,7 +528,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       <TableCell 
                         key={cell.id} 
                         className={cn(
-                          "px-4 py-3 align-middle transition-colors",
+                          "px-2 py-3 align-middle transition-colors",
                           index === 0 && cn(
                             "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0",
                             isSelected ? "bg-muted" : "bg-card"
