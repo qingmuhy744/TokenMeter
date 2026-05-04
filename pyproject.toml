@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "LLM API speed testing tool - measure TTFT and TPS across providers"
 requires-python = ">=3.12"
 dependencies = [
-    "aiosqlite>=0.22.1",
     "alembic>=1.14.0",
     "apscheduler>=3.11.2",
     "asyncpg>=0.31.0",

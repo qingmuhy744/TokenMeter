@@ -33,9 +33,6 @@ def get_url():
     # Convert async URLs to sync for Alembic
     if url.startswith("postgresql+asyncpg://"):
         url = url.replace("postgresql+asyncpg://", "postgresql://", 1)
-    elif url.startswith("sqlite+aiosqlite://"):
-        # Kept for local test compatibility (conftest uses SQLite in-memory)
-        url = url.replace("sqlite+aiosqlite://", "sqlite:///", 1)
     return url
 
 
