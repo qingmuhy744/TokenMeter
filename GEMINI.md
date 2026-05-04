@@ -6,7 +6,7 @@ TokenMeter — LLM API 速度测试工具，测量 TTFT 和 TPS。
 
 ## 技术栈
 
-- 后端: Python 3.12, FastAPI, SQLAlchemy (async), aiosqlite, APScheduler
+- 后端: Python 3.12, FastAPI, SQLAlchemy (async), asyncpg, Alembic, APScheduler
 - 前端: React 19, TypeScript, TailwindCSS v4, shadcn/ui (base-nova), Recharts
 - 包管理: uv (Python), npm (Node)
 - 部署: Docker, docker-compose
@@ -24,31 +24,49 @@ make docker     # 构建 Docker 镜像
 
 ## 数据库
 
-SQLite 文件: `token_speed.db`（.gitignore 已排除）
+- PostgreSQL（通过 `DATABASE_URL` 环境变量配置）
+- Alembic 管理数据库迁移
 
 ### 数据库操作与调试
 
 - **PostgreSQL**: 关于如何通过 SSH 连入并使用 Docker 操作调试数据库（192.168.8.3），请参考本地 `.env` 文件中的注释说明。
 
-测试前备份，测试后恢复：
-```bash
-cp token_speed.db token_speed.db.bak   # 备份
-rm -f token_speed.db && uv run pytest  # 测试（会创建新库）
-cp token_speed.db.bak token_speed.db   # 恢复
-```
-
 当前已配置的 Token Plans：
 - 小米 (mimo-v2.5-pro) — anthropic 格式
 - minimax (MiniMax-M2.7) — anthropic 格式
 
-### 数据库迁移
+### 从旧版迁移
 
-没有使用 Alembic，模型定义即 schema。`backend/migrations/manager.py` 管理：
-- SQLite → PG 自动迁移（PG 为空 + SQLite 文件存在时触发）
-- Schema 版本化迁移（`MIGRATIONS` 列表，支持 `sql` 和 `func` 两种类型）
-- 新安装由 `Base.metadata.create_all` 自动建表，版本直接标记为最新
+旧版本使用 `backend/migrations/manager.py` 手动管理迁移，已迁移到 Alembic。
 
-**重要**：`run_migrations()` 在异步引擎检查 PG 是否为空后，必须 `await db.rollback()` 释放锁，再启动同步迁移引擎执行 TRUNCATE，否则会死锁。
+**迁移步骤：**
+
+1. 确保 PostgreSQL 可用并设置 `DATABASE_URL`：
+   ```bash
+   export DATABASE_URL="postgresql://user:pass@host/dbname"
+   ```
+
+2. 运行 Alembic 升级：
+   ```bash
+   uv run alembic upgrade head
+   ```
+
+3. 如有旧版数据需要迁移，手动导入：
+   ```bash
+   # 从旧 SQLite 导出数据
+   sqlite3 token_speed.db ".dump" > migration.sql
+
+   # 导入 PostgreSQL（需手动调整语法）
+   psql $DATABASE_URL -f migration.sql
+   ```
+
+**Alembic 命令：**
+```bash
+uv run alembic upgrade head       # 升级到最新
+uv run alembic downgrade -1       # 降一级
+uv run alembic history --verbose  # 查看历史
+uv run alembic revision --autogenerate -m "description"  # 创建新迁移
+```
 
 ## 分支策略
 

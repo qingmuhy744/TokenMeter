@@ -98,6 +98,40 @@ uv run alembic revision --autogenerate -m "description"
 uv run alembic history --verbose
 ```
 
+### 从旧版本迁移
+
+如果你正在使用旧版本（使用 `backend/migrations/manager.py` 手动管理迁移），按以下步骤迁移到 Alembic：
+
+**1. 备份现有数据**
+
+```bash
+# 方式一：PostgreSQL 导出
+pg_dump -h <host> -U <user> -d <dbname> > backup.sql
+
+# 方式二：SQLite 导出（如果仍有 sqlite 文件）
+sqlite3 token_speed.db ".dump" > backup.sql
+```
+
+**2. 配置 PostgreSQL 并运行迁移**
+
+```bash
+# 设置数据库连接
+export DATABASE_URL="postgresql://user:pass@host/dbname"
+
+# 运行 Alembic 升级（首次会创建所有表）
+uv run alembic upgrade head
+```
+
+**3. 导入旧数据（可选）**
+
+如果需要保留旧数据，使用 `psql` 导入备份文件。注意手动调整 SQL 语法差异（如 SQLite 的 `AUTOINCREMENT` vs PostgreSQL 的 `SERIAL`，布尔值 `0/1` vs `true/false` 等）。
+
+**4. 验证**
+
+```bash
+uv run alembic current  # 确认当前版本
+```
+
 ### 重置管理员密码
 
 忘记密码？使用内置的 `tm` 工具一行命令搞定：
