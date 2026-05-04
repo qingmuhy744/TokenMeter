@@ -35,7 +35,7 @@
     "day": "Day",
     "night": "Night",
     "degradation": "Degrad.",
-    "degradationTooltip": "Performance degradation: the increase in TTFT from daytime to nighttime. Formula: (Day TTFT - Night TTFT) / Night TTFT",
+    "degradationTooltip": "Performance change between day and night TTFT. Formula: (Day TTFT - Night TTFT) / Night TTFT. Positive = faster at night (improvement), Negative = slower at night (degradation). Reference: >10% significant slowdown, ±10% normal, <-10% better at night.",
     "success": "Success",
     "allLabel": "All",
     "instructions": "Instructions",
