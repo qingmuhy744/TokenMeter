@@ -12,6 +12,13 @@ import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// 常量定义
+const AVAILABILITY_HIGH = 99;    // 99% 以上绿色
+const AVAILABILITY_MEDIUM = 95;  // 95-99% 黄色
+const CHART_HEIGHT = 400;
+const REFRESH_INTERVAL = 60000;  // 1 分钟
+const MS_PER_SECOND = 1000;
+
 interface StatusData {
   plans: {
     id: number;
@@ -87,7 +94,7 @@ export default function Status() {
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60000);
+    const timer = setInterval(() => setNow(Date.now()), REFRESH_INTERVAL);
     return () => clearInterval(timer);
   }, []);
 
@@ -157,7 +164,7 @@ export default function Status() {
   };
 
   const timeAgo = (iso: string): string => {
-    const seconds = Math.floor((now - new Date(iso).getTime()) / 1000);
+    const seconds = Math.floor((now - new Date(iso).getTime()) / MS_PER_SECOND);
     if (seconds < 60) return `${seconds}s ${t("common.ago") || "ago"}`;
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${t("common.ago") || "ago"}`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ${t("common.ago") || "ago"}`;
@@ -345,9 +352,9 @@ export default function Status() {
                         {plan.availability_pct !== null && (
                           <div className="flex items-center gap-2">
                              <span className="text-[10px] font-bold">{plan.availability_pct}%</span>
-                             <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                             <div className="w-16 h-1.2 bg-muted rounded-full overflow-hidden">
                               <div
-                                className={`h-full rounded-full ${plan.availability_pct >= 99 ? "bg-green-500" : plan.availability_pct >= 95 ? "bg-yellow-500" : "bg-red-500"}`}
+                                className={`h-full rounded-full ${plan.availability_pct >= AVAILABILITY_HIGH ? "bg-green-500" : plan.availability_pct >= AVAILABILITY_MEDIUM ? "bg-yellow-500" : "bg-red-500"}`}
                                 style={{ width: `${plan.availability_pct}%` }}
                               />
                             </div>
@@ -407,7 +414,7 @@ export default function Status() {
           <CardContent className="pt-8">
             {selectedIds.length > 0 ? (
               mergedTrendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={400}>
+                <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
                   <LineChart data={mergedTrendData}>
                     <XAxis dataKey="time" tickFormatter={formatTime} tick={{ fontSize: 11 }} minTickGap={30} />
                     <YAxis tick={{ fontSize: 11 }} />
