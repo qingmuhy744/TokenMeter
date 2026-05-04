@@ -2,7 +2,7 @@
 
 import logging
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, select, table as sa_table, column
 
 logger = logging.getLogger(__name__)
 
@@ -55,15 +55,16 @@ def export_legacy_data(legacy_url: str) -> dict:
     tables = ["users", "settings", "token_plans", "test_results"]
 
     with legacy_engine.connect() as conn:
-        for table in tables:
+        for table_name in tables:
             try:
-                result = conn.execute(text(f"SELECT * FROM {table}"))  # nosec B608
+                tbl = sa_table(table_name, column("*"))
+                result = conn.execute(select(tbl))
                 rows = [dict(row._mapping) for row in result]
-                data[table] = rows
-                logger.info(f"Exported {len(rows)} rows from {table}")
+                data[table_name] = rows
+                logger.info(f"Exported {len(rows)} rows from {table_name}")
             except Exception as e:
-                logger.warning(f"Failed to export {table}: {e}")
-                data[table] = []
+                logger.warning(f"Failed to export {table_name}: {e}")
+                data[table_name] = []
 
     legacy_engine.dispose()
     return data
