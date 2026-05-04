@@ -27,7 +27,7 @@ export default function PublicHistory() {
           <p className="text-muted-foreground text-sm">{t("publicHistory.description")}</p>
         </div>
 
-        <div className="bg-card/50 border border-white/5 rounded-3xl p-1">
+        <div className="bg-card/50 border border-border/50 rounded-3xl p-1">
           <HistoryView planId={planId} isPublic={true} />
         </div>
       </div>
