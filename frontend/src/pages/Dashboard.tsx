@@ -102,28 +102,28 @@ export default function Dashboard() {
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: 'oklch(0.55 0.01 75)', fontSize: 12, fontWeight: 500 }}
+                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12, fontWeight: 500 }}
                   dy={10}
                 />
                 <YAxis
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: 'oklch(0.55 0.01 75)', fontSize: 12 }}
+                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
                 />
                 <Tooltip
-                  cursor={{ fill: 'rgba(255,255,255,0.03)' }}
+                  cursor={{ fill: 'var(--color-muted)' }}
                   contentStyle={{
-                    backgroundColor: 'oklch(0.14 0.012 260)',
+                    backgroundColor: 'var(--color-card)',
                     borderRadius: '12px',
-                    border: '1px solid oklch(0.22 0.015 260 / 0.5)',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.4)',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: 'var(--shadow-md)',
                     padding: '12px',
-                    color: 'oklch(0.93 0.005 80)',
+                    color: 'var(--color-foreground)',
                   }}
                 />
                 <Bar
                   dataKey="tps"
-                  fill="oklch(0.72 0.18 65)"
+                  fill="var(--color-primary)"
                   name="TPS"
                   radius={[4, 4, 0, 0]}
                   barSize={32}

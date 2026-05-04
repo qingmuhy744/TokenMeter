@@ -102,8 +102,8 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
     return areas;
   }, [chartData]);
 
-  const textMuted = "oklch(0.55 0.01 75)";
-  const cardBg = "oklch(0.14 0.012 260)";
+  const textMuted = "var(--color-muted-foreground)";
+  const cardBg = "var(--color-card)";
 
   return (
     <div className="space-y-8">
@@ -176,9 +176,9 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     backgroundColor: cardBg, 
                     borderRadius: '12px', 
                     fontSize: '12px',
-                    border: '1px solid oklch(0.22 0.015 260 / 0.5)',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.4)',
-                    color: 'oklch(0.93 0.005 80)',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: 'var(--shadow-md)',
+                    color: 'var(--color-foreground)',
                   }} 
                 />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 500, paddingTop: '20px', color: textMuted }} />
@@ -188,14 +188,14 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     x1={area.x1}
                     x2={area.x2}
                     yAxisId="left"
-                    fill={area.isDay ? "oklch(0.72 0.18 65 / 0.06)" : "oklch(0.6 0.12 200 / 0.06)"}
+                    fill={area.isDay ? "oklch(0.6399 0.093 224.37 / 0.06)" : "oklch(0.5 0.1 240 / 0.06)"}
                     fillOpacity={1}
                   />
                 ))}
-                <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="oklch(0.72 0.18 65)" strokeWidth={3} name={t("history.tpsOverall")} dot={false} connectNulls />
-                <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="oklch(0.65 0.15 145)" strokeWidth={2} strokeDasharray="5 5" name={t("history.tpsGenerate")} dot={false} connectNulls />
-                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="oklch(0.6 0.12 200)" strokeWidth={3} name={t("history.ttftMs")} dot={false} connectNulls />
-                <Line yAxisId="right" type="monotone" dataKey="think" stroke="oklch(0.5 0.1 85)" strokeWidth={1.5} strokeDasharray="3 3" name={t("history.thinkTimeMs")} dot={false} connectNulls />
+                <Line yAxisId="left" type="monotone" dataKey="tps_overall" stroke="var(--color-primary)" strokeWidth={3} name={t("history.tpsOverall")} dot={false} connectNulls />
+                <Line yAxisId="left" type="monotone" dataKey="tps_generate" stroke="var(--color-green)" strokeWidth={2} strokeDasharray="5 5" name={t("history.tpsGenerate")} dot={false} connectNulls />
+                <Line yAxisId="right" type="monotone" dataKey="ttft" stroke="var(--color-cyan)" strokeWidth={3} name={t("history.ttftMs")} dot={false} connectNulls />
+                <Line yAxisId="right" type="monotone" dataKey="think" stroke="oklch(0.55 0.1 85)" strokeWidth={1.5} strokeDasharray="3 3" name={t("history.thinkTimeMs")} dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
