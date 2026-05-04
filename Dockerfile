@@ -15,15 +15,13 @@ WORKDIR /app
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock alembic.ini ./
 RUN uv sync --frozen --no-dev --no-editable
 
 COPY backend/ ./backend/
 COPY bin/tm /usr/local/bin/tm
 RUN chmod +x /usr/local/bin/tm
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
-
-RUN mkdir -p /data
 
 EXPOSE 8000
 
