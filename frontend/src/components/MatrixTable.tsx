@@ -27,7 +27,7 @@ function Sparkline({ data, className }: { data: (number | null)[], className?: s
   const max = Math.max(...points);
   const range = max - min || 1;
   const width = 100;
-  const height = 32;
+  const height = 24;
   const padding = 2;
   
   const pathData = points.map((v, i) => {
@@ -37,7 +37,7 @@ function Sparkline({ data, className }: { data: (number | null)[], className?: s
   }).join(' ');
 
   return (
-    <div className={cn("h-8 w-24", className)}>
+    <div className={cn("h-6 w-20", className)}>
       <svg width="100%" height="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="overflow-visible">
         <path
           d={pathData}
@@ -165,9 +165,9 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           </div>
         );
       },
-      size: 120,
-      minSize: 80,
-      maxSize: 180,
+      size: 90,
+      minSize: 70,
+      maxSize: 150,
     }),
     columnHelper.accessor("latest_status", {
       header: t("matrix.status"),
@@ -201,7 +201,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-center font-mono px-1.5 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
+        <div className={cn("text-center font-mono px-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
           {info.getValue()?.toFixed(0)}ms
         </div>
       ),
@@ -221,7 +221,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-center font-mono px-1.5 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+        <div className={cn("text-center font-mono px-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
           {info.getValue()?.toFixed(1)}
         </div>
       ),
@@ -241,7 +241,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         </div>
       ),
       cell: info => (
-        <div className={cn("text-center font-mono px-1.5 py-1 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+        <div className={cn("text-center font-mono px-1.5 rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
           {info.getValue()?.toFixed(1)}
         </div>
       ),
@@ -279,7 +279,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       cell: info => {
         const val = info.getValue();
         return (
-          <div className={cn("text-center font-mono px-1.5 py-1 rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
+          <div className={cn("text-center font-mono px-1.5 rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
             {val !== null ? `${(val * 100).toFixed(1)}%` : '-'}
           </div>
         );
@@ -484,7 +484,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     <TableHead 
                       key={header.id} 
                       className={cn(
-                        "h-12 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors relative",
+                        "h-9 px-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors relative",
                         index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0"
                       )}
                       style={{ width: header.getSize() }}
@@ -528,7 +528,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                       <TableCell 
                         key={cell.id} 
                         className={cn(
-                          "px-2 py-3 align-middle transition-colors",
+                          "px-2 py-1.5 align-middle transition-colors",
                           index === 0 && cn(
                             "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0",
                             isSelected ? "bg-muted" : "bg-card"
