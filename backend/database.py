@@ -5,7 +5,6 @@ import logging
 import time
 
 from backend.config import settings
-from backend.models.base import Base
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +30,3 @@ def receive_checkin(dbapi_connection, connection_record):
 async def get_db():
     async with async_session() as session:
         yield session
-
-
-async def init_db():
-    from backend.migrations.manager import run_migrations
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    async with async_session() as db:
-        await run_migrations(db)
