@@ -164,7 +164,7 @@ export default function Plans() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("plans.title")}</h1>
+        <h1 className="text-2xl font-heading font-bold text-foreground">{t("plans.title")}</h1>
         <div className="flex gap-2">
           <Button
             variant="outline"

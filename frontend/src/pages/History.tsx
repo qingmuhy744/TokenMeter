@@ -4,6 +4,7 @@ import { api } from "@/api/client";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function History() {
   const { t } = useTranslation();
@@ -21,16 +22,22 @@ export default function History() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{t("history.title")}</h1>
-        <div className="flex bg-muted p-1 rounded-lg">
+    <div className="space-y-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-heading font-bold text-foreground tracking-tight">{t("history.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("history.description")}</p>
+        </div>
+        <div className="flex bg-muted p-1 rounded-xl border border-white/10">
           {[1, 7, 30].map(d => (
             <Button 
               key={d}
               variant={statsRange === d ? "default" : "ghost"} 
               size="sm" 
-              className="h-7 text-xs px-3"
+              className={cn(
+                "h-8 text-xs px-4 rounded-lg font-medium transition-all",
+                statsRange === d ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
               onClick={() => setStatsRange(d)}
             >
               {d}d Stats
@@ -38,7 +45,10 @@ export default function History() {
           ))}
         </div>
       </div>
-      <HistoryView onDelete={handleDelete} statsDays={statsRange} />
+      
+      <div className="bg-card/50 border border-white/5 rounded-3xl p-1">
+        <HistoryView onDelete={handleDelete} statsDays={statsRange} />
+      </div>
     </div>
   );
 }
