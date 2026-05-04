@@ -23,8 +23,6 @@ COPY bin/tm /usr/local/bin/tm
 RUN chmod +x /usr/local/bin/tm
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-RUN mkdir -p /data
-
 EXPOSE 8000
 
 CMD ["/app/.venv/bin/uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

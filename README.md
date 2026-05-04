@@ -162,7 +162,7 @@ docker exec tokenmeter tm reset-password
 
 项目配置了严谨的自动化流水线，确保代码质量与环境一致性：
 
-- **矩阵测试 (Matrix Testing)** — 每次 PR 或 Push 都会在 **SQLite** 和 **PostgreSQL 16** (Service Container) 两个环境下并行运行所有测试用例。
+- **CI 测试** — 每次 PR 或 Push 在 **PostgreSQL 16** (Service Container) 环境下运行全部测试。
 - **多架构构建 (Multi-platform)** — 自动构建支持 `linux/amd64` 和 `linux/arm64` (Apple Silicon/ARM Server) 的 Docker 镜像。
 - **构建优化** — 利用 `gha` 类型缓存层，大幅缩减重复构建时间。
 - **镜像分级**：
