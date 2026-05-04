@@ -95,6 +95,16 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
   const [mode, setMode] = useState<'all' | 'day' | 'night'>('all');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollKey = 'matrix-scroll-position';
+  const columnSizingKey = 'matrix-column-sizing';
+
+  const [columnSizing, setColumnSizing] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem(columnSizingKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
     const saved = sessionStorage.getItem(lastScrollKey);
@@ -155,9 +165,9 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           </div>
         );
       },
-      size: 140,
-      minSize: 100,
-      maxSize: 200,
+      size: 120,
+      minSize: 80,
+      maxSize: 180,
     }),
     columnHelper.accessor("latest_status", {
       header: t("matrix.status"),
@@ -306,8 +316,18 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
     columns,
     state: {
       sorting,
+      columnSizing,
     },
     onSortingChange: setSorting,
+    onColumnSizingChange: (updater) => {
+      setColumnSizing(prev => {
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        localStorage.setItem(columnSizingKey, JSON.stringify(next));
+        return next;
+      });
+    },
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -456,7 +476,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
             ref={scrollContainerRef}
             onScroll={saveScroll}
           >
-            <Table className="w-full min-w-[1000px]">
+            <Table className="w-full min-w-[1000px]" style={{ tableLayout: 'fixed' }}>
               <TableHeader className="bg-card sticky top-0 z-30">
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-white/5">
@@ -464,14 +484,27 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     <TableHead 
                       key={header.id} 
                       className={cn(
-                        "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors",
+                        "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors relative",
                         index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0"
                       )}
-                      style={index === 0 ? { minWidth: header.getSize(), maxWidth: header.getSize() } : undefined}
+                      style={{ width: header.getSize() }}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
+                      <div className="flex items-center gap-1">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </div>
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className={cn(
+                            "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none",
+                            "hover:bg-primary/50 active:bg-primary transition-colors",
+                            header.column.getIsResizing() && "bg-primary"
+                          )}
+                        />
+                      )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -494,13 +527,14 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     {row.getVisibleCells().map((cell, index) => (
                       <TableCell 
                         key={cell.id} 
-                          className={cn(
+                        className={cn(
                           "px-4 py-3 align-middle transition-colors",
                           index === 0 && cn(
                             "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0",
                             isSelected ? "bg-muted" : "bg-card"
                           )
                         )}
+                        style={{ width: cell.column.getSize() }}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
