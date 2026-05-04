@@ -42,7 +42,8 @@
     "description": "Monitor performance metrics across all plans and time periods.",
     "nightTTFT": "Night TTFT",
     "mobileTpsGen": "TPS (Gen)",
-    "mobileTrend24h": "24h Trend"
+    "mobileTrend24h": "24h Trend",
+    "performanceMatrix": "{{days}}-Day Performance Matrix"
   },
   "plans": {
     "title": "Test Plans",

@@ -26,7 +26,7 @@
     "modelPlan": "模型 / 计划",
     "status": "状态",
     "trend24h": "24小时趋势",
-    "avgTTFT": "首字延迟",
+    "avgTTFT": "TTFT",
     "tpsAll": "总TPS",
     "tpsGen": "生成TPS",
     "day": "日间",
@@ -40,9 +40,10 @@
     "nameHint": "点击名称查看详情",
     "noData": "暂无数据",
     "description": "监控所有计划和时间段内的性能指标。",
-    "nightTTFT": "夜间TTFT",
+    "nightTTFT": "夜间 TTFT",
     "mobileTpsGen": "生成TPS",
-    "mobileTrend24h": "24小时趋势"
+    "mobileTrend24h": "24小时趋势",
+    "performanceMatrix": "{{days}}天性能矩阵"
   },
   "plans": {
     "title": "测速计划",

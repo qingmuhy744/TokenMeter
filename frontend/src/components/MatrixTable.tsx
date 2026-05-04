@@ -437,7 +437,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         <CardHeader className="bg-muted/20 border-b border-white/5 py-5 flex flex-row items-center justify-between space-y-0 px-6">
           <div>
             <CardTitle className="text-lg font-heading font-bold tracking-tight text-foreground">
-              {days}-Day Performance Matrix
+              {t("matrix.performanceMatrix", { days })}
             </CardTitle>
             <p className="text-[12px] text-muted-foreground mt-1.5 flex items-center gap-2">
               <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">{t("matrix.instructions")}</span>
@@ -464,7 +464,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     <TableHead 
                       key={header.id} 
                       className={cn(
-                        "h-14 px-6 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors",
+                        "h-12 px-4 text-[11px] font-bold uppercase tracking-wider text-muted-foreground/70 transition-colors",
                         index === 0 && "sticky left-0 z-50 bg-card shadow-[2px_0_8px_-4px_rgba(0,0,0,0.3)] border-l-0"
                       )}
                       style={index === 0 ? { minWidth: header.getSize(), maxWidth: header.getSize() } : undefined}
@@ -494,8 +494,8 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
                     {row.getVisibleCells().map((cell, index) => (
                       <TableCell 
                         key={cell.id} 
-                        className={cn(
-                          "px-6 py-4 align-middle transition-colors",
+                          className={cn(
+                          "px-4 py-3 align-middle transition-colors",
                           index === 0 && cn(
                             "sticky left-0 z-20 shadow-[4px_0_12px_-6px_rgba(0,0,0,0.5)] border-l-0",
                             isSelected ? "bg-muted" : "bg-card"
