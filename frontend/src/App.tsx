@@ -147,7 +147,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
               >
                 {theme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />}
-                {theme === 'dark' ? '浅色' : '深色'}
+                {theme === 'dark' ? t('theme.light') : t('theme.dark')}
               </button>
             </div>
             <div className="flex items-center gap-2">
