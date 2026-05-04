@@ -70,6 +70,11 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     alembic_cfg = alembic.config.Config("alembic.ini")
     alembic.command.upgrade(alembic_cfg, "head")
+
+    from backend.alembic.migrations_helper import check_and_migrate_legacy
+
+    await check_and_migrate_legacy()
+
     await ensure_admin()
     await sync_scheduled_jobs()
     start_scheduler()

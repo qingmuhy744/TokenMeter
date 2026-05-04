@@ -109,3 +109,41 @@ def import_data_to_new_db(target_engine, data: dict):
 
         conn.commit()
         logger.info("Data import completed")
+
+
+async def check_and_migrate_legacy():
+    """Check for legacy SQLite data and migrate if needed."""
+    from backend.config import settings
+    from sqlalchemy import create_engine
+
+    legacy_url = get_legacy_db_url()
+    if not legacy_url:
+        logger.info("No legacy SQLite database found, skipping migration")
+        return
+
+    target_engine = create_engine(settings.database_url)
+
+    try:
+        if not detect_needs_migration(target_engine):
+            logger.info(
+                "Database already has data or no legacy data, skipping migration"
+            )
+            return
+
+        logger.info("Found legacy SQLite data, starting migration...")
+        data = export_legacy_data(legacy_url)
+
+        if any(data.values()):
+            import_data_to_new_db(target_engine, data)
+
+            total = sum(len(rows) for rows in data.values())
+            logger.info(f"Legacy data migration completed: {total} rows migrated")
+
+            import shutil
+
+            shutil.copy("token_speed.db", "token_speed.db.migrated")
+            logger.info("Legacy SQLite backed up to token_speed.db.migrated")
+        else:
+            logger.info("No data found in legacy database")
+    finally:
+        target_engine.dispose()
