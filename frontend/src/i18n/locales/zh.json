@@ -15,6 +15,7 @@
     "avgTTFT": "平均首字延迟",
     "avgTPS": "平均 TPS",
     "noPlans": "尚未配置测速计划",
+    "noResults": "暂无结果",
     "createFirst": "立即创建第一个计划",
     "description": "实时监控 LLM 性能和响应指标。",
     "activePlans": "启用计划",

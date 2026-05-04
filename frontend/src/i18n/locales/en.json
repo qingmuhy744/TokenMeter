@@ -15,6 +15,7 @@
     "avgTTFT": "Avg TTFT",
     "avgTPS": "Avg TPS",
     "noPlans": "No test plans configured yet",
+    "noResults": "No results yet",
     "createFirst": "Create your first plan",
     "description": "Monitor LLM performance and response metrics in real-time.",
     "activePlans": "Active Plans",

@@ -160,7 +160,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
           </CardHeader>
           <CardContent className="pt-8">
             <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={chartData} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
+              <LineChart data={chartData} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
                 <XAxis 
                   dataKey="time" 
                   tick={{ fontSize: 10, fill: textMuted, fontWeight: 500 }} 
