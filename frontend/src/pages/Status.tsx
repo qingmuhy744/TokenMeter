@@ -84,6 +84,7 @@ export default function Status() {
   });
   const [metric, setMetric] = useState<ComparisonMetric>('tps_overall');
   const [now, setNow] = useState(() => Date.now());
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 60000);
@@ -204,8 +205,8 @@ export default function Status() {
               <Link to="/"><Button variant="outline" size="sm">{t("nav.dashboard")}</Button></Link>
               <Link to="/history"><Button variant="outline" size="sm">{t("nav.history")}</Button></Link>
               <div className="w-px h-5 bg-border mx-1" />
-              <div className="relative group">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+              <div className="relative">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setThemeMenuOpen(!themeMenuOpen)}>
                   {theme === 'system' ? (
                     resolvedTheme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />
                   ) : theme === 'dark' ? (
@@ -214,44 +215,46 @@ export default function Status() {
                     <Moon className="size-3.5" />
                   )}
                 </Button>
-                <div className="absolute top-full right-0 mt-1 w-28 bg-popover border border-border rounded-lg shadow-lg overflow-hidden hidden group-hover:block z-50">
-                  <button
-                    onClick={() => setTheme('system')}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
-                      theme === 'system'
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                    )}
-                  >
-                    <Monitor className="size-3" />
-                    {t('theme.auto')}
-                  </button>
-                  <button
-                    onClick={() => setTheme('light')}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
-                      theme === 'light'
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                    )}
-                  >
-                    <Moon className="size-3" />
-                    {t('theme.light')}
-                  </button>
-                  <button
-                    onClick={() => setTheme('dark')}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
-                      theme === 'dark'
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                    )}
-                  >
-                    <Sun className="size-3" />
-                    {t('theme.dark')}
-                  </button>
-                </div>
+                {themeMenuOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-28 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50">
+                    <button
+                      onClick={() => { setTheme('system'); setThemeMenuOpen(false); }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                        theme === 'system'
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      )}
+                    >
+                      <Monitor className="size-3" />
+                      {t('theme.auto')}
+                    </button>
+                    <button
+                      onClick={() => { setTheme('light'); setThemeMenuOpen(false); }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                        theme === 'light'
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      )}
+                    >
+                      <Moon className="size-3" />
+                      {t('theme.light')}
+                    </button>
+                    <button
+                      onClick={() => { setTheme('dark'); setThemeMenuOpen(false); }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                        theme === 'dark'
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                      )}
+                    >
+                      <Sun className="size-3" />
+                      {t('theme.dark')}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

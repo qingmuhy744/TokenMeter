@@ -229,7 +229,11 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
         </div>
       ),
-      cell: info => <div className="text-center font-mono text-muted-foreground">{info.getValue()?.toFixed(0)}ms</div>,
+      cell: info => (
+        <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
+          {info.getValue()?.toFixed(0)}ms
+        </div>
+      ),
       size: 80,
       minSize: 60,
       maxSize: 100,
