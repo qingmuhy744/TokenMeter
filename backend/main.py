@@ -1,4 +1,5 @@
 import logging
+import sys
 from collections import deque
 from contextlib import asynccontextmanager
 
@@ -51,16 +52,8 @@ def sink_buffer(message):
 def setup_logging():
     logger.remove()
 
-    logger.add(
-        sink_buffer,
-        format=LOG_FORMAT,
-        level="INFO",
-    )
-    logger.add(
-        lambda m: print(m, end=""),
-        format=LOG_FORMAT,
-        level="INFO",
-    )
+    logger.add(sink_buffer, format=LOG_FORMAT, level="INFO")
+    logger.add(sys.stderr, format=LOG_FORMAT, level="INFO")
 
     logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
@@ -70,7 +63,10 @@ async def lifespan(app: FastAPI):
     setup_logging()
 
     alembic_cfg = alembic.config.Config("alembic.ini")
+    alembic_cfg.set_main_option("configure_logger", "false")
     alembic.command.upgrade(alembic_cfg, "head")
+
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
 
     await ensure_admin()
     await sync_scheduled_jobs()
