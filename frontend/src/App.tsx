@@ -42,6 +42,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t, i18n } = useTranslation();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const location = useLocation();
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 
   useEffect(() => {
     onClose();
@@ -145,8 +146,9 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Globe className="size-3" />
               {i18n.language === "zh" ? "EN" : "中文"}
             </button>
-            <div className="relative group">
+            <div className="relative">
               <button
+                onClick={() => setThemeMenuOpen(!themeMenuOpen)}
                 className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
               >
                 {theme === 'system' ? (
@@ -158,44 +160,46 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 )}
                 {theme === 'system' ? t('theme.auto') : theme === 'dark' ? t('theme.light') : t('theme.dark')}
               </button>
-              <div className="absolute bottom-full left-0 mb-1 w-28 bg-sidebar border border-sidebar-border rounded-lg shadow-lg overflow-hidden hidden group-hover:block">
-                <button
-                  onClick={() => setTheme('system')}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
-                    theme === 'system'
-                      ? "bg-sidebar-foreground/10 text-sidebar-foreground"
-                      : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
-                  )}
-                >
-                  <Monitor className="size-3" />
-                  {t('theme.auto')}
-                </button>
-                <button
-                  onClick={() => setTheme('light')}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
-                    theme === 'light'
-                      ? "bg-sidebar-foreground/10 text-sidebar-foreground"
-                      : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
-                  )}
-                >
-                  <Moon className="size-3" />
-                  {t('theme.light')}
-                </button>
-                <button
-                  onClick={() => setTheme('dark')}
-                  className={cn(
-                    "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
-                    theme === 'dark'
-                      ? "bg-sidebar-foreground/10 text-sidebar-foreground"
-                      : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
-                  )}
-                >
-                  <Sun className="size-3" />
-                  {t('theme.dark')}
-                </button>
-              </div>
+              {themeMenuOpen && (
+                <div className="absolute bottom-full left-0 mb-1 w-28 bg-sidebar border border-sidebar-border rounded-lg shadow-lg overflow-hidden z-50">
+                  <button
+                    onClick={() => { setTheme('system'); setThemeMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'system'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Monitor className="size-3" />
+                    {t('theme.auto')}
+                  </button>
+                  <button
+                    onClick={() => { setTheme('light'); setThemeMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'light'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Moon className="size-3" />
+                    {t('theme.light')}
+                  </button>
+                  <button
+                    onClick={() => { setTheme('dark'); setThemeMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'dark'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Sun className="size-3" />
+                    {t('theme.dark')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center justify-between px-2 py-2 mt-1 border-t border-sidebar-border/30 pt-2 md:hidden">
