@@ -8,8 +8,10 @@ from fastapi.responses import FileResponse
 from starlette.middleware.sessions import SessionMiddleware
 from pathlib import Path
 
+import alembic.command
+import alembic.config
+
 from backend.config import settings
-from backend.database import init_db
 from backend.auth import router as auth_router, ensure_admin, get_current_user
 from backend.routes.plans import router as plans_router
 from backend.routes.results import router as results_router
@@ -66,7 +68,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_db()
+    alembic_cfg = alembic.config.Config("alembic.ini")
+    alembic.command.upgrade(alembic_cfg, "head")
     await ensure_admin()
     await sync_scheduled_jobs()
     start_scheduler()
