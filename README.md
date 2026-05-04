@@ -85,10 +85,10 @@ docker compose up -d
 
 ### 数据库迁移
 
-使用 [Alembic](https://alembic.sqlalchemy.org/) 管理数据库 schema。
+使用 [Alembic](https://alembic.sqlalchemy.org/) 管理数据库 schema，所有后续变更均通过 Alembic 迁移脚本完成，不再有其他迁移方式。
 
 ```bash
-# 运行迁移
+# 运行迁移（日常使用）
 uv run alembic upgrade head
 
 # 创建新迁移
@@ -98,49 +98,37 @@ uv run alembic revision --autogenerate -m "description"
 uv run alembic history --verbose
 ```
 
-### 从旧版本迁移
+### 从旧版本迁移（一次性操作）
 
-如果你正在使用旧版本（使用 `backend/migrations/manager.py` 手动管理迁移），按以下步骤迁移到 Alembic：
+旧版本使用 `backend/migrations/manager.py` 手动管理 + SQLite，新版改为 Alembic + PostgreSQL。
 
-**Docker 部署自动迁移：**
+**Docker 部署：**
 
-使用 PR #43 之后的镜像，首次启动会自动检测并完成迁移：
-
-1. 拉取新镜像，配置 `DATABASE_URL` 指向旧 PostgreSQL
-2. 首次启动日志显示 `Running stamp_revision -> head` — 迁移完成
-3. **后续启动直接跳过，不再有迁移日志**
-
-**本地部署手动迁移：**
-
-**1. 备份现有数据**
-
+由于旧数据库已有表但无 `alembic_version` 记录，需要用一次性的 stamp 镜像标记当前状态：
 
 ```bash
-# 方式一：PostgreSQL 导出
+# Step 1: 拉取 stamp 镜像（仅此一次）
+docker compose pull
+# 首次启动日志会显示：
+#   Running stamp_revision -> 2f9c1045e7d7 (head)
+
+# Step 2: 确认迁移完成后，拉取后续正常镜像即可
+docker compose pull && docker compose up -d
+```
+
+stamp 之后 `alembic_version` 表已写入，后续所有版本直接 `alembic upgrade head` 即可，干净无额外日志。
+
+**本地部署：**
+
+```bash
+# Step 1: 备份数据
 pg_dump -h <host> -U <user> -d <dbname> > backup.sql
 
-# 方式二：SQLite 导出（如果仍有 sqlite 文件）
-sqlite3 token_speed.db ".dump" > backup.sql
-```
+# Step 2: 如果数据库已有表但无 alembic_version，先 stamp
+uv run alembic stamp head
 
-**2. 配置 PostgreSQL 并运行迁移**
-
-```bash
-# 设置数据库连接
-export DATABASE_URL="postgresql://user:pass@host/dbname"
-
-# 运行 Alembic 升级（首次会创建所有表）
+# Step 3: 后续正常升级
 uv run alembic upgrade head
-```
-
-**3. 导入旧数据（可选）**
-
-如果需要保留旧数据，使用 `psql` 导入备份文件。注意手动调整 SQL 语法差异（如 SQLite 的 `AUTOINCREMENT` vs PostgreSQL 的 `SERIAL`，布尔值 `0/1` vs `true/false` 等）。
-
-**4. 验证**
-
-```bash
-uv run alembic current  # 确认当前版本
 ```
 
 ### 重置管理员密码
