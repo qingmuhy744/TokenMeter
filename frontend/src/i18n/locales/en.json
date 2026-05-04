@@ -27,6 +27,8 @@
     "status": "Status",
     "trend24h": "24h TPS",
     "avgTTFT": "Avg TTFT",
+    "dayTTFT": "Day TTFT",
+    "nightTTFT": "Night TTFT",
     "tpsAll": "TPS (All)",
     "tpsGen": "TPS (Gen)",
     "day": "Day",
@@ -201,5 +203,9 @@
     "ok": "OK",
     "cancel": "Cancel",
     "delete": "Delete"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark"
   }
 }

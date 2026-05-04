@@ -192,14 +192,14 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
       minSize: 80,
       maxSize: 140,
     }),
-    columnHelper.accessor("avg_ttft", {
+    columnHelper.accessor("day_avg_ttft", {
       header: ({ column }) => (
         <div 
           className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           title={t("history.ttftDef")}
         >
-          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.avgTTFT")}</span>
+          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.dayTTFT")}</span>
           {{
             asc: <ArrowUp className="w-4 h-4 text-primary" />,
             desc: <ArrowDown className="w-4 h-4 text-primary" />,
@@ -211,6 +211,97 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           {info.getValue()?.toFixed(0)}ms
         </div>
       ),
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
+    }),
+    columnHelper.accessor("night_avg_ttft", {
+      header: ({ column }) => (
+        <div 
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.ttftDef")}
+        >
+          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.nightTTFT")}</span>
+          {{
+            asc: <ArrowUp className="w-4 h-4 text-primary" />,
+            desc: <ArrowDown className="w-4 h-4 text-primary" />,
+          }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
+        </div>
+      ),
+      cell: info => <div className="text-center font-mono text-muted-foreground">{info.getValue()?.toFixed(0)}ms</div>,
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
+    }),
+    columnHelper.accessor("avg_tps_overall", {
+      header: ({ column }) => (
+        <div 
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.tpsOverallDef")}
+        >
+          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.tpsAll")}</span>
+          {{
+            asc: <ArrowUp className="w-4 h-4 text-primary" />,
+            desc: <ArrowDown className="w-4 h-4 text-primary" />,
+          }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
+        </div>
+      ),
+      cell: info => (
+        <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+          {info.getValue()?.toFixed(1)}
+        </div>
+      ),
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
+    }),
+    columnHelper.accessor("avg_tps_generate", {
+      header: ({ column }) => (
+        <div 
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("history.tpsGenerateDef")}
+        >
+          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.tpsGen")}</span>
+          {{
+            asc: <ArrowUp className="w-4 h-4 text-primary" />,
+            desc: <ArrowDown className="w-4 h-4 text-primary" />,
+          }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
+        </div>
+      ),
+      cell: info => (
+        <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(info.getValue(), 'tps'))}>
+          {info.getValue()?.toFixed(1)}
+        </div>
+      ),
+      size: 80,
+      minSize: 60,
+      maxSize: 100,
+    }),
+    columnHelper.accessor("degradation", {
+      header: ({ column }) => (
+        <div 
+          className="flex items-center justify-center cursor-pointer select-none gap-1"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          title={t("matrix.degradation")}
+        >
+          <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.degradation")}</span>
+          {{
+            asc: <ArrowUp className="w-4 h-4 text-primary" />,
+            desc: <ArrowDown className="w-4 h-4 text-primary" />,
+          }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
+        </div>
+      ),
+      cell: info => {
+        const val = info.getValue();
+        return (
+          <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(val, 'degradation'))}>
+            {val !== null ? `${(val * 100).toFixed(1)}%` : '-'}
+          </div>
+        );
+      },
       size: 80,
       minSize: 60,
       maxSize: 100,
