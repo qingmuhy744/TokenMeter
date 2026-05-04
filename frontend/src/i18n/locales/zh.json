@@ -17,6 +17,25 @@
     "noPlans": "尚未配置测速计划",
     "createFirst": "立即创建第一个计划"
   },
+  "matrix": {
+    "title": "性能矩阵",
+    "modelPlan": "模型 / 计划",
+    "status": "状态",
+    "trend24h": "24小时趋势",
+    "avgTTFT": "首字延迟",
+    "tpsAll": "总TPS",
+    "tpsGen": "生成TPS",
+    "day": "日间",
+    "night": "夜间",
+    "degradation": "衰减",
+    "success": "成功率",
+    "allLabel": "全部",
+    "instructions": "使用说明",
+    "scrollHint": "拖拽滚动",
+    "keyboardHint": "← → 切换",
+    "nameHint": "点击名称查看详情",
+    "noData": "暂无数据"
+  },
   "plans": {
     "title": "测速计划",
     "addPlan": "新增计划",
@@ -71,6 +90,7 @@
   },
   "history": {
     "title": "测试历史",
+    "description": "查看历史测试结果和性能趋势。",
     "allPlans": "全部计划",
     "trend": "趋势图",
     "tpsOverall": "TPS（整体）",
@@ -106,10 +126,13 @@
   },
   "settings": {
     "title": "系统设置",
+    "testConfig": "测速配置",
     "general": "通用设置",
+    "description": "管理系统配置、安全设置，以及查看服务器日志。",
     "defaultPrompt": "默认提示词",
     "timeout": "测速超时（秒）",
     "customBanner": "公共状态页公告 (HTML)",
+    "bannerHint": "支持 HTML，显示在 Status 页面顶部",
     "saveSettings": "保存设置",
     "settingsSaved": "设置已保存",
     "changePassword": "修改密码",
@@ -122,7 +145,9 @@
     "serverLogs": "服务器日志",
     "autoRefresh": "自动刷新",
     "refresh": "刷新",
-    "clickRefresh": "点击刷新加载日志"
+    "clickRefresh": "点击刷新加载日志",
+    "seconds": "秒",
+    "logsConsole": "日志控制台"
   },
   "status": {
     "title": "系统状态",
@@ -150,6 +175,15 @@
     "username": "用户名",
     "password": "密码",
     "loginButton": "登录"
+  },
+  "publicHistory": {
+    "title": "公开测速历史",
+    "description": "查看社区公开的性能数据和历史趋势。",
+    "backToStatus": "返回状态页"
+  },
+  "planDetail": {
+    "title": "计划详情",
+    "description": "查看该计划的性能数据和历史趋势。"
   },
   "common": {
     "error": "错误",

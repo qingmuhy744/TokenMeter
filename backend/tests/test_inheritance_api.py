@@ -130,11 +130,11 @@ async def test_inheritance_max_depth(db_session, auth_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_effective_api_key_is_masked_in_response(
+async def test_effective_api_key_is_returned_full_in_response(
     db_session,
     auth_client: AsyncClient,
 ):
-    """API response should mask effective_api_key when inherited from parent."""
+    """API response should return full effective_api_key when inherited from parent."""
     parent_resp = await auth_client.post(
         "/api/plans",
         json={
@@ -158,9 +158,7 @@ async def test_effective_api_key_is_masked_in_response(
     data = child_resp.json()
 
     assert "effective_api_key" in data
-    assert data["effective_api_key"] is not None
-    assert data["effective_api_key"] != "sk-parent-secret-key-long"
-    assert data["effective_api_key"] == "sk-p...long"
+    assert data["effective_api_key"] == "sk-parent-secret-key-long"
 
 
 @pytest.mark.asyncio

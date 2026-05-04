@@ -16,3 +16,4 @@ htmlcov/
 .coverage.*
 .cache
 .DS_Store
+token_speed.db.migrated

@@ -17,6 +17,25 @@
     "noPlans": "No test plans configured yet",
     "createFirst": "Create your first plan"
   },
+  "matrix": {
+    "title": "Performance Matrix",
+    "modelPlan": "Model / Plan",
+    "status": "Status",
+    "trend24h": "24h TPS",
+    "avgTTFT": "Avg TTFT",
+    "tpsAll": "TPS (All)",
+    "tpsGen": "TPS (Gen)",
+    "day": "Day",
+    "night": "Night",
+    "degradation": "Degrad.",
+    "success": "Success",
+    "allLabel": "All",
+    "instructions": "Instructions",
+    "scrollHint": "Drag to scroll",
+    "keyboardHint": "← → to switch",
+    "nameHint": "Click name for details",
+    "noData": "No data available"
+  },
   "plans": {
     "title": "Test Plans",
     "addPlan": "Add Plan",
@@ -71,6 +90,7 @@
   },
   "history": {
     "title": "History",
+    "description": "Review historical test results and performance trends.",
     "allPlans": "All Plans",
     "trend": "Trend",
     "tpsOverall": "TPS (Overall)",
@@ -106,10 +126,13 @@
   },
   "settings": {
     "title": "Settings",
+    "testConfig": "Test Configuration",
     "general": "General",
+    "description": "Manage system configuration, security, and monitor server logs.",
     "defaultPrompt": "Default Prompt",
     "timeout": "Timeout (seconds)",
     "customBanner": "Status Page Banner (HTML)",
+    "bannerHint": "Supports HTML. Displayed at the top of the Status page.",
     "saveSettings": "Save Settings",
     "settingsSaved": "Settings saved",
     "changePassword": "Change Password",
@@ -122,7 +145,9 @@
     "serverLogs": "Server Logs",
     "autoRefresh": "Auto Refresh",
     "refresh": "Refresh",
-    "clickRefresh": "Click refresh to load logs"
+    "clickRefresh": "Click refresh to load logs",
+    "seconds": "Seconds",
+    "logsConsole": "Logs Console"
   },
   "status": {
     "title": "System Status",
@@ -150,6 +175,15 @@
     "username": "Username",
     "password": "Password",
     "loginButton": "Login"
+  },
+  "publicHistory": {
+    "title": "Public History",
+    "description": "View community performance data and historical trends.",
+    "backToStatus": "Back to Status"
+  },
+  "planDetail": {
+    "title": "Plan Detail",
+    "description": "Performance data and historical trends for this plan."
   },
   "common": {
     "error": "Error",

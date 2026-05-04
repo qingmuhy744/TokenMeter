@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { RefreshCw } from "lucide-react";
 
 export default function Settings() {
@@ -71,64 +72,138 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold">{t("settings.title")}</h1>
-      <Card>
-        <CardHeader><CardTitle>{t("settings.testConfig")}</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div><Label>{t("settings.defaultPrompt")}</Label><Textarea rows={4} value={settings.default_prompt} onChange={(e) => setSettings({ ...settings, default_prompt: e.target.value })} /></div>
-          <div><Label>{t("settings.timeout")}</Label><Input type="number" value={settings.timeout_seconds} onChange={(e) => setSettings({ ...settings, timeout_seconds: +e.target.value })} /></div>
-          <div>
-            <Label>{t("settings.customBanner")}</Label>
-            <Textarea
-              rows={3}
-              placeholder="HTML... (留空关闭)"
-              value={settings.custom_banner || ""}
-              onChange={(e) => setSettings({ ...settings, custom_banner: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground mt-1">支持 HTML，显示在 Status 页面顶部</p>
-          </div>
-          <Button onClick={handleSaveSettings}>{t("settings.saveSettings")}</Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader><CardTitle>{t("settings.changePassword")}</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div><Label>{t("settings.oldPassword")}</Label><PasswordInput value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} /></div>
-          <div><Label>{t("settings.newPassword")}</Label><PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} /></div>
-          <div><Label>{t("settings.confirmNewPassword")}</Label><PasswordInput value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
-          <Button onClick={handleChangePassword}>{t("settings.changePassword")}</Button>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>{t("settings.serverLogs")}</CardTitle>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} />
-                <span className="text-xs text-muted-foreground">{t("settings.autoRefresh")}</span>
+    <div className="space-y-8 max-w-3xl mx-auto">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-heading font-bold text-foreground tracking-tight">{t("settings.title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("settings.description")}</p>
+      </div>
+
+      <div className="grid gap-8">
+        <Card>
+          <CardHeader className="bg-muted/30 border-b border-white/5 pb-4">
+            <CardTitle className="text-lg font-heading font-semibold text-foreground/90">{t("settings.testConfig")}</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground/70">{t("settings.defaultPrompt")}</Label>
+              <Textarea 
+                rows={4} 
+                value={settings.default_prompt} 
+                onChange={(e) => setSettings({ ...settings, default_prompt: e.target.value })} 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground/70">{t("settings.timeout")}</Label>
+              <div className="flex items-center gap-3">
+                <Input 
+                  type="number" 
+                  className="max-w-[120px]"
+                  value={settings.timeout_seconds} 
+                  onChange={(e) => setSettings({ ...settings, timeout_seconds: +e.target.value })} 
+                />
+                <span className="text-sm text-muted-foreground font-medium uppercase tracking-wide">{t("settings.seconds")}</span>
               </div>
-              <Button variant="outline" size="sm" onClick={fetchLogs} disabled={logLoading}>
-                <RefreshCw className={`h-4 w-4 mr-1 ${logLoading ? "animate-spin" : ""}`} />
-                {t("settings.refresh")}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground/70">{t("settings.customBanner")}</Label>
+              <Textarea
+                rows={3}
+                placeholder="HTML..."
+                value={settings.custom_banner || ""}
+                onChange={(e) => setSettings({ ...settings, custom_banner: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground/50 font-medium mt-1.5 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                {t("settings.bannerHint")}
+              </p>
+            </div>
+            <div className="pt-2">
+              <Button onClick={handleSaveSettings} className="rounded-xl px-6 font-medium shadow-sm">
+                {t("settings.saveSettings")}
               </Button>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {logs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("settings.clickRefresh")}</p>
-          ) : (
-            <pre
-              ref={logRef}
-              className="text-xs bg-black text-green-400 p-4 rounded-md overflow-auto max-h-[400px] font-mono whitespace-pre-wrap"
-            >
-              {logs.join("\n")}
-            </pre>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="bg-muted/30 border-b border-white/5 pb-4">
+            <CardTitle className="text-lg font-heading font-semibold text-foreground/90">{t("settings.changePassword")}</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground/70">{t("settings.oldPassword")}</Label>
+                <PasswordInput 
+                  value={oldPassword} 
+                  onChange={(e) => setOldPassword(e.target.value)} 
+                />
+              </div>
+              <div />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground/70">{t("settings.newPassword")}</Label>
+                <PasswordInput 
+                  value={newPassword} 
+                  onChange={(e) => setNewPassword(e.target.value)} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground/70">{t("settings.confirmNewPassword")}</Label>
+                <PasswordInput 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                />
+              </div>
+            </div>
+            <div className="pt-2">
+              <Button onClick={handleChangePassword} className="rounded-xl px-6 font-medium shadow-sm">
+                {t("settings.changePassword")}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="bg-muted/30 border-b border-white/5 pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-heading font-semibold text-foreground/90">{t("settings.serverLogs")}</CardTitle>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-card border border-white/10 rounded-xl">
+                  <Switch checked={autoRefresh} onCheckedChange={setAutoRefresh} className="scale-75" />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">{t("settings.autoRefresh")}</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={fetchLogs} 
+                  disabled={logLoading}
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${logLoading ? "animate-spin" : ""}`} />
+                  {t("settings.refresh")}
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {logs.length === 0 ? (
+              <div className="flex items-center justify-center py-12 bg-muted/30 rounded-2xl border border-dashed border-white/10">
+                <p className="text-muted-foreground/50 text-sm font-medium italic">{t("settings.clickRefresh")}</p>
+              </div>
+            ) : (
+              <div className="relative group">
+                <pre
+                  ref={logRef}
+                  className="text-[11px] bg-slate-950 text-slate-300 p-6 rounded-2xl overflow-auto max-h-[500px] font-mono whitespace-pre-wrap leading-relaxed shadow-inner border border-white/5"
+                >
+                  {logs.join("\n")}
+                </pre>
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Badge className="bg-muted text-muted-foreground/60 border-white/5 font-mono text-[9px] uppercase">{t("settings.logsConsole")}</Badge>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
