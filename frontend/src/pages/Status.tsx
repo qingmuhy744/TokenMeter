@@ -216,7 +216,7 @@ export default function Status() {
                   )}
                 </Button>
                 {themeMenuOpen && (
-                  <div className="absolute top-full right-0 mt-1 w-28 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50">
+                  <div className="absolute top-full right-0 mt-1 w-28 bg-popover border border-border rounded-lg shadow-lg overflow-hidden z-50 max-h-[60vh] overflow-y-auto">
                     <button
                       onClick={() => { setTheme('system'); setThemeMenuOpen(false); }}
                       className={cn(
