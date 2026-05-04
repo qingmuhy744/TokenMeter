@@ -30,7 +30,7 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 - **高精度指标采集** — TTFT (ms)、TPS (Overall/Generate)、Token 密度、缓存读取量
 - **定时测速引擎** — 基于 APScheduler 的自动化频率检测 (1 分钟 ~ 数小时)
 - **数据可视化** — 实时 Dashboard 总览 + 历史性能趋势图
-- **多数据库支持** — 默认 SQLite，可选高性能 PostgreSQL，支持自动数据迁移
+- **数据库迁移** — 使用 Alembic 管理数据库 schema，支持 PostgreSQL
 - **安全性** — 自动化 Session 管理，首次启动随机管理员凭据
 - **Docker 生产级部署** — 预构建多架构镜像，一键拉起
 
@@ -39,7 +39,7 @@ LLM API 速度测试工具 — 测量首 Token 时间 (TTFT) 和每秒 Token 数
 | 层 | 技术 |
 |---|---|
 | **后端** | Python 3.12, FastAPI, SQLAlchemy (Async), APScheduler |
-| **数据库** | SQLite (默认), PostgreSQL (可选, 基于 asyncpg & psycopg3) |
+| **数据库** | PostgreSQL (基于 asyncpg & psycopg3, 使用 Alembic 迁移) |
 | **前端** | React 19, TypeScript, TailwindCSS v4, Recharts, shadcn/ui |
 | **包管理** | <a href="https://docs.astral.sh/uv/" target="_blank">uv</a> (Python), npm (Node) |
 | **部署** | Docker, docker-compose, Multi-platform (AMD64/ARM64) |
@@ -79,10 +79,24 @@ docker compose up -d
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `DB_PATH` | `token_speed.db` | SQLite 数据库路径 |
-| `DATABASE_URL` | _(空)_ | PostgreSQL 连接串。**设置后将启用从 SQLite 自动迁移数据至 PG。** |
+| `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/postgres` | PostgreSQL 连接串 |
 | `SECRET_KEY` | 随机生成 | Session 加密密钥 |
 | `HTTP_PROXY` | _(空)_ | 全局 HTTP 代理地址 |
+
+### 数据库迁移
+
+使用 [Alembic](https://alembic.sqlalchemy.org/) 管理数据库 schema。
+
+```bash
+# 运行迁移
+uv run alembic upgrade head
+
+# 创建新迁移
+uv run alembic revision --autogenerate -m "description"
+
+# 查看迁移历史
+uv run alembic history --verbose
+```
 
 ### 重置管理员密码
 
