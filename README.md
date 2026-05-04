@@ -108,7 +108,7 @@ uv run alembic history --verbose
 
 ```bash
 # Step 1: 拉取 stamp 镜像（仅此一次，镜像 tag 格式为 日期-commit短SHA）
-docker pull qingmuhy744/tokenmeter:20260504-c251977
+docker pull qingmuhy744/tokenmeter:20260504-ce80c9d
 # 修改 compose.yaml 中的 image 为上述 tag，启动
 docker compose up -d
 # 首次启动日志会显示：
