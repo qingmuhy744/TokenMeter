@@ -190,7 +190,7 @@ export default function Status() {
       {/* Header */}
       <div className="border-b">
         <div className="max-w-5xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">{t("status.title")}</h1>
               <div className="flex items-center gap-2 mt-2">
@@ -200,7 +200,7 @@ export default function Status() {
                 </span>
               </div>
             </div>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center flex-wrap">
               <Link to="/matrix"><Button variant="outline" size="sm">{t("nav.matrix")}</Button></Link>
               <Link to="/"><Button variant="outline" size="sm">{t("nav.dashboard")}</Button></Link>
               <Link to="/history"><Button variant="outline" size="sm">{t("nav.history")}</Button></Link>
