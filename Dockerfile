@@ -15,7 +15,7 @@ WORKDIR /app
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock alembic.ini ./
 RUN uv sync --frozen --no-dev --no-editable
 
 COPY backend/ ./backend/
