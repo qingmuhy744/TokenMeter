@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -185,12 +186,21 @@ export default function Status() {
       {/* Header */}
       <div className="border-b">
         <div className="max-w-5xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold tracking-tight">{t("status.title")}</h1>
-          <div className="flex items-center gap-2 mt-2">
-            <div className={`h-2.5 w-2.5 rounded-full ${allOperational ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"}`} />
-            <span className="text-sm text-muted-foreground font-medium">
-              {allOperational ? t("status.allSystemsOperational") : t("status.someSystemsIssues")}
-            </span>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{t("status.title")}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <div className={`h-2.5 w-2.5 rounded-full ${allOperational ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"}`} />
+                <span className="text-sm text-muted-foreground font-medium">
+                  {allOperational ? t("status.allSystemsOperational") : t("status.someSystemsIssues")}
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Link to="/matrix"><Button variant="outline" size="sm">{t("nav.matrix")}</Button></Link>
+              <Link to="/"><Button variant="outline" size="sm">{t("nav.dashboard")}</Button></Link>
+              <Link to="/history"><Button variant="outline" size="sm">{t("nav.history")}</Button></Link>
+            </div>
           </div>
         </div>
       </div>
