@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
-import { ThemeProvider, useTheme } from "next-themes";
+import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -43,10 +43,22 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const location = useLocation();
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     onClose();
   }, [location.pathname, onClose]);
+
+  useEffect(() => {
+    if (!themeMenuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+        setThemeMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [themeMenuOpen]);
 
   const links = [
     { to: "/", icon: LayoutDashboard, label: t("nav.dashboard") },
@@ -146,7 +158,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Globe className="size-3" />
               {i18n.language === "zh" ? "EN" : "中文"}
             </button>
-            <div className="relative">
+            <div className="relative" ref={themeMenuRef}>
               <button
                 onClick={() => setThemeMenuOpen(!themeMenuOpen)}
                 className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
@@ -338,28 +350,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <TooltipProvider>
-            <Routes>
-              <Route path="/status" element={<Status />} />
-              <Route path="/public/history" element={<PublicHistory />} />
-              <Route path="/public/plan/:id" element={<PlanDetail />} />
-              <Route path="/plan/:id" element={<PlanDetail />} />
-              <Route path="/login" element={<Login />} />
-              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/matrix" element={<DashboardMatrix />} />
-                <Route path="/plans" element={<Plans />} />
-                <Route path="/history" element={<History />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
-            </Routes>
-            <Toaster />
-          </TooltipProvider>
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <TooltipProvider>
+          <Routes>
+            <Route path="/status" element={<Status />} />
+            <Route path="/public/history" element={<PublicHistory />} />
+            <Route path="/public/plan/:id" element={<PlanDetail />} />
+            <Route path="/plan/:id" element={<PlanDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/matrix" element={<DashboardMatrix />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Routes>
+          <Toaster />
+        </TooltipProvider>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

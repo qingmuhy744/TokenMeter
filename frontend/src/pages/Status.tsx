@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,6 +92,18 @@ export default function Status() {
   const [metric, setMetric] = useState<ComparisonMetric>('tps_overall');
   const [now, setNow] = useState(() => Date.now());
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!themeMenuOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+        setThemeMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [themeMenuOpen]);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), REFRESH_INTERVAL);
@@ -147,7 +159,7 @@ export default function Status() {
   useEffect(() => {
     const id = setInterval(() => {
       fetchStatus(range).then(setData);
-    }, 60000);
+    }, REFRESH_INTERVAL);
     return () => clearInterval(id);
   }, [range]);
 
@@ -212,7 +224,7 @@ export default function Status() {
               <Link to="/"><Button variant="outline" size="sm">{t("nav.dashboard")}</Button></Link>
               <Link to="/history"><Button variant="outline" size="sm">{t("nav.history")}</Button></Link>
               <div className="w-px h-5 bg-border mx-1" />
-              <div className="relative">
+              <div className="relative" ref={themeMenuRef}>
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setThemeMenuOpen(!themeMenuOpen)}>
                   {theme === 'system' ? (
                     resolvedTheme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />
@@ -352,7 +364,7 @@ export default function Status() {
                         {plan.availability_pct !== null && (
                           <div className="flex items-center gap-2">
                              <span className="text-[10px] font-bold">{plan.availability_pct}%</span>
-                             <div className="w-16 h-1.2 bg-muted rounded-full overflow-hidden">
+                             <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${plan.availability_pct >= AVAILABILITY_HIGH ? "bg-green-500" : plan.availability_pct >= AVAILABILITY_MEDIUM ? "bg-yellow-500" : "bg-red-500"}`}
                                 style={{ width: `${plan.availability_pct}%` }}
