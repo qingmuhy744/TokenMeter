@@ -229,7 +229,11 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
           }[column.getIsSorted() as string] ?? <ArrowUpDown className="w-4 h-4 opacity-50" />}
         </div>
       ),
-      cell: info => <div className="text-center font-mono text-muted-foreground">{info.getValue()?.toFixed(0)}ms</div>,
+      cell: info => (
+        <div className={cn("text-center font-mono rounded-md transition-colors", getHeatmapColor(info.getValue(), 'ttft'))}>
+          {info.getValue()?.toFixed(0)}ms
+        </div>
+      ),
       size: 80,
       minSize: 60,
       maxSize: 100,
@@ -285,7 +289,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         <div 
           className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          title={t("matrix.degradation")}
+          title={t("matrix.degradationTooltip")}
         >
           <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.degradation")}</span>
           {{
@@ -311,7 +315,7 @@ export default function MatrixTable({ selectedIds = [], onToggleSelection }: Mat
         <div 
           className="flex items-center justify-center cursor-pointer select-none gap-1"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          title={t("matrix.success")}
+          title={t("matrix.successTooltip")}
         >
           <span className="border-b border-dashed border-muted-foreground/50">{t("matrix.success")}</span>
           {{

@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth, AuthProvider } from "@/hooks/useAuth";
-import { ThemeProvider, useTheme } from "@/hooks/useTheme";
+import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Sun,
   Moon,
+  Monitor,
 } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -39,12 +40,25 @@ interface SidebarProps {
 function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { t, i18n } = useTranslation();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const location = useLocation();
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     onClose();
   }, [location.pathname, onClose]);
+
+  // 点击外部关闭主题菜单
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (themeMenuOpen && themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+        setThemeMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [themeMenuOpen]);
 
   const links = [
     { to: "/", icon: LayoutDashboard, label: t("nav.dashboard") },
@@ -136,7 +150,80 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         <div className="p-3 border-t border-sidebar-border/50 mx-3">
-          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors">
+          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors md:hidden">
+            <button
+              onClick={toggleLang}
+              className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+            >
+              <Globe className="size-3" />
+              {i18n.language === "zh" ? "EN" : "中文"}
+            </button>
+            <div className="relative" ref={themeMenuRef}>
+              <button
+                onClick={() => setThemeMenuOpen(!themeMenuOpen)}
+                className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+              >
+                {theme === 'system' ? (
+                  resolvedTheme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />
+                ) : theme === 'dark' ? (
+                  <Sun className="size-3" />
+                ) : (
+                  <Moon className="size-3" />
+                )}
+                {theme === 'system' ? t('theme.auto') : theme === 'dark' ? t('theme.light') : t('theme.dark')}
+              </button>
+              {themeMenuOpen && (
+                <div className="absolute bottom-full left-0 mb-1 w-28 bg-sidebar border border-sidebar-border rounded-lg shadow-lg overflow-hidden z-50 md:top-full md:left-0 md:mt-1 md:bottom-auto">
+                  <button
+                    onClick={() => { setTheme('system'); setThemeMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'system'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Monitor className="size-3" />
+                    {t('theme.auto')}
+                  </button>
+                  <button
+                    onClick={() => { setTheme('light'); setThemeMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'light'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Moon className="size-3" />
+                    {t('theme.light')}
+                  </button>
+                  <button
+                    onClick={() => { setTheme('dark'); setThemeMenuOpen(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'dark'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Sun className="size-3" />
+                    {t('theme.dark')}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between px-2 py-2 mt-1 border-t border-sidebar-border/30 pt-2 md:hidden">
+            <span className="text-xs font-medium text-sidebar-foreground/60">{user?.username}</span>
+            <button
+              onClick={logout}
+              className="size-6 flex items-center justify-center rounded-lg text-sidebar-foreground/40 hover:text-red hover:bg-red/10 transition-colors"
+            >
+              <LogOut className="size-3.5" />
+            </button>
+          </div>
+          <div className="hidden md:flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-sidebar-accent transition-colors">
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleLang}
@@ -145,13 +232,58 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <Globe className="size-3" />
                 {i18n.language === "zh" ? "EN" : "中文"}
               </button>
-              <button
-                onClick={toggleTheme}
-                className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-              >
-                {theme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />}
-                {theme === 'dark' ? t('theme.light') : t('theme.dark')}
-              </button>
+              <div className="relative group">
+                <button
+                  className="flex items-center gap-2 text-xs font-medium text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+                >
+                  {theme === 'system' ? (
+                    resolvedTheme === 'dark' ? <Sun className="size-3" /> : <Moon className="size-3" />
+                  ) : theme === 'dark' ? (
+                    <Sun className="size-3" />
+                  ) : (
+                    <Moon className="size-3" />
+                  )}
+                  {theme === 'system' ? t('theme.auto') : theme === 'dark' ? t('theme.light') : t('theme.dark')}
+                </button>
+                <div className="absolute bottom-full left-0 mb-1 w-28 bg-sidebar border border-sidebar-border rounded-lg shadow-lg overflow-hidden hidden group-hover:block">
+                  <button
+                    onClick={() => setTheme('system')}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'system'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Monitor className="size-3" />
+                    {t('theme.auto')}
+                  </button>
+                  <button
+                    onClick={() => setTheme('light')}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'light'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Moon className="size-3" />
+                    {t('theme.light')}
+                  </button>
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors",
+                      theme === 'dark'
+                        ? "bg-sidebar-foreground/10 text-sidebar-foreground"
+                        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-foreground/5"
+                    )}
+                  >
+                    <Sun className="size-3" />
+                    {t('theme.dark')}
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-sidebar-foreground/60">{user?.username}</span>
@@ -218,28 +350,26 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <TooltipProvider>
-            <Routes>
-              <Route path="/status" element={<Status />} />
-              <Route path="/public/history" element={<PublicHistory />} />
-              <Route path="/public/plan/:id" element={<PlanDetail />} />
-              <Route path="/plan/:id" element={<PlanDetail />} />
-              <Route path="/login" element={<Login />} />
-              <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/matrix" element={<DashboardMatrix />} />
-                <Route path="/plans" element={<Plans />} />
-                <Route path="/history" element={<History />} />
-                <Route path="/settings" element={<Settings />} />
-              </Route>
-            </Routes>
-            <Toaster />
-          </TooltipProvider>
-        </BrowserRouter>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <TooltipProvider>
+          <Routes>
+            <Route path="/status" element={<Status />} />
+            <Route path="/public/history" element={<PublicHistory />} />
+            <Route path="/public/plan/:id" element={<PlanDetail />} />
+            <Route path="/plan/:id" element={<PlanDetail />} />
+            <Route path="/login" element={<Login />} />
+            <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/matrix" element={<DashboardMatrix />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/history" element={<History />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Routes>
+          <Toaster />
+        </TooltipProvider>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

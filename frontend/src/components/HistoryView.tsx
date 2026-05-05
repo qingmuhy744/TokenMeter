@@ -181,7 +181,7 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
                     color: 'var(--color-foreground)',
                   }} 
                 />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 500, paddingTop: '20px', color: textMuted }} />
+                <Legend iconType="plainline" wrapperStyle={{ fontSize: '11px', fontWeight: 500, paddingTop: '20px', color: textMuted }} />
                 {shadingAreas.map((area, idx) => (
                   <ReferenceArea
                     key={idx}
