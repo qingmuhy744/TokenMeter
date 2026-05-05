@@ -49,10 +49,10 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     onClose();
   }, [location.pathname, onClose]);
 
+  // 点击外部关闭主题菜单
   useEffect(() => {
-    if (!themeMenuOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+      if (themeMenuOpen && themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
         setThemeMenuOpen(false);
       }
     };

@@ -94,10 +94,10 @@ export default function Status() {
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement>(null);
 
+  // 点击外部关闭主题菜单
   useEffect(() => {
-    if (!themeMenuOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+      if (themeMenuOpen && themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
         setThemeMenuOpen(false);
       }
     };
