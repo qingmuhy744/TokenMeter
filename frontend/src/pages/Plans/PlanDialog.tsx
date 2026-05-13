@@ -123,15 +123,29 @@ export const PlanDialog = ({
             <div className="space-y-2">
               <Label>{t("plans.apiType")}</Label>
               <Select
-                value={form.api_type || "openai"}
+                value={form.api_type === null ? "inherit" : form.api_type}
                 onValueChange={(v) =>
-                  setForm({ ...form, api_type: v as "openai" | "anthropic" })
+                  setForm({
+                    ...form,
+                    api_type: v === "inherit" ? null : (v as "openai" | "anthropic"),
+                  })
                 }
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue
+                    placeholder={
+                      parentEffective?.effective_api_type
+                        ? `${parentEffective.effective_api_type} (继承)`
+                        : "选择 API 类型"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="inherit">
+                    {parentEffective?.effective_api_type
+                      ? `${parentEffective.effective_api_type} (继承)`
+                      : "默认（继承父级）"}
+                  </SelectItem>
                   <SelectItem value="openai">OpenAI Compatible</SelectItem>
                   <SelectItem value="anthropic">Anthropic</SelectItem>
                 </SelectContent>
