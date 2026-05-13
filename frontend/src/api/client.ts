@@ -5,7 +5,7 @@ const BASE = "/api";
 export interface Plan {
   id: number;
   name: string;
-  api_type: string;
+  api_type: "openai" | "anthropic" | null;
   api_base: string;
   has_api_key: boolean;
   model: string;
