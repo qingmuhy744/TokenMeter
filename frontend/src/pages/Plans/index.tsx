@@ -14,7 +14,7 @@ import { DeleteDialog } from "./DeleteDialog";
 
 export interface PlanForm {
   name: string;
-  api_type: "openai" | "anthropic";
+  api_type: "openai" | "anthropic" | null;
   api_base: string;
   api_key: string;
   model: string;
@@ -29,7 +29,7 @@ export interface PlanForm {
 
 const defaultForm: PlanForm = {
   name: "",
-  api_type: "openai",
+  api_type: null,
   api_base: "",
   api_key: "",
   model: "",
@@ -108,7 +108,7 @@ export default function Plans() {
   const handleEdit = (plan: Plan) => {
     setForm({
       name: plan.name,
-      api_type: (plan.api_type as "openai" | "anthropic") || "openai",
+      api_type: plan.api_type as "openai" | "anthropic" | null,
       api_base: plan.api_base || "",
       api_key: "",
       model: plan.model || "",
