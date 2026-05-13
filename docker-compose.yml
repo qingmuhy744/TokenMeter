@@ -13,7 +13,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://tm_user:tm_password@db:5432/tokenmeter
 
-      # SECRET_KEY=your-secret-key-here     # 不配置则自动生成随机密钥
+      # 生产环境必须设置固定 SECRET_KEY；不配置会自动生成随机密钥，容器重启后会话全部失效
+      # SECRET_KEY=replace-with-a-long-random-secret
       # HTTP_PROXY=http://host.docker.internal:7890
       # HTTPS_PROXY=http://host.docker.internal:7890
       # NO_PROXY=localhost,127.0.0.1

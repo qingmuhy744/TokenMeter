@@ -167,7 +167,11 @@ export const PlanDialog = ({
             <PasswordInput
               value={form.api_key}
               onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-              placeholder={parentEffective?.effective_api_key || undefined}
+              placeholder={
+                parentEffective?.has_effective_api_key
+                  ? "Inherited API key configured"
+                  : undefined
+              }
             />
           </div>
 

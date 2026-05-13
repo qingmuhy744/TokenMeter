@@ -58,6 +58,14 @@ class TokenPlan(Base):
         return self.get_effective_value("api_key")
 
     @property
+    def has_api_key(self) -> bool:
+        return bool(self.api_key)
+
+    @property
+    def has_effective_api_key(self) -> bool:
+        return bool(self.effective_api_key)
+
+    @property
     def effective_api_base(self) -> str | None:
         return self.get_effective_value("api_base")
 

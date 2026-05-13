@@ -17,6 +17,34 @@ from backend.auth import get_current_user
 router = APIRouter(prefix="/api/plans", tags=["plans"])
 
 
+async def _validate_parent_id(
+    db,
+    plan_id: int | None,
+    parent_id: int | None,
+) -> None:
+    if parent_id is None:
+        return
+
+    if plan_id is not None and parent_id == plan_id:
+        raise HTTPException(status_code=400, detail="Plan cannot be its own parent")
+
+    result = await db.execute(select(TokenPlan.id, TokenPlan.parent_id))
+    parent_map = {row.id: row.parent_id for row in result.all()}
+
+    if parent_id not in parent_map:
+        raise HTTPException(status_code=400, detail="Parent plan not found")
+
+    seen: set[int] = set()
+    current = parent_id
+    while current is not None:
+        if current in seen:
+            raise HTTPException(status_code=400, detail="Parent cycle detected")
+        seen.add(current)
+        if plan_id is not None and current == plan_id:
+            raise HTTPException(status_code=400, detail="Parent cycle detected")
+        current = parent_map.get(current)
+
+
 @router.get("", response_model=list[PlanResponse])
 async def list_plans(request: Request):
     await get_current_user(request)
@@ -36,7 +64,7 @@ async def list_plans(request: Request):
 
 
 @router.get("/export")
-async def export_plans(request: Request):
+async def export_plans(request: Request, include_api_key: bool = False):
     await get_current_user(request)
     async with async_session() as db:
         result = await db.execute(select(TokenPlan).order_by(TokenPlan.id.asc()))
@@ -45,22 +73,23 @@ async def export_plans(request: Request):
     export_data = []
     for plan in plans:
         # Include api_key for transferability/backup
-        export_data.append(
-            {
-                "name": plan.name,
-                "api_type": plan.api_type,
-                "api_base": plan.api_base,
-                "api_key": plan.api_key,
-                "model": plan.model,
-                "prompt": plan.prompt,
-                "max_tokens": plan.max_tokens,
-                "test_count": plan.test_count,
-                "interval_minutes": plan.interval_minutes,
-                "is_active": plan.is_active,
-                "parent_id": plan.parent_id,
-                "multiplier": plan.multiplier,
-            }
-        )
+        plan_data = {
+            "name": plan.name,
+            "api_type": plan.api_type,
+            "api_base": plan.api_base,
+            "model": plan.model,
+            "prompt": plan.prompt,
+            "max_tokens": plan.max_tokens,
+            "test_count": plan.test_count,
+            "interval_minutes": plan.interval_minutes,
+            "is_active": plan.is_active,
+            "parent_id": plan.parent_id,
+            "multiplier": plan.multiplier,
+            "has_api_key": bool(plan.api_key),
+        }
+        if include_api_key:
+            plan_data["api_key"] = plan.api_key
+        export_data.append(plan_data)
 
     return Response(
         content=json.dumps(export_data, indent=2),
@@ -79,6 +108,7 @@ async def import_plans(body: list[PlanCreate], request: Request):
         existing_names = set(result.scalars().all())
 
         for plan_data in body:
+            await _validate_parent_id(db, None, plan_data.parent_id)
             name = plan_data.name
             # Collision handling: append " (Imported)" until unique
             while name in existing_names:
@@ -106,6 +136,7 @@ async def import_plans(body: list[PlanCreate], request: Request):
 async def create_plan(body: PlanCreate, request: Request):
     await get_current_user(request)
     async with async_session() as db:
+        await _validate_parent_id(db, None, body.parent_id)
         plan = TokenPlan(**body.model_dump())
         db.add(plan)
         await db.commit()
@@ -163,7 +194,10 @@ async def update_plan(plan_id: int, body: PlanUpdate, request: Request):
         plan = result.scalar_one_or_none()
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
-        for field, value in body.model_dump(exclude_unset=True).items():
+        update_data = body.model_dump(exclude_unset=True)
+        if "parent_id" in update_data:
+            await _validate_parent_id(db, plan_id, update_data["parent_id"])
+        for field, value in update_data.items():
             setattr(plan, field, value)
         await db.commit()
         await db.refresh(plan)
@@ -200,7 +234,11 @@ async def trigger_test(plan_id: int, request: Request):
             raise HTTPException(status_code=404, detail="Plan not found")
 
         # If it's a Provider (Suite), run all children sequentially
-        if plan.parent_id is None:
+        children_result = await db.execute(
+            select(TokenPlan.id).where(TokenPlan.parent_id == plan_id).limit(1)
+        )
+        has_children = children_result.scalar_one_or_none() is not None
+        if plan.parent_id is None and has_children:
             from backend.services.scheduler import run_suite_test
 
             logger.info(

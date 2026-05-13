@@ -32,7 +32,7 @@ async def test_sync_scheduled_jobs_filters_suites(db_session):
     child2 = TokenPlan(name="Child 2", parent_id=suite.id, is_active=True)
     db_session.add_all([child1, child2])
 
-    # 2. 创建一个独立的活跃计划（非套餐子项，但也算作套餐，因为它没有 parent_id）
+    # 2. 创建一个独立的活跃计划（无子项，不应按 suite 运行）
     standalone = TokenPlan(name="Standalone", interval_minutes=10, is_active=True)
     db_session.add(standalone)
 
@@ -41,12 +41,12 @@ async def test_sync_scheduled_jobs_filters_suites(db_session):
     # 3. 同步
     await sync_scheduled_jobs(db_session)
 
-    # 4. 验证：应该只有 suite 和 standalone 两个任务
+    # 4. 验证：suite 和 standalone 分别注册为不同类型的任务
     jobs = scheduler.get_jobs()
     job_ids = {job.id for job in jobs}
     assert len(jobs) == 2
     assert f"suite_{suite.id}" in job_ids
-    assert f"suite_{standalone.id}" in job_ids
+    assert f"standalone_{standalone.id}" in job_ids
     assert f"plan_{child1.id}" not in job_ids
     assert f"plan_{child2.id}" not in job_ids
 

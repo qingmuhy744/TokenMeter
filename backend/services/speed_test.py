@@ -90,15 +90,9 @@ class OpenAIParser(BaseParser):
                         if tracker.time_first_reasoning is None:
                             tracker.time_first_reasoning = now
                         self._is_thinking = True
-                        tracker.thinking_char_count += len(part)
-                        tracker.char_count += len(part)
-                        char_delta += len(part)
                     elif part == "</think>":
                         tracker.time_think_end = now
                         self._is_thinking = False
-                        tracker.thinking_char_count += len(part)
-                        tracker.char_count += len(part)
-                        char_delta += len(part)
                     else:
                         if self._is_thinking:
                             tracker.thinking_char_count += len(part)
@@ -156,12 +150,6 @@ class AnthropicParser(BaseParser):
             return 0
 
         data_type = data.get("type", "")
-
-        # RESTORED DEBUG LOGS
-        if tracker.delta_count < 15:
-            logger.info(
-                f"Anthropic event: {data_type} | delta: {json.dumps(data.get('delta', {}))}"
-            )
 
         if data_type == "message_start":
             usage = data.get("message", {}).get("usage", {})
@@ -443,7 +431,10 @@ class SpeedTester:
         output_tokens = tracker.output_tokens or tracker.total_tokens or 0
         if output_tokens == 0 and tracker.delta_count > 0:
             output_tokens = tracker.delta_count
-            result.note = f"Token count from stream deltas (no usage field). Events: {tracker.is_finished}"
+            result.note = (
+                f"Estimated token count from stream deltas (no usage field). "
+                f"Events: {tracker.is_finished}"
+            )
 
         if output_tokens == 0:
             result.note = f"No output tokens. Events: {tracker.is_finished}"

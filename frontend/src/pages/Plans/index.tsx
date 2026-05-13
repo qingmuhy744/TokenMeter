@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
-import type { Plan } from "@/api/client";
+import type { Plan, PlanPayload } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus, ListPlus } from "lucide-react";
@@ -51,7 +51,6 @@ export default function Plans() {
   const [batchImportOpen, setBatchImportOpen] = useState(false);
   const [form, setForm] = useState<PlanForm>(defaultForm);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [originalKey, setOriginalKey] = useState("");
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Plan | null>(null);
@@ -89,11 +88,11 @@ export default function Plans() {
         // Original single creation/update logic
         if (editingId) {
           const { api_key, ...rest } = form;
-          const payload = (originalKey !== api_key ? { ...rest, api_key } : rest) as Partial<Plan>;
+          const payload = (api_key ? { ...rest, api_key } : rest) as PlanPayload;
           await api.updatePlan(editingId, payload);
           toast.success(t("plans.planUpdated"));
         } else {
-          await api.createPlan(form as Partial<Plan>);
+          await api.createPlan(form as PlanPayload);
           toast.success(t("plans.planCreated"));
         }
       }
@@ -107,12 +106,11 @@ export default function Plans() {
   };
 
   const handleEdit = (plan: Plan) => {
-    setOriginalKey(plan.api_key || "");
     setForm({
       name: plan.name,
       api_type: (plan.api_type as "openai" | "anthropic") || "openai",
       api_base: plan.api_base || "",
-      api_key: plan.api_key || "",
+      api_key: "",
       model: plan.model || "",
       prompt: plan.prompt || "",
       max_tokens: plan.max_tokens ?? 256,
@@ -177,7 +175,6 @@ export default function Plans() {
             onClick={() => {
               setForm(defaultForm);
               setEditingId(null);
-              setOriginalKey("");
               setOpen(true);
             }}
           >

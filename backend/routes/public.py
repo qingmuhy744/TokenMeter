@@ -147,7 +147,15 @@ async def public_status(range: str = Query("24h", pattern="^(24h|7d|30d)$")):
         plan_ids = [p.id for p in plans]
 
         if not plan_ids:
-            return {"plans": [], "custom_banner": None, "range": range}
+            banner_result = await db.execute(
+                select(Setting).where(Setting.key == "custom_banner")
+            )
+            custom_banner = banner_result.scalar_one_or_none()
+            return {
+                "plans": [],
+                "custom_banner": custom_banner.value if custom_banner else None,
+                "range": range,
+            }
 
         # Bulk fetch latest results
         latest_results_query = select(TestResult).where(
@@ -348,10 +356,13 @@ async def public_matrix(
         plans_result = await db.execute(
             select(TokenPlan)
             .options(selectinload(TokenPlan.parent))
-            .where(TokenPlan.is_active)
+            .where(TokenPlan.is_active, TokenPlan.parent_id.is_not(None))
         )
         plans = plans_result.scalars().all()
         plan_ids = [p.id for p in plans]
+
+        if not plan_ids:
+            return []
 
         results_data = await db.execute(
             select(TestResult)

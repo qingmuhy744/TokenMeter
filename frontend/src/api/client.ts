@@ -7,7 +7,7 @@ export interface Plan {
   name: string;
   api_type: string;
   api_base: string;
-  api_key: string;
+  has_api_key: boolean;
   model: string;
   prompt: string | null;
   max_tokens: number;
@@ -21,12 +21,16 @@ export interface Plan {
   parent_id?: number | null;
   effective_api_type?: string | null;
   effective_api_base?: string | null;
-  effective_api_key?: string | null;
+  has_effective_api_key?: boolean;
   effective_model?: string | null;
   effective_prompt?: string | null;
   effective_max_tokens?: number | null;
   effective_test_count?: number | null;
 }
+
+export type PlanPayload = Partial<Plan> & {
+  api_key?: string;
+};
 
 export interface TestResult {
   id: number;
@@ -131,8 +135,8 @@ export const api = {
   },
 
   getPlans: () => request<Plan[]>("/plans"),
-  createPlan: (data: Partial<Plan>) => request<Plan>("/plans", { method: "POST", body: JSON.stringify(data) }),
-  updatePlan: (id: number, data: Partial<Plan>) =>
+  createPlan: (data: PlanPayload) => request<Plan>("/plans", { method: "POST", body: JSON.stringify(data) }),
+  updatePlan: (id: number, data: PlanPayload) =>
     request<Plan>(`/plans/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deletePlan: (id: number) => request(`/plans/${id}`, { method: "DELETE" }),
   triggerTest: (id: number) => request<{ task_id: string }>(`/plans/${id}/test`, { method: "POST" }),

@@ -7,7 +7,7 @@ from backend.main import app
 async def test_public_status_no_auth(db_session):
     """Public status endpoint should work without authentication."""
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         resp = await client.get("/api/public/status")
         assert resp.status_code == 200
         data = resp.json()
@@ -20,7 +20,7 @@ async def test_public_status_no_auth(db_session):
 async def test_public_status_range_param(db_session):
     """Status endpoint accepts range query parameter."""
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         for r in ["24h", "7d", "30d"]:
             resp = await client.get(f"/api/public/status?range={r}")
             assert resp.status_code == 200
@@ -31,6 +31,6 @@ async def test_public_status_range_param(db_session):
 async def test_public_status_invalid_range(db_session):
     """Status endpoint rejects invalid range values."""
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         resp = await client.get("/api/public/status?range=1y")
         assert resp.status_code == 422
