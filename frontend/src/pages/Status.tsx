@@ -181,7 +181,7 @@ export default function Status() {
       {data.custom_banner && (
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
           <div className="max-w-5xl mx-auto px-4 py-6 space-y-3">
-            <div dangerouslySetInnerHTML={{ __html: data.custom_banner }} />
+            <div className="whitespace-pre-wrap text-sm font-medium">{data.custom_banner}</div>
           </div>
         </div>
       )}

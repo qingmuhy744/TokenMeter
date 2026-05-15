@@ -13,7 +13,7 @@ from sqlalchemy import select
 async def auth_client(db_session):
     """Create an authenticated test client using the shared test db session."""
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         pw_hash = hashlib.sha256("testpass".encode()).hexdigest()
         result = await db_session.execute(
             select(User).where(User.username == "testadmin")

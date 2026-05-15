@@ -111,6 +111,7 @@
     "editPlan": "编辑计划",
     "name": "计划名称",
     "apiType": "API 类型",
+    "apiTypeInherit": "继承（默认）",
     "apiBaseUrl": "API 地址",
     "apiKey": "API 密钥",
     "model": "模型",

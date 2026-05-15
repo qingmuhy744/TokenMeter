@@ -6,7 +6,7 @@ from backend.main import app
 @pytest.mark.asyncio
 async def test_me_requires_auth(db_session):
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         resp = await client.get("/api/auth/me")
         assert resp.status_code == 401
 
@@ -15,7 +15,7 @@ async def test_me_requires_auth(db_session):
 async def test_login_creates_session(db_session):
     # No need to call init_db(), db_session fixture already created tables
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         from backend.database import async_session
         from backend.models import User
         from backend.auth import hash_password
@@ -52,7 +52,7 @@ async def test_logout(db_session):
     import hashlib
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         # 1. Login
         async with async_session() as db:
             pw_hash = hashlib.sha256("testpass".encode()).hexdigest()
@@ -85,7 +85,7 @@ async def test_change_password_success(db_session):
     import hashlib
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         # 1. Setup user
         async with async_session() as db:
             old_pw_hash = hashlib.sha256("oldpass".encode()).hexdigest()
@@ -121,7 +121,7 @@ async def test_change_password_wrong_old(db_session):
     import hashlib
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         async with async_session() as db:
             old_pw_hash = hashlib.sha256("oldpass".encode()).hexdigest()
             db.add(
@@ -150,7 +150,7 @@ async def test_login_rate_limiting(db_session):
     reset_rate_limit()  # Ensure clean start
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         # Attempt login with wrong password 5 times
         for _ in range(5):
             resp = await client.post(
@@ -171,6 +171,46 @@ async def test_login_rate_limiting(db_session):
             "/api/auth/login", json={"username": "admin", "password": "wrong"}
         )
         assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_successful_login_resets_rate_limit(db_session):
+    from httpx import AsyncClient, ASGITransport
+    from backend.main import app
+    from backend.auth import hash_password, reset_rate_limit, async_session
+    from backend.models import User
+    import hashlib
+
+    reset_rate_limit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
+        async with async_session() as db:
+            pw_hash = hashlib.sha256("goodpass".encode()).hexdigest()
+            db.add(User(username="rate_user", password_hash=hash_password(pw_hash)))
+            await db.commit()
+
+        for _ in range(4):
+            resp = await client.post(
+                "/api/auth/login", json={"username": "rate_user", "password": "wrong"}
+            )
+            assert resp.status_code == 401
+
+        resp = await client.post(
+            "/api/auth/login", json={"username": "rate_user", "password": pw_hash}
+        )
+        assert resp.status_code == 200
+
+        for _ in range(5):
+            resp = await client.post(
+                "/api/auth/login", json={"username": "rate_user", "password": "wrong"}
+            )
+            assert resp.status_code == 401
+
+        resp = await client.post(
+            "/api/auth/login", json={"username": "rate_user", "password": "wrong"}
+        )
+        assert resp.status_code == 429
 
 
 @pytest.mark.asyncio
@@ -209,6 +249,7 @@ async def test_lifespan_calls_ensure_admin(db_session):
         patch("backend.main.sync_scheduled_jobs", new_callable=AsyncMock),
         patch("backend.main.start_scheduler"),
         patch("backend.main.shutdown_scheduler"),
+        patch("backend.main.alembic.command.upgrade"),
     ):
         async with lifespan(app):
             pass

@@ -152,6 +152,17 @@ class TestMiniMaxM25Stream:
         # The final usage chunk has completion_tokens=28
         assert tracker.output_tokens == 28
 
+    def test_think_tags_are_not_counted_as_payload(self):
+        lines = [
+            make_openai_chunk(content="<think>hidden reasoning</think>visible"),
+            "data: [DONE]",
+        ]
+        parser = OpenAIParser()
+        tracker = parse_lines(parser, lines)
+        assert tracker.thinking_char_count == len("hidden reasoning")
+        assert tracker.content_char_count == len("visible")
+        assert tracker.char_count == len("hidden reasoning") + len("visible")
+
 
 # ---------------------------------------------------------------------------
 # DeepSeek-style: reasoning_content as separate field
@@ -180,6 +191,17 @@ class TestDeepSeekReasoningField:
         assert tracker.char_count == len("Let me think") + len(" about this") + len(
             "The answer is 42"
         )
+
+    def test_stream_without_usage_marks_estimated_note(self):
+        lines = [
+            make_openai_chunk(content="Hello"),
+            make_openai_chunk(content=" world"),
+            "data: [DONE]",
+        ]
+        parser = OpenAIParser()
+        tracker = parse_lines(parser, lines)
+        assert tracker.output_tokens is None
+        assert tracker.delta_count == 2
 
     def test_mixed_content_and_reasoning_in_same_chunk(self):
         """A chunk can have both reasoning_content and content."""

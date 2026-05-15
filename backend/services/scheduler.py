@@ -193,41 +193,46 @@ async def _run_suite_test_internal(suite_id: int, db: AsyncSession):
 
 
 async def sync_scheduled_jobs(db: AsyncSession | None = None):
-    """Sync APScheduler jobs with active suites in database."""
+    """Sync APScheduler jobs with active root plans in database."""
     if db is None:
         async with async_session() as db:
             result = await db.execute(
-                select(TokenPlan).where(
-                    TokenPlan.parent_id.is_(None), TokenPlan.is_active
-                )
+                select(TokenPlan)
+                .options(selectinload(TokenPlan.children))
+                .where(TokenPlan.parent_id.is_(None), TokenPlan.is_active)
             )
-            suites = result.scalars().all()
+            root_plans = result.scalars().all()
     else:
         result = await db.execute(
-            select(TokenPlan).where(TokenPlan.parent_id.is_(None), TokenPlan.is_active)
+            select(TokenPlan)
+            .options(selectinload(TokenPlan.children))
+            .where(TokenPlan.parent_id.is_(None), TokenPlan.is_active)
         )
-        suites = result.scalars().all()
+        root_plans = result.scalars().all()
 
     existing_jobs = {job.id for job in scheduler.get_jobs()}
+    active_ids = set()
 
-    for suite in suites:
-        job_id = f"suite_{suite.id}"
+    for plan in root_plans:
+        has_active_children = any(child.is_active for child in plan.children)
+        job_id = f"suite_{plan.id}" if has_active_children else f"standalone_{plan.id}"
+        job_func = run_suite_test if has_active_children else run_plan_test
+        active_ids.add(job_id)
         if job_id in existing_jobs:
             scheduler.reschedule_job(
-                job_id, trigger=IntervalTrigger(minutes=suite.interval_minutes)
+                job_id, trigger=IntervalTrigger(minutes=plan.interval_minutes)
             )
         else:
             scheduler.add_job(
-                run_suite_test,
-                trigger=IntervalTrigger(minutes=suite.interval_minutes),
+                job_func,
+                trigger=IntervalTrigger(minutes=plan.interval_minutes),
                 id=job_id,
-                args=[suite.id],
+                args=[plan.id],
                 replace_existing=True,
             )
 
-    active_ids = {f"suite_{s.id}" for s in suites}
     for job in scheduler.get_jobs():
-        if job.id.startswith("suite_") and job.id not in active_ids:
+        if job.id.startswith(("suite_", "standalone_")) and job.id not in active_ids:
             scheduler.remove_job(job.id)
         # 清理旧版本的 plan_ 前缀任务
         elif job.id.startswith("plan_"):

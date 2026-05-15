@@ -70,7 +70,7 @@ async def test_public_status_time_bucket_trend(db_session):
     await seed_fake_data(db_session)
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         resp = await client.get("/api/public/status?range=24h")
         assert resp.status_code == 200
         data = resp.json()
@@ -93,7 +93,7 @@ async def test_public_status_invalid_date_check(db_session):
     await seed_fake_data(db_session)
 
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
+    async with AsyncClient(transport=transport, base_url="https://test") as client:
         resp = await client.get("/api/public/status?range=24h")
         data = resp.json()
 

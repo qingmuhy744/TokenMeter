@@ -94,10 +94,32 @@ async def test_export_plans(db_session, auth_client: AsyncClient):
     plan = next(p for p in data if p["name"] == "Export Test")
     assert plan["api_type"] == "openai"
     assert plan["test_count"] == 5
-    assert plan["api_key"] == "sk-export-test"
+    assert plan["has_api_key"] is True
+    assert "api_key" not in plan
     assert "id" not in plan
     assert "created_at" not in plan
     assert "updated_at" not in plan
+
+
+@pytest.mark.asyncio
+async def test_export_plans_can_include_api_keys(db_session, auth_client: AsyncClient):
+    await auth_client.post(
+        "/api/plans",
+        json={
+            "name": "Secret Export",
+            "api_type": "openai",
+            "api_base": "https://api.openai.com/v1",
+            "api_key": "sk-secret-export",
+            "model": "gpt-4o",
+        },
+    )
+
+    resp = await auth_client.get("/api/plans/export?include_api_key=true")
+    assert resp.status_code == 200
+
+    data = resp.json()
+    plan = next(p for p in data if p["name"] == "Secret Export")
+    assert plan["api_key"] == "sk-secret-export"
 
 
 @pytest.mark.asyncio

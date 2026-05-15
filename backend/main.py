@@ -77,7 +77,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="TokenMeter", lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, max_age=86400 * 7)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    session_cookie="tokenmeter_session",
+    max_age=86400 * 7,
+    same_site="lax",
+    https_only=True,
+)
 app.include_router(auth_router)
 app.include_router(plans_router)
 app.include_router(results_router)

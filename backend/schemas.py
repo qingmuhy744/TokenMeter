@@ -51,7 +51,7 @@ class PlanCreate(BaseModel):
     interval_minutes: int = 60
     is_active: bool = True
     parent_id: int | None = None
-    multiplier: float = 1.0
+    multiplier: float = Field(default=1.0, gt=0, le=1)
 
     @field_validator("api_base")
     @classmethod
@@ -73,7 +73,7 @@ class PlanUpdate(BaseModel):
     interval_minutes: int | None = None
     is_active: bool | None = None
     parent_id: int | None = None
-    multiplier: float | None = None
+    multiplier: float | None = Field(default=None, gt=0, le=1)
 
     @field_validator("api_base")
     @classmethod
@@ -88,7 +88,7 @@ class PlanResponse(BaseModel):
     name: str
     api_type: str | None
     api_base: str | None
-    api_key: str | None
+    has_api_key: bool = False
     model: str | None
     prompt: str | None
     max_tokens: int | None
@@ -102,7 +102,7 @@ class PlanResponse(BaseModel):
 
     effective_api_type: str | None = None
     effective_api_base: str | None = None
-    effective_api_key: str | None = None
+    has_effective_api_key: bool = False
     effective_model: str | None = None
     effective_prompt: str | None = None
     effective_max_tokens: int | None = None

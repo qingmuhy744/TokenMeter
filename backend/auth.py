@@ -36,6 +36,13 @@ def _check_rate_limit(ip: str) -> None:
         raise HTTPException(
             status_code=429, detail="Too many login attempts. Try again in 5 minutes."
         )
+    _login_attempts[ip] = attempts
+
+
+def _record_failed_attempt(ip: str) -> None:
+    now = time.time()
+    attempts = _login_attempts.get(ip, [])
+    attempts = [t for t in attempts if now - t < _LOGIN_RATE_WINDOW]
     attempts.append(now)
     _login_attempts[ip] = attempts
 
@@ -81,7 +88,9 @@ async def login(body: LoginRequest, request: Request):
     if not user or not verify_password(
         body.password.get_secret_value(), user.password_hash
     ):
+        _record_failed_attempt(client_ip)
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    reset_rate_limit(client_ip)
     request.session[SESSION_KEY] = user.id
     return {"message": "Logged in", "username": user.username}
 

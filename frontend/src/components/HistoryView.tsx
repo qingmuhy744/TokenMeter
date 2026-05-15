@@ -44,17 +44,16 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
 
   useEffect(() => {
     let active = true;
+    if (isPublic || selectedPlan === "all") return;
     if (selectedPlan !== "all") {
       api.getStats(parseInt(selectedPlan), statsDays).then(res => {
         if (active) setStats(res);
       });
-    } else {
-      Promise.resolve().then(() => {
-        if (active) setStats(null);
-      });
     }
     return () => { active = false; };
-  }, [selectedPlan, statsDays]);
+  }, [selectedPlan, statsDays, isPublic]);
+
+  const visibleStats = !isPublic && selectedPlan !== "all" ? stats : null;
 
   const chartData = useMemo(() => {
     const now = new Date();
@@ -129,13 +128,13 @@ export default function HistoryView({ planId: initialPlanId, isPublic = false, o
         </div>
       )}
 
-      {stats && (
+      {visibleStats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: `${statsDays}d Avg TTFT`, value: stats.avg_ttft_ms?.toFixed(0) || '-', suffix: 'ms' },
-            { label: `${statsDays}d Avg TPS`, value: stats.avg_tps_overall?.toFixed(1) || '-', suffix: '' },
-            { label: `${statsDays}d P95 TTFT`, value: stats.p95_ttft_ms?.toFixed(0) || '-', suffix: 'ms' },
-            { label: 'Total Tests', value: stats.count, suffix: '' },
+            { label: `${statsDays}d Avg TTFT`, value: visibleStats.avg_ttft_ms?.toFixed(0) || '-', suffix: 'ms' },
+            { label: `${statsDays}d Avg TPS`, value: visibleStats.avg_tps_overall?.toFixed(1) || '-', suffix: '' },
+            { label: `${statsDays}d P95 TTFT`, value: visibleStats.p95_ttft_ms?.toFixed(0) || '-', suffix: 'ms' },
+            { label: 'Total Tests', value: visibleStats.count, suffix: '' },
           ].map((item, i) => (
             <Card key={i} className="border border-border shadow-sm">
               <CardContent className="pt-6">

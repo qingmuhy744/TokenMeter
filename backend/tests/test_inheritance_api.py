@@ -36,7 +36,8 @@ async def test_inheritance_trigger_test(db_session, auth_client: AsyncClient):
     # 验证子计划在 DB 中的字段确实为 None
     data = child_resp.json()
     assert data["api_type"] is None
-    assert data["api_key"] is None  # Masked as None because raw is None
+    assert "api_key" not in data
+    assert data["has_api_key"] is False
 
     # 3. 模拟 SpeedTester.test_openai 并触发手动测试
     mock_result = SpeedTestResult(
@@ -130,11 +131,11 @@ async def test_inheritance_max_depth(db_session, auth_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_effective_api_key_is_returned_full_in_response(
+async def test_effective_api_key_is_not_returned_full_in_response(
     db_session,
     auth_client: AsyncClient,
 ):
-    """API response should return full effective_api_key when inherited from parent."""
+    """API response should not return raw effective API keys to the browser."""
     parent_resp = await auth_client.post(
         "/api/plans",
         json={
@@ -157,8 +158,9 @@ async def test_effective_api_key_is_returned_full_in_response(
     )
     data = child_resp.json()
 
-    assert "effective_api_key" in data
-    assert data["effective_api_key"] == "sk-parent-secret-key-long"
+    assert "effective_api_key" not in data
+    assert data["has_effective_api_key"] is True
+    assert "sk-parent-secret-key-long" not in str(data)
 
 
 @pytest.mark.asyncio
@@ -189,5 +191,6 @@ async def test_plan_response_effective_values_not_included_by_default(
     data = child_resp.json()
     assert data["api_type"] is None
     assert data["api_base"] is None
-    assert data["api_key"] is None
+    assert "api_key" not in data
+    assert data["has_api_key"] is False
     assert data["model"] == "gpt-3.5-turbo"

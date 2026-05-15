@@ -112,6 +112,7 @@
     "editPlan": "Edit Plan",
     "name": "Plan Name",
     "apiType": "API Type",
+    "apiTypeInherit": "Inherit (default)",
     "apiBaseUrl": "API Base URL",
     "apiKey": "API Key",
     "model": "Model",
