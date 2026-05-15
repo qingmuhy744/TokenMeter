@@ -86,6 +86,25 @@
     "nameHint": "Click name for details",
     "noData": "No data available"
   },
+  "matrix": {
+    "title": "Performance Matrix",
+    "modelPlan": "Model / Plan",
+    "status": "Status",
+    "trend24h": "24h TPS",
+    "avgTTFT": "Avg TTFT",
+    "tpsAll": "TPS (All)",
+    "tpsGen": "TPS (Gen)",
+    "day": "Day",
+    "night": "Night",
+    "degradation": "Degrad.",
+    "success": "Success",
+    "allLabel": "All",
+    "instructions": "Instructions",
+    "scrollHint": "Drag to scroll",
+    "keyboardHint": "← → to switch",
+    "nameHint": "Click name for details",
+    "noData": "No data available"
+  },
   "plans": {
     "title": "Test Plans",
     "addPlan": "Add Plan",
